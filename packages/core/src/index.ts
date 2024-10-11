@@ -51,9 +51,8 @@ export function openApiSpecs<
       if (!(isMiddleware(targetHandler) && handler.name === handlerName))
         continue;
 
-      const response = await handler(c, next).then((res: Response) =>
-        res.json()
-      );
+      // biome-ignore lint/suspicious/noExplicitAny: this is a response object
+      const response = await handler(c, next).then((res: any) => res.json());
 
       console.log({ path, method, ...response });
     }
