@@ -11,15 +11,35 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.3",
     "@nx/js": "20.0.0",
+    "@nx/rollup": "20.0.0",
     "@swc-node/register": "~1.9.1",
+    "@swc/cli": "~0.3.12",
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
+    "@types/node": "18.16.9",
     "czg": "^1.10.1",
     "husky": "^9.1.6",
     "is-ci": "^3.0.1",
     "lint-staged": "^15.2.10",
     "nx": "20.0.0",
+    "rollup": "^4.14.0",
+    "swc-loader": "0.1.15",
     "tslib": "^2.3.0",
-    "typescript": "~5.5.2"
+    "typescript": "~5.5.2",
+    "verdaccio": "^5.0.4"
+  },
+  "dependencies": {},
+  "nx": {
+    "includedScripts": [],
+    "targets": {
+      "local-registry": {
+        "executor": "@nx/js:verdaccio",
+        "options": {
+          "port": 4873,
+          "config": ".verdaccio/config.yml",
+          "storage": "tmp/local-registry/storage"
+        }
+      }
+    }
   }
 }

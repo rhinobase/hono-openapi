@@ -1,0 +1,14 @@
+{
+  "name": "hono-openapi",
+  "version": "0.0.1",
+  "dependencies": {},
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo"
+  ],
+  "nx": {
+    "name": "core"
+  }
+}
