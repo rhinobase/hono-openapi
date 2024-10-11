@@ -1,0 +1,10 @@
+{
+  "scopes": [
+    {
+      "value": "core",
+      "name": "core:                 anything core specific"
+    }
+  ],
+  "scopesSearchValue": true,
+  "allowCustomScopes": false
+}
