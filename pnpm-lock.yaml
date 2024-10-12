@@ -71,6 +71,9 @@ importers:
       hono:
         specifier: ^4.6.4
         version: 4.6.4
+      hono-openapi:
+        specifier: workspace:*
+        version: link:../../packages/core
     devDependencies:
       '@types/node':
         specifier: ^20.11.17

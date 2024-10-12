@@ -1,15 +1,14 @@
 import type { Context, Env, Hono, Input, Next } from "hono";
 import { findTargetHandler, isMiddleware } from "hono/utils/handler";
+import type {
+  OpenApiSpecsOptions,
+  DescribeRouteOptions,
+  OpenAPIRoute,
+} from "./types";
 import type { OpenAPIV3 } from "openapi-types";
+import { filterPaths, registerSchemaPath } from "./utils";
 
 const handlerName = "openAPIConfig";
-
-export type DescribeRouteOptions = Partial<OpenAPIV3.OperationObject> & {
-  /**
-   * Pass `true` to hide route from OpenAPI/swagger document
-   * */
-  hide?: boolean;
-};
 
 export function describeRoute<
   E extends Env = Env,
@@ -26,37 +25,112 @@ export function describeRoute<
   };
 }
 
-export type OpenApiSpecsOptions = {
-  openapi: string;
-  info: {
-    title: string;
-    version: string;
-  };
-};
-
 export function openApiSpecs<
   E extends Env = Env,
   P extends string = string,
   I extends Input = Input
->(hono: Hono, options: OpenApiSpecsOptions) {
-  return async (c: Context<E, P, I>, next: Next) => {
-    const specs = options;
+>(
+  hono: Hono,
+  {
+    documentation = {},
+    exclude = [],
+    excludeMethods = ["OPTIONS"],
+    excludeTags = [],
+  }: OpenApiSpecsOptions = {
+    documentation: {},
+    exclude: [],
+    excludeMethods: ["OPTIONS"],
+    excludeTags: [],
+  }
+) {
+  const schema = {};
+  let totalRoutes = 0;
 
+  return async (c: Context<E, P, I>, next: Next) => {
     // @ts-ignore
     c.set("__OPENAPI_SPECS__", true);
 
-    for (const { path, method, handler } of hono.routes) {
-      const targetHandler = findTargetHandler(handler);
+    const routes = await Promise.all(
+      hono.routes.map(async (route) => {
+        const targetHandler = findTargetHandler(route.handler);
 
-      if (!(isMiddleware(targetHandler) && handler.name === handlerName))
-        continue;
+        if (isMiddleware(targetHandler) && route.handler.name === handlerName) {
+          const data = await route
+            .handler(c, next)
+            .then((res: { json: () => Promise<DescribeRouteOptions> }) =>
+              res.json()
+            );
+          return {
+            method: route.method,
+            path: route.path,
+            data,
+          } as OpenAPIRoute;
+        }
 
-      // biome-ignore lint/suspicious/noExplicitAny: this is a response object
-      const response = await handler(c, next).then((res: any) => res.json());
+        return undefined;
+      })
+    ).then((routes) => routes.filter((route) => route !== undefined));
 
-      console.log({ path, method, ...response });
+    if (routes.length !== totalRoutes) {
+      const ALLOWED_METHODS = [
+        "GET",
+        "PUT",
+        "POST",
+        "DELETE",
+        "OPTIONS",
+        "HEAD",
+        "PATCH",
+        "TRACE",
+      ];
+      totalRoutes = routes.length;
+
+      for (const route of routes) {
+        if (route.data.hide === true) return;
+        if (excludeMethods.includes(route.method)) return;
+        if (
+          ALLOWED_METHODS.includes(route.method) === false &&
+          route.method !== "ALL"
+        )
+          return;
+
+        if (route.method === "ALL") {
+          for (const method of ALLOWED_METHODS) {
+            registerSchemaPath();
+          }
+
+          return;
+        }
+
+        registerSchemaPath();
+      }
     }
 
-    return c.json(specs);
+    return c.json({
+      openapi: "3.0.3",
+      ...{
+        ...documentation,
+        tags: documentation.tags?.filter(
+          (tag) => !excludeTags?.includes(tag?.name)
+        ),
+        info: {
+          title: "Hono Documentation",
+          description: "Development documentation",
+          version: "0.0.0",
+          ...documentation.info,
+        },
+        paths: {
+          ...filterPaths(),
+          ...documentation.paths,
+        },
+        components: {
+          ...documentation.components,
+          schemas: {
+            // TODO: Need to figure out what this is
+            // ...app.definitions?.type,
+            ...documentation.components?.schemas,
+          },
+        },
+      },
+    } satisfies OpenAPIV3.Document);
   };
 }
