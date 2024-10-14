@@ -33,17 +33,19 @@ export function openApiSpecs<
   hono: Hono,
   {
     documentation = {},
+    excludeStaticFile = true,
     exclude = [],
     excludeMethods = ["OPTIONS"],
     excludeTags = [],
   }: OpenApiSpecsOptions = {
     documentation: {},
+    excludeStaticFile: true,
     exclude: [],
     excludeMethods: ["OPTIONS"],
     excludeTags: [],
   }
 ) {
-  const schema = {};
+  const schema: OpenAPIV3.PathsObject = {};
   let totalRoutes = 0;
 
   return async (c: Context<E, P, I>, next: Next) => {
@@ -95,13 +97,20 @@ export function openApiSpecs<
 
         if (route.method === "ALL") {
           for (const method of ALLOWED_METHODS) {
-            registerSchemaPath();
+            registerSchemaPath({
+              ...route,
+              method,
+              schema,
+            });
           }
 
           return;
         }
 
-        registerSchemaPath();
+        registerSchemaPath({
+          ...route,
+          schema,
+        });
       }
     }
 
@@ -119,7 +128,10 @@ export function openApiSpecs<
           ...documentation.info,
         },
         paths: {
-          ...filterPaths(),
+          ...filterPaths(schema, {
+            excludeStaticFile,
+            exclude: Array.isArray(exclude) ? exclude : [exclude],
+          }),
           ...documentation.paths,
         },
         components: {

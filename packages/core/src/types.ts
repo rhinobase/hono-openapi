@@ -13,6 +13,13 @@ export type OpenApiSpecsOptions = {
   >;
 
   /**
+   * Determine if Swagger should exclude static files.
+   *
+   * @default true
+   */
+  excludeStaticFile?: boolean;
+
+  /**
    * Paths to exclude from OpenAPI endpoint
    *
    * @default []
@@ -33,7 +40,7 @@ export type OpenApiSpecsOptions = {
 export type DescribeRouteOptions = Partial<OpenAPIV3.OperationObject> & {
   /**
    * Pass `true` to hide route from OpenAPI/swagger document
-   * */
+   */
   hide?: boolean;
 };
 

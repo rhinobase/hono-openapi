@@ -6,7 +6,8 @@
   "dependencies": {
     "@hono/node-server": "^1.13.2",
     "hono": "^4.6.4",
-    "hono-openapi": "workspace:*"
+    "hono-openapi": "workspace:*",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",

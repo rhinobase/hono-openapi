@@ -1,18 +1,49 @@
 {
   "name": "hono-openapi",
+  "description": "OpenAPI schema generator for Hono",
   "version": "0.0.1",
+  "license": "MIT",
+  "keywords": [
+    "hono",
+    "openapi"
+  ],
+  "homepage": "https://github.com/rhinobase/hono-openapi",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rhinobase/hono-openapi.git",
+    "directory": "packages/ui"
+  },
+  "bugs": {
+    "url": "https://github.com/rhinobase/hono-openapi/issues"
+  },
   "dependencies": {},
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "main": "./dist/index.cjs.js",
+  "module": "./dist/index.esm.js",
   "files": [
     "dist",
     "!**/*.tsbuildinfo"
   ],
   "peerDependencies": {
-    "hono": "^4.6.4"
+    "hono": "^4.6.4",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "openapi-types": "^12.1.3"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.cjs.js",
+      "types": "./dist/index.cjs.d.ts"
+    },
+    "./zod": {
+      "import": "./dist/zod.esm.js",
+      "require": "./dist/zod.cjs.js",
+      "types": "./dist/zod.cjs.d.ts"
+    }
   },
   "nx": {
     "name": "core"

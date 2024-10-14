@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/swcrc",
   "jsc": {
     "target": "es2017",
     "parser": {
@@ -17,6 +18,14 @@
   "module": {
     "type": "es6"
   },
-  "sourceMaps": true,
-  "exclude": ["jest.config.ts",".*\\.spec.tsx?$",".*\\.test.tsx?$","./src/jest-setup.ts$","./**/jest-setup.ts$",".*.js$"]
+  "minify": true,
+  "sourceMaps": false,
+  "exclude": [
+    "jest.config.ts",
+    ".*\\.spec.tsx?$",
+    ".*\\.test.tsx?$",
+    "./src/jest-setup.ts$",
+    "./**/jest-setup.ts$",
+    "./**/*.stories.tsx?$"
+  ]
 }
