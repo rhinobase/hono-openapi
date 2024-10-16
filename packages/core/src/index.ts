@@ -8,7 +8,8 @@ import type {
 import type { OpenAPIV3 } from "openapi-types";
 import { filterPaths, registerSchemaPath } from "./utils";
 
-const handlerName = "openAPIConfig";
+const MIDDLEWARE_HANDLER_NAME = "openAPIConfig";
+const CONTEXT_KEY = "__OPENAPI_SPECS__";
 
 export function describeRoute<
   E extends Env = Env,
@@ -17,7 +18,7 @@ export function describeRoute<
 >(options: DescribeRouteOptions) {
   return async function openAPIConfig(c: Context<E, P, I>, next: Next) {
     // @ts-ignore
-    if (c.get("__OPENAPI_SPECS__")) {
+    if (c.get(CONTEXT_KEY)) {
       return c.json(options);
     }
 
@@ -50,13 +51,16 @@ export function openApiSpecs<
 
   return async (c: Context<E, P, I>, next: Next) => {
     // @ts-ignore
-    c.set("__OPENAPI_SPECS__", true);
+    c.set(CONTEXT_KEY, true);
 
     const routes = await Promise.all(
       hono.routes.map(async (route) => {
         const targetHandler = findTargetHandler(route.handler);
 
-        if (isMiddleware(targetHandler) && route.handler.name === handlerName) {
+        if (
+          isMiddleware(targetHandler) &&
+          route.handler.name === MIDDLEWARE_HANDLER_NAME
+        ) {
           const data = await route
             .handler(c, next)
             .then((res: { json: () => Promise<DescribeRouteOptions> }) =>
@@ -145,4 +149,40 @@ export function openApiSpecs<
       },
     } satisfies OpenAPIV3.Document);
   };
+}
+
+function generateOpenAPISpecs({ request, ...options }: DescribeRouteOptions) {
+  const tmp = { ...options };
+
+  if (request) {
+    tmp.parameters ??= [];
+
+    if (request.cookie) {
+      request.cookie = {
+        schema: request.cookie.schema,
+        validator: () => {},
+      };
+    }
+
+    if (request.header) {
+      request.header = {
+        schema: request.header.schema,
+        validator: () => {},
+      };
+    }
+
+    if (request.param) {
+      request.param = {
+        schema: request.param.schema,
+        validator: () => {},
+      };
+    }
+
+    if (request.query) {
+      request.query = {
+        schema: request.query.schema,
+        validator: () => {},
+      };
+    }
+  }
 }

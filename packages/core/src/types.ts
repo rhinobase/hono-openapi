@@ -37,11 +37,52 @@ export type OpenApiSpecsOptions = {
   excludeTags?: string[];
 };
 
-export type DescribeRouteOptions = Partial<OpenAPIV3.OperationObject> & {
+export type HonoOpenAPISchema = {
+  schema: OpenAPIV3.SchemaObject;
+  validator: <T>(data: unknown) => T | { error: string };
+};
+
+export type DescribeRouteOptions = Partial<
+  Omit<OpenAPIV3.OperationObject, "responses" | "requestBody">
+> & {
   /**
    * Pass `true` to hide route from OpenAPI/swagger document
    */
   hide?: boolean;
+
+  /**
+   * Parameters of the request
+   */
+  request?: {
+    cookie?: HonoOpenAPISchema;
+    header?: HonoOpenAPISchema;
+    param?: HonoOpenAPISchema;
+    query?: HonoOpenAPISchema;
+  };
+
+  /**
+   * Request body of the request
+   */
+  requestBody?: OpenAPIV3.RequestBodyObject & {
+    content: {
+      [key: string]: OpenAPIV3.MediaTypeObject & {
+        schema: OpenAPIV3.SchemaObject | HonoOpenAPISchema;
+      };
+    };
+  };
+
+  /**
+   * Responses of the request
+   */
+  responses?: {
+    [key: string]: OpenAPIV3.ResponseObject & {
+      content: {
+        [key: string]: OpenAPIV3.MediaTypeObject & {
+          schema: OpenAPIV3.SchemaObject | HonoOpenAPISchema;
+        };
+      };
+    };
+  };
 };
 
 export interface OpenAPIRoute {
