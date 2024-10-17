@@ -1,4 +1,4 @@
-import type { Context, Env, Hono, Input, Next } from "hono";
+import type { Context, Env, Hono, Input, MiddlewareHandler, Next } from "hono";
 import { findTargetHandler, isMiddleware } from "hono/utils/handler";
 import type {
   OpenApiSpecsOptions,
@@ -10,20 +10,38 @@ import { filterPaths, registerSchemaPath } from "./utils";
 
 const MIDDLEWARE_HANDLER_NAME = "openAPIConfig";
 const CONTEXT_KEY = "__OPENAPI_SPECS__";
+const TARGETS = ["cookie", "header", "param", "query"] as const;
 
 export function describeRoute<
   E extends Env = Env,
   P extends string = string,
   I extends Input = Input
 >(options: DescribeRouteOptions) {
-  return async function openAPIConfig(c: Context<E, P, I>, next: Next) {
-    // @ts-ignore
-    if (c.get(CONTEXT_KEY)) {
-      return c.json(options);
-    }
+  const validators: MiddlewareHandler[] = [];
 
-    await next();
-  };
+  for (const target of TARGETS) {
+    if (options.request?.[target]) {
+      validators.push(options.request?.[target].validator<E, P>(target));
+    }
+  }
+
+  const raw = options.requestBody?.content?.["application/json"]?.schema;
+  if (raw && "validator" in raw) {
+    validators.push(raw.validator<E, P>("json"));
+  }
+
+  return [
+    ...validators,
+    async function openAPIConfig(c: Context<E, P, I>, next: Next) {
+      // @ts-ignore
+      if (c.get(CONTEXT_KEY)) {
+        const docs = generateRouteDocs(options);
+        return c.json(docs);
+      }
+
+      await next();
+    },
+  ];
 }
 
 export function openApiSpecs<
@@ -151,38 +169,85 @@ export function openApiSpecs<
   };
 }
 
-function generateOpenAPISpecs({ request, ...options }: DescribeRouteOptions) {
+function generateRouteDocs({ request, ...options }: DescribeRouteOptions) {
   const tmp = { ...options };
 
   if (request) {
     tmp.parameters ??= [];
 
-    if (request.cookie) {
-      request.cookie = {
-        schema: request.cookie.schema,
-        validator: () => {},
-      };
-    }
+    for (const target of TARGETS) {
+      if (request[target]) {
+        const { schema } = request[target].builder({
+          openapi: "3.0.3",
+        });
 
-    if (request.header) {
-      request.header = {
-        schema: request.header.schema,
-        validator: () => {},
-      };
-    }
+        // Reference Object
+        if ("$ref" in schema) {
+        }
+        // Schema Object
+        else {
+          for (const [key, value] of Object.entries(schema.properties ?? {})) {
+            const {
+              example,
+              examples,
+              allowEmptyValue,
+              deprecated,
+              style,
+              explode,
+              allowReserved,
+              $ref,
+              content,
+              description,
+              ...param
+              // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+            } = value as any;
 
-    if (request.param) {
-      request.param = {
-        schema: request.param.schema,
-        validator: () => {},
-      };
-    }
-
-    if (request.query) {
-      request.query = {
-        schema: request.query.schema,
-        validator: () => {},
-      };
+            tmp.parameters.push({
+              in: target,
+              name: key,
+              required: schema.required?.includes(key),
+              schema: param,
+              example,
+              examples,
+              allowEmptyValue,
+              deprecated,
+              style,
+              explode,
+              allowReserved,
+              $ref,
+              content,
+              description,
+            });
+          }
+        }
+      }
     }
   }
+
+  if (tmp.requestBody) {
+    const raw = tmp.requestBody?.content?.["application/json"]?.schema;
+
+    if (raw && "builder" in raw) {
+      const { schema } = raw.builder({
+        openapi: "3.0.3",
+      });
+
+      tmp.requestBody.content["application/json"].schema = schema;
+    }
+  }
+
+  if (tmp.responses) {
+    for (const key of Object.keys(tmp.responses)) {
+      const raw = tmp.responses[key].content?.["application/json"]?.schema;
+      if (raw && "builder" in raw) {
+        const { schema } = raw.builder({
+          openapi: "3.0.3",
+        });
+
+        tmp.responses[key].content["application/json"].schema = schema;
+      }
+    }
+  }
+
+  return tmp;
 }

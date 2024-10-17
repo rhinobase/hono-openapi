@@ -1,3 +1,4 @@
+import "zod-openapi/extend";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { describeRoute, openApiSpecs } from "hono-openapi";
@@ -8,18 +9,42 @@ const app = new Hono();
 
 app.get(
   "/",
-  describeRoute({
-    description: "This is the root route",
-    parameters: [
-      ...zodResolver(
-        "query",
-        z.object({ name: z.string().describe("Something something") })
+  ...describeRoute({
+    request: {
+      query: zodResolver(
+        z.object({ name: z.string().optional().openapi({ example: "Steven" }) })
       ),
-    ],
-    responses: {},
+    },
   }),
   (c) => {
-    return c.text("Hello Hono!");
+    const result = c.req.valid("query");
+    return c.text(`Hello ${result?.name ?? "Hono"}!`);
+  }
+);
+
+app.post(
+  "/:id",
+  ...describeRoute({
+    request: {
+      param: zodResolver(
+        z.object({ id: z.coerce.number().openapi({ example: 123 }) })
+      ),
+    },
+    requestBody: {
+      content: {
+        "application/json": {
+          schema: zodResolver(
+            z.object({ name: z.string().openapi({ example: "Steven" }) })
+          ),
+        },
+      },
+    },
+  }),
+  (c) => {
+    const params = c.req.valid("param");
+    const body = c.req.valid("json");
+
+    return c.text(`Hello ${body.name}! Your id is ${params.id}`);
   }
 );
 

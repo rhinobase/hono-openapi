@@ -1,4 +1,74 @@
+import type { MiddlewareHandler, Env, ValidationTargets } from "hono";
 import type { OpenAPIV3 } from "openapi-types";
+
+export type ResolverResult = {
+  builder: (options?: Record<string, unknown>) => {
+    schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
+    components?: OpenAPIV3.ComponentsObject;
+  };
+  validator: <
+    E extends Env,
+    P extends string,
+    Target extends keyof ValidationTargets = keyof ValidationTargets
+  >(
+    target: Target
+  ) => MiddlewareHandler<E, P>;
+};
+
+export type DescribeRouteOptions = Partial<
+  Omit<OpenAPIV3.OperationObject, "responses" | "requestBody">
+> & {
+  /**
+   * Pass `true` to hide route from OpenAPI/swagger document
+   */
+  hide?: boolean;
+
+  /**
+   * Parameters of the request
+   */
+  request?: {
+    cookie?: ResolverResult;
+    header?: ResolverResult;
+    param?: ResolverResult;
+    query?: ResolverResult;
+  };
+
+  /**
+   * Request body of the request
+   */
+  requestBody?: OpenAPIV3.RequestBodyObject & {
+    content: {
+      [key: string]: Omit<OpenAPIV3.MediaTypeObject, "schema"> & {
+        schema?:
+          | OpenAPIV3.ReferenceObject
+          | OpenAPIV3.SchemaObject
+          | ResolverResult;
+      };
+    };
+  };
+
+  /**
+   * Responses of the request
+   */
+  responses?: {
+    [key: string]: OpenAPIV3.ResponseObject & {
+      content: {
+        [key: string]: Omit<OpenAPIV3.MediaTypeObject, "schema"> & {
+          schema?:
+            | OpenAPIV3.ReferenceObject
+            | OpenAPIV3.SchemaObject
+            | ResolverResult;
+        };
+      };
+    };
+  };
+};
+
+export interface OpenAPIRoute {
+  path: string;
+  method: string;
+  data: DescribeRouteOptions;
+}
 
 export type OpenApiSpecsOptions = {
   /**
@@ -36,57 +106,3 @@ export type OpenApiSpecsOptions = {
    */
   excludeTags?: string[];
 };
-
-export type HonoOpenAPISchema = {
-  schema: OpenAPIV3.SchemaObject;
-  validator: <T>(data: unknown) => T | { error: string };
-};
-
-export type DescribeRouteOptions = Partial<
-  Omit<OpenAPIV3.OperationObject, "responses" | "requestBody">
-> & {
-  /**
-   * Pass `true` to hide route from OpenAPI/swagger document
-   */
-  hide?: boolean;
-
-  /**
-   * Parameters of the request
-   */
-  request?: {
-    cookie?: HonoOpenAPISchema;
-    header?: HonoOpenAPISchema;
-    param?: HonoOpenAPISchema;
-    query?: HonoOpenAPISchema;
-  };
-
-  /**
-   * Request body of the request
-   */
-  requestBody?: OpenAPIV3.RequestBodyObject & {
-    content: {
-      [key: string]: OpenAPIV3.MediaTypeObject & {
-        schema: OpenAPIV3.SchemaObject | HonoOpenAPISchema;
-      };
-    };
-  };
-
-  /**
-   * Responses of the request
-   */
-  responses?: {
-    [key: string]: OpenAPIV3.ResponseObject & {
-      content: {
-        [key: string]: OpenAPIV3.MediaTypeObject & {
-          schema: OpenAPIV3.SchemaObject | HonoOpenAPISchema;
-        };
-      };
-    };
-  };
-};
-
-export interface OpenAPIRoute {
-  path: string;
-  method: string;
-  data: DescribeRouteOptions;
-}
