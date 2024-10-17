@@ -1,4 +1,4 @@
-import type { Context, Env, Hono, Input, MiddlewareHandler, Next } from "hono";
+import type { Context, Env, Hono, Input, Next } from "hono";
 import { findTargetHandler, isMiddleware } from "hono/utils/handler";
 import type {
   OpenApiSpecsOptions,
@@ -17,34 +17,18 @@ export function describeRoute<
   P extends string = string,
   I extends Input = Input
 >(options: DescribeRouteOptions) {
-  const validators: MiddlewareHandler[] = [];
-
-  for (const target of TARGETS) {
-    if (options.request?.[target]) {
-      validators.push(options.request?.[target].validator<E, P>(target));
+  return async function openAPIConfig(c: Context<E, P, I>, next: Next) {
+    // @ts-ignore
+    if (c.get(CONTEXT_KEY)) {
+      const docs = generateRouteDocs(options);
+      return c.json(docs);
     }
-  }
 
-  const raw = options.requestBody?.content?.["application/json"]?.schema;
-  if (raw && "validator" in raw) {
-    validators.push(raw.validator<E, P>("json"));
-  }
-
-  return [
-    ...validators,
-    async function openAPIConfig(c: Context<E, P, I>, next: Next) {
-      // @ts-ignore
-      if (c.get(CONTEXT_KEY)) {
-        const docs = generateRouteDocs(options);
-        return c.json(docs);
-      }
-
-      await next();
-    },
-  ];
+    await next();
+  };
 }
 
-export function openApiSpecs<
+export function openAPISpecs<
   E extends Env = Env,
   P extends string = string,
   I extends Input = Input

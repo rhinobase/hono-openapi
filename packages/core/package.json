@@ -31,7 +31,6 @@
     "zod": "^3.23.8"
   },
   "optionalDependencies": {
-    "@hono/zod-validator": "^0.4.1",
     "zod-openapi": "^3.1.1"
   },
   "devDependencies": {

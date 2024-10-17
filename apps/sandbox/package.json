@@ -5,6 +5,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.13.2",
+    "@hono/zod-validator": "^0.4.1",
     "hono": "^4.6.4",
     "hono-openapi": "workspace:*",
     "zod": "^3.23.8",
