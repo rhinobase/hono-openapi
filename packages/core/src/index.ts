@@ -1,4 +1,4 @@
-import type { Context, Env, Hono, Input, Next } from "hono";
+import type { Context, Hono, Input, Next } from "hono";
 import { findTargetHandler, isMiddleware } from "hono/utils/handler";
 import type {
   OpenApiSpecsOptions,
@@ -12,15 +12,25 @@ const MIDDLEWARE_HANDLER_NAME = "openAPIConfig";
 const CONTEXT_KEY = "__OPENAPI_SPECS__";
 const TARGETS = ["cookie", "header", "param", "query"] as const;
 
+type OpenAPIHonoEnv = {
+  Variables: {
+    __OPENAPI_SPECS__?: {
+      version: string;
+      components: OpenAPIV3.ComponentsObject[];
+    };
+  };
+};
+
 export function describeRoute<
-  E extends Env = Env,
+  E extends OpenAPIHonoEnv = OpenAPIHonoEnv,
   P extends string = string,
   I extends Input = Input
 >(options: DescribeRouteOptions) {
   return async function openAPIConfig(c: Context<E, P, I>, next: Next) {
-    // @ts-ignore
-    if (c.get(CONTEXT_KEY)) {
-      const docs = generateRouteDocs(options);
+    const docOptions = c.get(CONTEXT_KEY);
+
+    if (docOptions) {
+      const docs = generateRouteDocs(options, docOptions);
       return c.json(docs);
     }
 
@@ -29,7 +39,7 @@ export function describeRoute<
 }
 
 export function openAPISpecs<
-  E extends Env = Env,
+  E extends OpenAPIHonoEnv = OpenAPIHonoEnv,
   P extends string = string,
   I extends Input = Input
 >(
@@ -48,12 +58,16 @@ export function openAPISpecs<
     excludeTags: [],
   }
 ) {
+  const version = "3.0.3";
+  const components: OpenAPIV3.ComponentsObject[] = [];
   const schema: OpenAPIV3.PathsObject = {};
   let totalRoutes = 0;
 
   return async (c: Context<E, P, I>, next: Next) => {
-    // @ts-ignore
-    c.set(CONTEXT_KEY, true);
+    c.set(CONTEXT_KEY, {
+      version,
+      components,
+    });
 
     const routes = await Promise.all(
       hono.routes.map(async (route) => {
