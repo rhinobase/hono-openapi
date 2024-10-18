@@ -209,26 +209,29 @@ function generateRouteDocs({ request, ...options }: DescribeRouteOptions) {
   }
 
   if (tmp.requestBody) {
-    const raw = tmp.requestBody?.content?.["application/json"]?.schema;
+    for (const [key, raw] of Object.entries(tmp.requestBody?.content ?? {})) {
+      if (raw.schema && "builder" in raw.schema) {
+        const { schema } = raw.schema.builder({
+          openapi: "3.0.3",
+        });
 
-    if (raw && "builder" in raw) {
-      const { schema } = raw.builder({
-        openapi: "3.0.3",
-      });
-
-      tmp.requestBody.content["application/json"].schema = schema;
+        tmp.requestBody.content[key].schema = schema;
+      }
     }
   }
 
   if (tmp.responses) {
     for (const key of Object.keys(tmp.responses)) {
-      const raw = tmp.responses[key].content?.["application/json"]?.schema;
-      if (raw && "builder" in raw) {
-        const { schema } = raw.builder({
-          openapi: "3.0.3",
-        });
+      for (const [contentKey, raw] of Object.entries(
+        tmp.responses[key].content ?? {}
+      )) {
+        if (raw.schema && "builder" in raw.schema) {
+          const { schema } = raw.schema.builder({
+            openapi: "3.0.3",
+          });
 
-        tmp.responses[key].content["application/json"].schema = schema;
+          tmp.responses[key].content[contentKey].schema = schema;
+        }
       }
     }
   }

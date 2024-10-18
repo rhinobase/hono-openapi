@@ -1,3 +1,4 @@
+import type { Env, MiddlewareHandler, ValidationTargets } from "hono";
 import type { OpenAPIV3 } from "openapi-types";
 
 export type ResolverResult = {
@@ -5,6 +6,13 @@ export type ResolverResult = {
     schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
     components?: OpenAPIV3.ComponentsObject;
   };
+  validator?: <
+    E extends Env,
+    P extends string,
+    Target extends keyof ValidationTargets = keyof ValidationTargets
+  >(
+    target: Target
+  ) => MiddlewareHandler<E, P>;
 };
 
 export type DescribeRouteOptions = Partial<
