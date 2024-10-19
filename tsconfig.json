@@ -5,6 +5,9 @@
   "references": [
     {
       "path": "./packages/core"
+    },
+    {
+      "path": "./apps/sandbox"
     }
   ]
 }

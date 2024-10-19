@@ -1,4 +1,5 @@
 const { withNx } = require("@nx/rollup/with-nx");
+const terser = require("@rollup/plugin-terser");
 
 module.exports = withNx(
   {
@@ -10,6 +11,10 @@ module.exports = withNx(
     assets: [{ input: ".", output: ".", glob: "README.md" }],
   },
   {
-    input: ["./src/index.ts", "./src/zod.ts"],
-  }
+    input: {
+      index: "./src/index.ts",
+      zod: "./src/zod.ts",
+    },
+    plugins: [terser()],
+  },
 );

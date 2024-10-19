@@ -1,7 +1,7 @@
 {
   "name": "sandbox",
   "scripts": {
-    "dev": "tsx watch src/index.ts"
+    "serve": "tsx watch src/index.ts"
   },
   "dependencies": {
     "@scalar/hono-api-reference": "^0.5.155",
@@ -15,8 +15,5 @@
   "devDependencies": {
     "@types/node": "^20.11.17",
     "tsx": "^4.7.1"
-  },
-  "nx": {
-    "name": "sandbox"
   }
 }
