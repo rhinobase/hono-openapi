@@ -1,11 +1,11 @@
-import "zod-openapi/extend";
 import { serve } from "@hono/node-server";
+import { zValidator } from "@hono/zod-validator";
+import { apiReference } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { describeRoute, openAPISpecs } from "hono-openapi";
 import { zodResolver } from "hono-openapi/zod";
 import z from "zod";
-import { zValidator } from "@hono/zod-validator";
-import { apiReference } from "@scalar/hono-api-reference";
+import "zod-openapi/extend";
 
 const app = new Hono();
 
