@@ -1,10 +1,15 @@
 import type { Env, MiddlewareHandler, ValidationTargets } from "hono";
 import type { OpenAPIV3 } from "openapi-types";
 
+export type OpenAPIRouteHandlerConfig = {
+  version: "3.0.0" | "3.0.1" | "3.0.2" | "3.0.3" | "3.1.0";
+  components: OpenAPIV3.ComponentsObject["schemas"];
+};
+
 export type ResolverResult = {
-  builder: (options?: Record<string, unknown>) => {
+  builder: (options?: OpenAPIRouteHandlerConfig) => {
     schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
-    components?: OpenAPIV3.ComponentsObject;
+    components?: OpenAPIV3.ComponentsObject["schemas"];
   };
   validator?: <
     E extends Env,

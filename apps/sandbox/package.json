@@ -4,6 +4,7 @@
     "dev": "tsx watch src/index.ts"
   },
   "dependencies": {
+    "@scalar/hono-api-reference": "^0.5.155",
     "@hono/node-server": "^1.13.2",
     "@hono/zod-validator": "^0.4.1",
     "hono": "^4.6.4",

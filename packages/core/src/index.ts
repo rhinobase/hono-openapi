@@ -4,6 +4,7 @@ import type {
   OpenApiSpecsOptions,
   DescribeRouteOptions,
   OpenAPIRoute,
+  OpenAPIRouteHandlerConfig,
 } from "./types";
 import type { OpenAPIV3 } from "openapi-types";
 import { filterPaths, registerSchemaPath } from "./utils";
@@ -14,10 +15,7 @@ const TARGETS = ["cookie", "header", "param", "query"] as const;
 
 type OpenAPIHonoEnv = {
   Variables: {
-    __OPENAPI_SPECS__?: {
-      version: string;
-      components: OpenAPIV3.ComponentsObject[];
-    };
+    __OPENAPI_SPECS__?: OpenAPIRouteHandlerConfig;
   };
 };
 
@@ -27,10 +25,10 @@ export function describeRoute<
   I extends Input = Input
 >(options: DescribeRouteOptions) {
   return async function openAPIConfig(c: Context<E, P, I>, next: Next) {
-    const docOptions = c.get(CONTEXT_KEY);
+    const config = c.get(CONTEXT_KEY);
 
-    if (docOptions) {
-      const docs = generateRouteDocs(options, docOptions);
+    if (config) {
+      const docs = generateRouteDocs(options, config);
       return c.json(docs);
     }
 
@@ -58,19 +56,32 @@ export function openAPISpecs<
     excludeTags: [],
   }
 ) {
-  const version = "3.0.3";
-  const components: OpenAPIV3.ComponentsObject[] = [];
+  const config: OpenAPIRouteHandlerConfig = {
+    version: "3.0.3",
+    components: {},
+  };
   const schema: OpenAPIV3.PathsObject = {};
   let totalRoutes = 0;
 
   return async (c: Context<E, P, I>, next: Next) => {
-    c.set(CONTEXT_KEY, {
-      version,
-      components,
-    });
+    c.set(CONTEXT_KEY, config);
 
-    const routes = await Promise.all(
-      hono.routes.map(async (route) => {
+    if (hono.routes.length !== totalRoutes) {
+      const ALLOWED_METHODS = [
+        "GET",
+        "PUT",
+        "POST",
+        "DELETE",
+        "OPTIONS",
+        "HEAD",
+        "PATCH",
+        "TRACE",
+      ];
+      totalRoutes = hono.routes.length;
+
+      const routes: OpenAPIRoute[] = [];
+
+      for (const route of hono.routes) {
         const targetHandler = findTargetHandler(route.handler);
 
         if (
@@ -82,29 +93,14 @@ export function openAPISpecs<
             .then((res: { json: () => Promise<DescribeRouteOptions> }) =>
               res.json()
             );
-          return {
+
+          routes.push({
             method: route.method,
             path: route.path,
             data,
-          } as OpenAPIRoute;
+          });
         }
-
-        return undefined;
-      })
-    ).then((routes) => routes.filter((route) => route !== undefined));
-
-    if (routes.length !== totalRoutes) {
-      const ALLOWED_METHODS = [
-        "GET",
-        "PUT",
-        "POST",
-        "DELETE",
-        "OPTIONS",
-        "HEAD",
-        "PATCH",
-        "TRACE",
-      ];
-      totalRoutes = routes.length;
+      }
 
       for (const route of routes) {
         if (route.data.hide === true) return;
@@ -135,7 +131,7 @@ export function openAPISpecs<
     }
 
     return c.json({
-      openapi: "3.0.3",
+      openapi: config.version,
       ...{
         ...documentation,
         tags: documentation.tags?.filter(
@@ -157,8 +153,7 @@ export function openAPISpecs<
         components: {
           ...documentation.components,
           schemas: {
-            // TODO: Need to figure out what this is
-            // ...app.definitions?.type,
+            ...config.components,
             ...documentation.components?.schemas,
           },
         },
@@ -167,7 +162,10 @@ export function openAPISpecs<
   };
 }
 
-function generateRouteDocs({ request, ...options }: DescribeRouteOptions) {
+function generateRouteDocs(
+  { request, ...options }: DescribeRouteOptions,
+  config: OpenAPIRouteHandlerConfig
+) {
   const tmp = { ...options };
 
   if (request) {
@@ -175,15 +173,13 @@ function generateRouteDocs({ request, ...options }: DescribeRouteOptions) {
 
     for (const target of TARGETS) {
       if (request[target]) {
-        const { schema } = request[target].builder({
-          openapi: "3.0.3",
-        });
+        const { schema, components } = request[target].builder(config);
 
-        // Reference Object
-        if ("$ref" in schema) {
-        }
-        // Schema Object
-        else {
+        if (components)
+          config.components = { ...config.components, ...components };
+
+        // Has to be Schema Object, as Reference Object is not possible here
+        if (!("$ref" in schema)) {
           for (const [key, value] of Object.entries(schema.properties ?? {})) {
             const {
               example,
@@ -193,7 +189,6 @@ function generateRouteDocs({ request, ...options }: DescribeRouteOptions) {
               style,
               explode,
               allowReserved,
-              $ref,
               content,
               description,
               ...param
@@ -212,7 +207,6 @@ function generateRouteDocs({ request, ...options }: DescribeRouteOptions) {
               style,
               explode,
               allowReserved,
-              $ref,
               content,
               description,
             });
@@ -225,9 +219,7 @@ function generateRouteDocs({ request, ...options }: DescribeRouteOptions) {
   if (tmp.requestBody) {
     for (const [key, raw] of Object.entries(tmp.requestBody?.content ?? {})) {
       if (raw.schema && "builder" in raw.schema) {
-        const { schema } = raw.schema.builder({
-          openapi: "3.0.3",
-        });
+        const { schema } = raw.schema.builder(config);
 
         tmp.requestBody.content[key].schema = schema;
       }
@@ -240,9 +232,7 @@ function generateRouteDocs({ request, ...options }: DescribeRouteOptions) {
         tmp.responses[key].content ?? {}
       )) {
         if (raw.schema && "builder" in raw.schema) {
-          const { schema } = raw.schema.builder({
-            openapi: "3.0.3",
-          });
+          const { schema } = raw.schema.builder(config);
 
           tmp.responses[key].content[contentKey].schema = schema;
         }
