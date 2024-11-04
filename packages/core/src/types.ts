@@ -5,14 +5,17 @@ export type OpenAPIRouteHandlerConfig = {
   components: OpenAPIV3.ComponentsObject["schemas"];
 };
 
-export type ResolverResult = (options?: OpenAPIRouteHandlerConfig) => {
-  schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
-  components?: OpenAPIV3.ComponentsObject["schemas"];
+export type ResolverResult = {
+  builder: (options?: OpenAPIRouteHandlerConfig) => {
+    schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
+    components?: OpenAPIV3.ComponentsObject["schemas"];
+  };
+  validator?: () => void | Promise<void>;
 };
 
 export type DescribeRouteOptions = Omit<
-  OpenAPIV3.OperationObject,
-  "responses"
+  OpenAPIV3.OperationObject["responses"],
+  "responses" | "requestBody" | "parameters"
 > & {
   /**
    * Pass `true` to hide route from OpenAPI/swagger document
@@ -24,7 +27,7 @@ export type DescribeRouteOptions = Omit<
    */
   responses?: {
     [key: string]: OpenAPIV3.ResponseObject & {
-      content: {
+      content?: {
         [key: string]: Omit<OpenAPIV3.MediaTypeObject, "schema"> & {
           schema?:
             | OpenAPIV3.ReferenceObject

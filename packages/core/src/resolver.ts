@@ -9,7 +9,11 @@ import {
   validator as hValidator,
   type ValidationFunction,
 } from "hono/validator";
-import type { DescribeRouteOptions, OpenAPIRouteHandlerConfig } from "./types";
+import type {
+  DescribeRouteOptions,
+  OpenAPIRouteHandlerConfig,
+  ResolverResult,
+} from "./types";
 import type { OpenAPIV3 } from "openapi-types";
 
 export const CONTEXT_KEY = "__OPENAPI_SPECS__";
@@ -55,8 +59,7 @@ export function validator<
     };
     out: { [K in U]: OutputTypeExcludeResponseType };
   },
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  E extends Env = any
+  E extends Env = Env
 >(
   target: U,
   validationFunc: ValidationFunction<
@@ -65,10 +68,11 @@ export function validator<
     E,
     P2
   >,
-  schema: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject
+  schema: ResolverResult
 ): MiddlewareHandler<E, P, V> {
-  return async function $re(c, next) {
-    const config = c.get(CONTEXT_KEY);
+  return async function $openAPIConfig(c, next) {
+    // @ts-expect-error
+    const config = c.get(CONTEXT_KEY) as OpenAPIRouteHandlerConfig | undefined;
 
     if (config) {
       const docs = generateDocsFromSchema(config, schema);
@@ -80,13 +84,13 @@ export function validator<
 }
 
 export function describeRoute<
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  E extends Env = any,
+  E extends Env = Env,
   P extends string = string,
   I extends Input = Input
 >(specs: DescribeRouteOptions): MiddlewareHandler<E, P, I> {
   return async function $openAPIConfig(c, next) {
-    const config = c.get(CONTEXT_KEY);
+    // @ts-expect-error
+    const config = c.get(CONTEXT_KEY) as OpenAPIRouteHandlerConfig | undefined;
 
     if (config) {
       const docs = generateDocsFromSpecs(config, specs);
@@ -99,7 +103,7 @@ export function describeRoute<
 
 export function generateDocsFromSchema(
   config: OpenAPIRouteHandlerConfig,
-  schema: OpenAPIV3.ReferenceObject | OpenAPIV3.SchemaObject
+  schema: ResolverResult
 ) {
   return {};
 }
@@ -108,5 +112,25 @@ export function generateDocsFromSpecs(
   config: OpenAPIRouteHandlerConfig,
   specs: DescribeRouteOptions
 ) {
-  return {};
+  const tmp = { ...specs };
+
+  if (tmp.responses) {
+    for (const key of Object.keys(tmp.responses)) {
+      const response = tmp.responses[key];
+      if (response && !("content" in response)) continue;
+
+      for (const contentKey of Object.keys(response.content ?? {})) {
+        const raw = response.content?.[contentKey];
+
+        if (!raw) continue;
+
+        if (raw.schema && "builder" in raw.schema) {
+          const { schema } = raw.schema.builder(config);
+          raw.schema = schema;
+        }
+      }
+    }
+  }
+
+  return tmp;
 }
