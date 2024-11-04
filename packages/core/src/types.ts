@@ -1,4 +1,3 @@
-import type { Env, MiddlewareHandler, ValidationTargets } from "hono";
 import type { OpenAPIV3 } from "openapi-types";
 
 export type OpenAPIRouteHandlerConfig = {
@@ -6,51 +5,19 @@ export type OpenAPIRouteHandlerConfig = {
   components: OpenAPIV3.ComponentsObject["schemas"];
 };
 
-export type ResolverResult = {
-  builder: (options?: OpenAPIRouteHandlerConfig) => {
-    schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
-    components?: OpenAPIV3.ComponentsObject["schemas"];
-  };
-  validator?: <
-    E extends Env,
-    P extends string,
-    Target extends keyof ValidationTargets = keyof ValidationTargets
-  >(
-    target: Target
-  ) => MiddlewareHandler<E, P>;
+export type ResolverResult = (options?: OpenAPIRouteHandlerConfig) => {
+  schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
+  components?: OpenAPIV3.ComponentsObject["schemas"];
 };
 
-export type DescribeRouteOptions = Partial<
-  Omit<OpenAPIV3.OperationObject, "responses" | "requestBody">
+export type DescribeRouteOptions = Omit<
+  OpenAPIV3.OperationObject,
+  "responses"
 > & {
   /**
    * Pass `true` to hide route from OpenAPI/swagger document
    */
   hide?: boolean;
-
-  /**
-   * Parameters of the request
-   */
-  request?: {
-    cookie?: ResolverResult;
-    header?: ResolverResult;
-    param?: ResolverResult;
-    query?: ResolverResult;
-  };
-
-  /**
-   * Request body of the request
-   */
-  requestBody?: OpenAPIV3.RequestBodyObject & {
-    content: {
-      [key: string]: Omit<OpenAPIV3.MediaTypeObject, "schema"> & {
-        schema?:
-          | OpenAPIV3.ReferenceObject
-          | OpenAPIV3.SchemaObject
-          | ResolverResult;
-      };
-    };
-  };
 
   /**
    * Responses of the request

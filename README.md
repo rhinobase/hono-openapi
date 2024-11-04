@@ -8,7 +8,7 @@ Supported Validation Libraries:
 - [ ] [TypeBox](https://github.com/sinclairzx81/typebox) (coming soon)
 - [ ] [Valibot](https://valibot.dev/) (coming soon)
 
-> **Note:** This package doesn't validate the schema, it only generates the OpenAPI specification from it. You should use the validation library to validate the data.
+> [!Note] This package doesn't validate the schema, it only generates the OpenAPI specification from it. You should use the validation library to validate the data.
 
 ## Usage
 

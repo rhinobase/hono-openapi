@@ -1,9 +1,8 @@
 import { serve } from "@hono/node-server";
-import { zValidator } from "@hono/zod-validator";
 import { apiReference } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { describeRoute, openAPISpecs } from "hono-openapi";
-import { zodResolver } from "hono-openapi/zod";
+import { zResolver as zValidator } from "hono-openapi/zod";
 import z from "zod";
 import "zod-openapi/extend";
 
@@ -13,19 +12,10 @@ const nameValidation = z.object({
   name: z.string().openapi({ example: "Steven", ref: "name" }),
 });
 
-app.get(
-  "/",
-  describeRoute({
-    request: {
-      query: zodResolver(nameValidation),
-    },
-  }),
-  zValidator("query", nameValidation),
-  (c) => {
-    const result = c.req.valid("query");
-    return c.text(`Hello ${result?.name ?? "Hono"}!`);
-  }
-);
+app.get("/", describeRoute({}), zValidator("query", nameValidation), (c) => {
+  const result = c.req.valid("query");
+  return c.text(`Hello ${result?.name ?? "Hono"}!`);
+});
 
 const bodyValidation = z.object({
   id: z.number().openapi({ example: 123 }),
@@ -33,18 +23,7 @@ const bodyValidation = z.object({
 
 app.post(
   "/",
-  describeRoute({
-    request: {
-      query: zodResolver(nameValidation),
-    },
-    requestBody: {
-      content: {
-        "application/json": {
-          schema: zodResolver(bodyValidation),
-        },
-      },
-    },
-  }),
+  describeRoute({}),
   zValidator("param", nameValidation),
   zValidator("json", bodyValidation),
   (c) => {
