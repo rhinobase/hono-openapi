@@ -1,20 +1,18 @@
 import type { OpenAPIV3 } from "openapi-types";
+import type { ALLOWED_METHODS } from "./utils";
 
 export type OpenAPIRouteHandlerConfig = {
   version: "3.0.0" | "3.0.1" | "3.0.2" | "3.0.3" | "3.1.0";
   components: OpenAPIV3.ComponentsObject["schemas"];
 };
 
-export type ResolverResult = {
-  builder: (options?: OpenAPIRouteHandlerConfig) => {
-    schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
-    components?: OpenAPIV3.ComponentsObject["schemas"];
-  };
-  validator?: () => void | Promise<void>;
+export type ResolverResult = (options?: OpenAPIRouteHandlerConfig) => {
+  schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
+  components?: OpenAPIV3.ComponentsObject["schemas"];
 };
 
 export type DescribeRouteOptions = Omit<
-  OpenAPIV3.OperationObject["responses"],
+  OpenAPIV3.OperationObject,
   "responses" | "requestBody" | "parameters"
 > & {
   /**
@@ -41,8 +39,8 @@ export type DescribeRouteOptions = Omit<
 
 export interface OpenAPIRoute {
   path: string;
-  method: string;
-  data: DescribeRouteOptions;
+  method: (typeof ALLOWED_METHODS)[number] | "ALL";
+  data: DescribeRouteOptions | ReturnType<ResolverResult>;
 }
 
 export type OpenApiSpecsOptions = {
@@ -74,7 +72,7 @@ export type OpenApiSpecsOptions = {
   /**
    * Exclude methods from Open API
    */
-  excludeMethods?: string[];
+  excludeMethods?: (typeof ALLOWED_METHODS)[number][];
 
   /**
    * Exclude tags from OpenAPI

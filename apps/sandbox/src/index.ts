@@ -2,35 +2,44 @@ import { serve } from "@hono/node-server";
 import { apiReference } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { describeRoute, openAPISpecs } from "hono-openapi";
-import { zResolver as zValidator } from "hono-openapi/zod";
+import { validator as zValidator } from "hono-openapi/zod";
 import z from "zod";
 import "zod-openapi/extend";
 
 const app = new Hono();
 
 const nameValidation = z.object({
-  name: z.string().openapi({ example: "Steven", ref: "name" }),
+  name: z
+    .string()
+    .optional()
+    .openapi({ example: "Steven", description: "User Name", ref: "name" }),
 });
 
-app.get("/", describeRoute({}), zValidator("query", nameValidation), (c) => {
-  const result = c.req.valid("query");
-  return c.text(`Hello ${result?.name ?? "Hono"}!`);
-});
-
-const bodyValidation = z.object({
-  id: z.number().openapi({ example: 123 }),
-});
+app.get(
+  "/",
+  describeRoute({ description: "Say hello to the user" }),
+  zValidator("query", nameValidation),
+  (c) => {
+    const query = c.req.valid("query");
+    return c.text(`Hello ${query?.name ?? "Hono"}!`);
+  }
+);
 
 app.post(
   "/",
-  describeRoute({}),
-  zValidator("param", nameValidation),
-  zValidator("json", bodyValidation),
+  describeRoute({ description: "Create a new user" }),
+  zValidator("query", nameValidation),
+  zValidator(
+    "json",
+    z.object({
+      id: z.number().openapi({ example: 123 }),
+    })
+  ),
   (c) => {
-    const params = c.req.valid("param");
+    const query = c.req.valid("query");
     const body = c.req.valid("json");
 
-    return c.text(`Hello ${params.name}! Your id is ${body.id}`);
+    return c.text(`Hello ${query.name}! Your id is ${body.id}`);
   }
 );
 

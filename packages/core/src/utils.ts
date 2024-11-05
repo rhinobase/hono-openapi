@@ -1,6 +1,19 @@
 import type { OpenAPIV3 } from "openapi-types";
 import type { OpenAPIRoute } from "./types";
 
+export const CONTEXT_KEY = "__OPENAPI_SPECS__";
+
+export const ALLOWED_METHODS = [
+  "GET",
+  "PUT",
+  "POST",
+  "DELETE",
+  "OPTIONS",
+  "HEAD",
+  "PATCH",
+  "TRACE",
+] as const;
+
 export const toOpenAPIPath = (path: string) =>
   path
     .split("/")
@@ -45,17 +58,16 @@ export function registerSchemaPath({
 }) {
   path = toOpenAPIPath(path);
 
-  let responseSchema = data.responses;
+  const responseSchema = {};
 
-  // if (typeof responseSchema === "object") {
-  //   if () {} else {}
-  // } else if (typeof responseSchema === "string") {
-
-  // }
+  // TODO: Correctly merge these components
 
   schema[path] = {
     ...(schema[path] ? schema[path] : {}),
     [method.toLowerCase()]: {
+      ...(schema[path] && schema[path][method.toLocaleLowerCase()]
+        ? schema[path][method.toLocaleLowerCase()]
+        : {}),
       responses: responseSchema ?? {},
       operationId: generateOperationId(method, path),
       ...data,

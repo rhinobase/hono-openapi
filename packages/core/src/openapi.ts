@@ -7,10 +7,14 @@ import type {
   OpenAPIRouteHandlerConfig,
 } from "./types";
 import type { OpenAPIV3 } from "openapi-types";
-import { filterPaths, registerSchemaPath } from "./utils";
-import { CONTEXT_KEY } from "./resolver";
+import {
+  filterPaths,
+  registerSchemaPath,
+  CONTEXT_KEY,
+  ALLOWED_METHODS,
+} from "./utils";
 
-const MIDDLEWARE_HANDLER_NAME = "openAPIConfig";
+const MIDDLEWARE_HANDLER_NAME = "$openAPIConfig";
 
 type OpenAPIHonoEnv = {
   Variables: {
@@ -49,16 +53,6 @@ export function openAPISpecs<
     c.set(CONTEXT_KEY, config);
 
     if (hono.routes.length !== totalRoutes) {
-      const ALLOWED_METHODS = [
-        "GET",
-        "PUT",
-        "POST",
-        "DELETE",
-        "OPTIONS",
-        "HEAD",
-        "PATCH",
-        "TRACE",
-      ];
       totalRoutes = hono.routes.length;
 
       const routes: OpenAPIRoute[] = [];
@@ -77,7 +71,7 @@ export function openAPISpecs<
             );
 
           routes.push({
-            method: route.method,
+            method: route.method as OpenAPIRoute["method"],
             path: route.path,
             data,
           });
@@ -85,10 +79,13 @@ export function openAPISpecs<
       }
 
       for (const route of routes) {
-        if (route.data.hide === true) return;
-        if (excludeMethods.includes(route.method)) return;
+        // TODO: correct this
+        // if ("hide" in route.data && route.data.hide === true) return;
+        if ((excludeMethods as ReadonlyArray<string>).includes(route.method))
+          return;
         if (
-          ALLOWED_METHODS.includes(route.method) === false &&
+          (ALLOWED_METHODS as ReadonlyArray<string>).includes(route.method) ===
+            false &&
           route.method !== "ALL"
         )
           return;
@@ -110,6 +107,8 @@ export function openAPISpecs<
           schema,
         });
       }
+
+      // TODO: Hide all the hidden routes
     }
 
     return c.json({

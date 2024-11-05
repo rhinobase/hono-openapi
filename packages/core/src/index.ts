@@ -1,2 +1,2 @@
-export { describeRoute } from "./resolver";
+export { describeRoute } from "./route";
 export { openAPISpecs } from "./openapi";
