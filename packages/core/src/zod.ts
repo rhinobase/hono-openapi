@@ -4,6 +4,7 @@ import { createSchema, type CreateSchemaOptions } from "zod-openapi";
 import type { ResolverResult, OpenAPIRouteHandlerConfig } from "./types";
 import type { Env, Input, MiddlewareHandler, ValidationTargets } from "hono";
 import { CONTEXT_KEY } from "./utils";
+import type { OpenAPIV3 } from "openapi-types";
 
 export function resolver<T extends ZodSchema>(schema: T): ResolverResult {
   // @ts-expect-error Need to fix the type
@@ -53,8 +54,48 @@ export function validator<
     const config = c.get(CONTEXT_KEY) as OpenAPIRouteHandlerConfig | undefined;
 
     if (config) {
-      const docs = resolver(schema)(config);
-      return c.json(docs);
+      const result = resolver(schema)(config);
+
+      const docs: Pick<
+        OpenAPIV3.OperationObject,
+        "parameters" | "requestBody"
+      > = {};
+
+      if (target === "form" || target === "json") {
+        docs.requestBody = {
+          content: {
+            [target === "json"
+              ? "application/json"
+              : "application/x-www-form-urlencoded"]: {
+              schema: result.schema,
+            },
+          },
+        };
+      } else {
+        const parameters = [];
+
+        if ("$ref" in result.schema) {
+          parameters.push({
+            in: target,
+            name: result.schema.$ref,
+            schema: result.schema,
+          });
+        } else {
+          for (const [key, value] of Object.entries(
+            result.schema.properties ?? {}
+          )) {
+            parameters.push({
+              in: target,
+              name: key,
+              schema: value,
+            });
+          }
+        }
+
+        docs.parameters = parameters;
+      }
+
+      return c.json({ docs, components: result.components });
     }
 
     // @ts-expect-error not typed well

@@ -13,7 +13,7 @@ export function describeRoute<
 
     if (config) {
       const docs = generateDocsFromSpecs(config, specs);
-      return c.json(docs);
+      return c.json({ docs });
     }
 
     await next();

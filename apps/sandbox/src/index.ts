@@ -17,7 +17,22 @@ const nameValidation = z.object({
 
 app.get(
   "/",
-  describeRoute({ description: "Say hello to the user" }),
+  describeRoute({
+    description: "Say hello to the user",
+    responses: {
+      200: {
+        description: "Successful greeting response",
+        content: {
+          "text/plain": {
+            schema: {
+              type: "string",
+              example: "Hello Steven!",
+            },
+          },
+        },
+      },
+    },
+  }),
   zValidator("query", nameValidation),
   (c) => {
     const query = c.req.valid("query");
@@ -27,7 +42,22 @@ app.get(
 
 app.post(
   "/",
-  describeRoute({ description: "Create a new user" }),
+  describeRoute({
+    description: "Create a new user",
+    responses: {
+      200: {
+        description: "Successful user creation response",
+        content: {
+          "text/plain": {
+            schema: {
+              type: "string",
+              example: "Hello Steven! Your id is 123",
+            },
+          },
+        },
+      },
+    },
+  }),
   zValidator("query", nameValidation),
   zValidator(
     "json",
@@ -47,7 +77,11 @@ app.get(
   "/openapi",
   openAPISpecs(app, {
     documentation: {
-      info: { title: "Hono", version: "1.0.0" },
+      info: {
+        title: "Hono",
+        version: "1.0.0",
+        description: "API for greeting an creating users",
+      },
       servers: [
         {
           url: "http://localhost:3000",

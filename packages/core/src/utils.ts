@@ -58,8 +58,6 @@ export function registerSchemaPath({
 }) {
   path = toOpenAPIPath(path);
 
-  const responseSchema = {};
-
   // TODO: Correctly merge these components
 
   schema[path] = {
@@ -68,7 +66,6 @@ export function registerSchemaPath({
       ...(schema[path] && schema[path][method.toLocaleLowerCase()]
         ? schema[path][method.toLocaleLowerCase()]
         : {}),
-      responses: responseSchema ?? {},
       operationId: generateOperationId(method, path),
       ...data,
     } satisfies OpenAPIV3.OperationObject,

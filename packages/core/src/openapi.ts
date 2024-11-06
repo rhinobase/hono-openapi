@@ -64,16 +64,22 @@ export function openAPISpecs<
           isMiddleware(targetHandler) &&
           route.handler.name === MIDDLEWARE_HANDLER_NAME
         ) {
-          const data = await route
+          const { docs, components } = (await route
             .handler(c, next)
-            .then((res: { json: () => Promise<DescribeRouteOptions> }) =>
-              res.json()
-            );
+            .then((res: { json: () => Promise<unknown> }) => res.json())) as {
+            docs: Pick<OpenAPIV3.OperationObject, "parameters" | "requestBody">;
+            components: OpenAPIV3.ComponentsObject["schemas"];
+          };
+
+          config.components = {
+            ...config.components,
+            ...(components ?? {}),
+          };
 
           routes.push({
             method: route.method as OpenAPIRoute["method"],
             path: route.path,
-            data,
+            data: docs,
           });
         }
       }
@@ -136,6 +142,11 @@ export function openAPISpecs<
           schemas: {
             ...config.components,
             ...documentation.components?.schemas,
+            name: {
+              type: "string",
+              example: "Steven",
+              description: "User Name",
+            },
           },
         },
       },

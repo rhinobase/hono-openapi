@@ -40,7 +40,10 @@ export type DescribeRouteOptions = Omit<
 export interface OpenAPIRoute {
   path: string;
   method: (typeof ALLOWED_METHODS)[number] | "ALL";
-  data: DescribeRouteOptions | ReturnType<ResolverResult>;
+  data:
+    | DescribeRouteOptions
+    | Pick<OpenAPIV3.OperationObject, "parameters" | "requestBody">
+    | ReturnType<ResolverResult>;
 }
 
 export type OpenApiSpecsOptions = {
