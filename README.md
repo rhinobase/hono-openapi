@@ -8,7 +8,8 @@ Supported Validation Libraries:
 - [ ] [TypeBox](https://github.com/sinclairzx81/typebox) (coming soon)
 - [ ] [Valibot](https://valibot.dev/) (coming soon)
 
-> [!Note] This package doesn't validate the schema, it only generates the OpenAPI specification from it. You should use the validation library to validate the data.
+> [!Note]
+> This package doesn't validate the responses schema, it only generates the OpenAPI specification from it. You should use the validation library to validate your response data, if you wanna do it.
 
 ## Usage
 
@@ -36,17 +37,35 @@ const schema = z.object({
   name: z.string().optional().openapi({ example: "Steven", ref: "name" }),
 });
 
+const nameValidation = z.object({
+  name: z
+    .string()
+    .optional()
+    .openapi({ example: "Steven", description: "User Name", ref: "name" }),
+});
+
 app.get(
   "/",
   describeRoute({
-    request: {
-      query: zodResolver(schema),
+    description: "Say hello to the user",
+    responses: {
+      200: {
+        description: "Successful greeting response",
+        content: {
+          "text/plain": {
+            schema: {
+              type: "string",
+              example: "Hello Steven!",
+            },
+          },
+        },
+      },
     },
   }),
-  zValidator("query", schema),
+  zValidator("query", nameValidation),
   (c) => {
-    const result = c.req.valid("query");
-    return c.text(`Hello ${result?.name ?? "Hono"}!`);
+    const query = c.req.valid("query");
+    return c.text(`Hello ${query?.name ?? "Hono"}!`);
   }
 );
 

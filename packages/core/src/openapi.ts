@@ -1,29 +1,20 @@
-import type { Context, Hono, Input, Next } from "hono";
-import { findTargetHandler, isMiddleware } from "hono/utils/handler";
+import type { Context, Env, Hono, Input } from "hono";
 import type {
   OpenApiSpecsOptions,
-  DescribeRouteOptions,
-  OpenAPIRoute,
   OpenAPIRouteHandlerConfig,
+  HandlerResponse,
+  OpenAPIRoute,
 } from "./types";
 import type { OpenAPIV3 } from "openapi-types";
 import {
   filterPaths,
   registerSchemaPath,
-  CONTEXT_KEY,
   ALLOWED_METHODS,
+  uniqueSymbol,
 } from "./utils";
 
-const MIDDLEWARE_HANDLER_NAME = "$openAPIConfig";
-
-type OpenAPIHonoEnv = {
-  Variables: {
-    __OPENAPI_SPECS__?: OpenAPIRouteHandlerConfig;
-  };
-};
-
 export function openAPISpecs<
-  E extends OpenAPIHonoEnv = OpenAPIHonoEnv,
+  E extends Env = Env,
   P extends string = string,
   I extends Input = Input
 >(
@@ -47,109 +38,88 @@ export function openAPISpecs<
     components: {},
   };
   const schema: OpenAPIV3.PathsObject = {};
-  let totalRoutes = 0;
 
-  return async (c: Context<E, P, I>, next: Next) => {
-    c.set(CONTEXT_KEY, config);
+  // TODO: Hide all the hidden routes
+  for (const route of hono.routes) {
+    // Finding routes with uniqueSymbol
+    if (!(uniqueSymbol in route.handler)) continue;
 
-    if (hono.routes.length !== totalRoutes) {
-      totalRoutes = hono.routes.length;
+    // Exclude methods
+    if ((excludeMethods as ReadonlyArray<string>).includes(route.method))
+      continue;
 
-      const routes: OpenAPIRoute[] = [];
+    // Include only allowed methods
+    if (
+      (ALLOWED_METHODS as ReadonlyArray<string>).includes(route.method) ===
+        false &&
+      route.method !== "ALL"
+    )
+      continue;
 
-      for (const route of hono.routes) {
-        const targetHandler = findTargetHandler(route.handler);
+    const { resolver, metadata = {} } = route.handler[
+      uniqueSymbol
+    ] as HandlerResponse;
 
-        if (
-          isMiddleware(targetHandler) &&
-          route.handler.name === MIDDLEWARE_HANDLER_NAME
-        ) {
-          const { docs, components } = (await route
-            .handler(c, next)
-            .then((res: { json: () => Promise<unknown> }) => res.json())) as {
-            docs: Pick<OpenAPIV3.OperationObject, "parameters" | "requestBody">;
-            components: OpenAPIV3.ComponentsObject["schemas"];
-          };
+    const { docs, components } = resolver({ ...config, ...metadata });
 
-          config.components = {
-            ...config.components,
-            ...(components ?? {}),
-          };
+    config.components = {
+      ...config.components,
+      ...(components ?? {}),
+    };
 
-          routes.push({
-            method: route.method as OpenAPIRoute["method"],
-            path: route.path,
-            data: docs,
-          });
-        }
-      }
-
-      for (const route of routes) {
-        // TODO: correct this
-        // if ("hide" in route.data && route.data.hide === true) return;
-        if ((excludeMethods as ReadonlyArray<string>).includes(route.method))
-          return;
-        if (
-          (ALLOWED_METHODS as ReadonlyArray<string>).includes(route.method) ===
-            false &&
-          route.method !== "ALL"
-        )
-          return;
-
-        if (route.method === "ALL") {
-          for (const method of ALLOWED_METHODS) {
-            registerSchemaPath({
-              ...route,
-              method,
-              schema,
-            });
-          }
-
-          return;
-        }
-
+    if (route.method === "ALL") {
+      for (const method of ALLOWED_METHODS) {
         registerSchemaPath({
-          ...route,
+          path: route.path,
+          data: docs,
+          method,
           schema,
         });
       }
-
-      // TODO: Hide all the hidden routes
+    } else {
+      registerSchemaPath({
+        method: route.method as OpenAPIRoute["method"],
+        path: route.path,
+        data: docs,
+        schema,
+      });
     }
+  }
 
-    return c.json({
-      openapi: config.version,
-      ...{
-        ...documentation,
-        tags: documentation.tags?.filter(
-          (tag) => !excludeTags?.includes(tag?.name)
-        ),
-        info: {
-          title: "Hono Documentation",
-          description: "Development documentation",
-          version: "0.0.0",
-          ...documentation.info,
-        },
-        paths: {
-          ...filterPaths(schema, {
-            excludeStaticFile,
-            exclude: Array.isArray(exclude) ? exclude : [exclude],
-          }),
-          ...documentation.paths,
-        },
-        components: {
-          ...documentation.components,
-          schemas: {
-            ...config.components,
-            ...documentation.components?.schemas,
-            name: {
-              type: "string",
-              example: "Steven",
-              description: "User Name",
-            },
+  const specs = {
+    openapi: config.version,
+    ...{
+      ...documentation,
+      tags: documentation.tags?.filter(
+        (tag) => !excludeTags?.includes(tag?.name)
+      ),
+      info: {
+        title: "Hono Documentation",
+        description: "Development documentation",
+        version: "0.0.0",
+        ...documentation.info,
+      },
+      paths: {
+        ...filterPaths(schema, {
+          excludeStaticFile,
+          exclude: Array.isArray(exclude) ? exclude : [exclude],
+        }),
+        ...documentation.paths,
+      },
+      components: {
+        ...documentation.components,
+        schemas: {
+          ...config.components,
+          ...documentation.components?.schemas,
+          name: {
+            type: "string",
+            example: "Steven",
+            description: "User Name",
           },
         },
       },
-    } satisfies OpenAPIV3.Document);
-  };
+    },
+  } satisfies OpenAPIV3.Document;
+
+  return (c: Context<E, P, I>) => c.json(specs);
 }

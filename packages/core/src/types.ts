@@ -6,9 +6,20 @@ export type OpenAPIRouteHandlerConfig = {
   components: OpenAPIV3.ComponentsObject["schemas"];
 };
 
-export type ResolverResult = (options?: OpenAPIRouteHandlerConfig) => {
-  schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
-  components?: OpenAPIV3.ComponentsObject["schemas"];
+export type ResolverResult = {
+  builder: (options?: OpenAPIRouteHandlerConfig) => {
+    schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
+    components?: OpenAPIV3.ComponentsObject["schemas"];
+  };
+  validator: (values: unknown) => void | Promise<void>;
+};
+
+export type HandlerResponse = {
+  resolver: (config: OpenAPIRouteHandlerConfig) => {
+    docs: OpenAPIV3.OperationObject;
+    components?: OpenAPIV3.ComponentsObject["schemas"];
+  };
+  metadata?: Record<string, unknown>;
 };
 
 export type DescribeRouteOptions = Omit<
@@ -39,11 +50,10 @@ export type DescribeRouteOptions = Omit<
 
 export interface OpenAPIRoute {
   path: string;
-  method: (typeof ALLOWED_METHODS)[number] | "ALL";
+  method: (typeof ALLOWED_METHODS)[number];
   data:
     | DescribeRouteOptions
-    | Pick<OpenAPIV3.OperationObject, "parameters" | "requestBody">
-    | ReturnType<ResolverResult>;
+    | Pick<OpenAPIV3.OperationObject, "parameters" | "requestBody">;
 }
 
 export type OpenApiSpecsOptions = {

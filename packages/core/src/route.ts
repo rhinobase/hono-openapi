@@ -1,48 +1,69 @@
 import type { Env, Input, MiddlewareHandler } from "hono/types";
 import type { DescribeRouteOptions, OpenAPIRouteHandlerConfig } from "./types";
-import { CONTEXT_KEY } from "./utils";
+import { uniqueSymbol } from "./utils";
 
 export function describeRoute<
   E extends Env = Env,
   P extends string = string,
   I extends Input = Input
->(specs: DescribeRouteOptions): MiddlewareHandler<E, P, I> {
-  return async function $openAPIConfig(c, next) {
-    // @ts-expect-error
-    const config = c.get(CONTEXT_KEY) as OpenAPIRouteHandlerConfig | undefined;
-
-    if (config) {
-      const docs = generateDocsFromSpecs(config, specs);
-      return c.json({ docs });
-    }
-
+>(specs: DescribeRouteOptions) {
+  const middleware: MiddlewareHandler<E, P, I> = async (c, next) => {
     await next();
+
+    // if (specs.validateResponse && specs.responses) {
+    //   const status = c.res.status;
+    //   const contentType = c.res.headers.get("content-type");
+
+    //   if (status && contentType) {
+    //     const response = specs.responses[status];
+    //     if (response?.content) {
+    //       const content = response.content[contentType];
+    //       if (content?.schema && "validator" in content.schema) {
+    //         try {
+    //           await content.schema.validator(res.body);
+    //         } catch (error) {
+    //           throw new HTTPException(400, {
+    //             message: "Response validation failed!",
+    //           });
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
   };
-}
 
-export function generateDocsFromSpecs(
-  config: OpenAPIRouteHandlerConfig,
-  specs: DescribeRouteOptions
-) {
-  const tmp = { ...specs };
+  return Object.assign(middleware, {
+    [uniqueSymbol]: {
+      resolver: (config: OpenAPIRouteHandlerConfig) => {
+        const docs = { ...specs };
+        let components = {};
 
-  if (tmp.responses) {
-    for (const key of Object.keys(tmp.responses)) {
-      const response = tmp.responses[key];
-      if (response && !("content" in response)) continue;
+        if (docs.responses) {
+          for (const key of Object.keys(docs.responses)) {
+            const response = docs.responses[key];
+            if (response && !("content" in response)) continue;
 
-      for (const contentKey of Object.keys(response.content ?? {})) {
-        const raw = response.content?.[contentKey];
+            for (const contentKey of Object.keys(response.content ?? {})) {
+              const raw = response.content?.[contentKey];
 
-        if (!raw) continue;
+              if (!raw) continue;
 
-        if (raw.schema && typeof raw.schema === "function") {
-          const { schema } = raw.schema(config);
-          raw.schema = schema;
+              if (raw.schema && "builder" in raw.schema) {
+                const result = raw.schema.builder(config);
+                raw.schema = result.schema;
+                if (result.components) {
+                  components = {
+                    ...components,
+                    ...result.components,
+                  };
+                }
+              }
+            }
+          }
         }
-      }
-    }
-  }
 
-  return tmp;
+        return { docs, components };
+      },
+    },
+  });
 }

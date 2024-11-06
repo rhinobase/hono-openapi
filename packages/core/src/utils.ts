@@ -1,7 +1,7 @@
 import type { OpenAPIV3 } from "openapi-types";
 import type { OpenAPIRoute } from "./types";
 
-export const CONTEXT_KEY = "__OPENAPI_SPECS__";
+export const uniqueSymbol = Symbol("openapi");
 
 export const ALLOWED_METHODS = [
   "GET",
@@ -33,7 +33,7 @@ export const capitalize = (word: string) =>
   word.charAt(0).toUpperCase() + word.slice(1);
 
 export const generateOperationId = (method: string, paths: string) => {
-  let operationId = method.toLowerCase();
+  let operationId = method;
 
   if (paths === "/") return `${operationId}Index`;
 
@@ -50,22 +50,22 @@ export const generateOperationId = (method: string, paths: string) => {
 
 export function registerSchemaPath({
   path,
-  method,
+  method: _method,
   data,
   schema,
 }: OpenAPIRoute & {
   schema: Partial<OpenAPIV3.PathsObject>;
 }) {
   path = toOpenAPIPath(path);
+  const method = _method.toLowerCase() as Lowercase<OpenAPIRoute["method"]>;
 
   // TODO: Correctly merge these components
 
   schema[path] = {
     ...(schema[path] ? schema[path] : {}),
-    [method.toLowerCase()]: {
-      ...(schema[path] && schema[path][method.toLocaleLowerCase()]
-        ? schema[path][method.toLocaleLowerCase()]
-        : {}),
+    [method]: {
+      responses: {},
+      ...(schema[path]?.[method] ?? {}),
       operationId: generateOperationId(method, path),
       ...data,
     } satisfies OpenAPIV3.OperationObject,
