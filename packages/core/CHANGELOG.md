@@ -1,3 +1,9 @@
+## 0.1.2 (2024-11-07)
+
+### 🩹 Fixes
+
+- **core:** improved package size ([a286576](https://github.com/rhinobase/hono-openapi/commit/a286576))
+
 ## 0.1.1 (2024-11-07)
 
 This was a version bump only for core to align it with other projects, there were no code changes.
