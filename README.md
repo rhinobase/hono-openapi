@@ -173,7 +173,7 @@ app.get(
 
 We would love to have more contributors involved!
 
-To get started, please read our [Contributing Guide](https://github.com/rhinobase/hono-rate-limiter/blob/main/CONTRIBUTING.md).
+To get started, please read our [Contributing Guide](https://github.com/rhinobase/hono-openapi/blob/main/CONTRIBUTING.md).
 
 ## Credits
 
