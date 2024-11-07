@@ -1,4 +1,4 @@
-# Hono OpenAPI
+# 📜 Hono OpenAPI
 
 [![npm version](https://img.shields.io/npm/v/hono-openapi.svg)](https://npmjs.org/package/hono-openapi "View this project on NPM")
 [![npm downloads](https://img.shields.io/npm/dm/hono-openapi)](https://www.npmjs.com/package/hono-openapi)
