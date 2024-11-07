@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/swcrc",
   "jsc": {
-    "target": "es2017",
+    "target": "es2022",
     "parser": {
       "syntax": "typescript",
       "decorators": true,
@@ -12,20 +12,23 @@
       "legacyDecorator": true
     },
     "keepClassNames": true,
-    "externalHelpers": true,
+    "externalHelpers": false,
     "loose": true
   },
   "module": {
-    "type": "es6"
+    "type": "es6",
+    "strictMode": true,
+    "noInterop": false
   },
   "minify": true,
   "sourceMaps": false,
   "exclude": [
-    "jest.config.ts",
+    "vite.config.ts",
     ".*\\.spec.tsx?$",
     ".*\\.test.tsx?$",
-    "./src/jest-setup.ts$",
-    "./**/jest-setup.ts$",
-    "./**/*.stories.tsx?$"
+    "./src/vite-setup.ts$",
+    "./**/vite-setup.ts$",
+    ".*.js$",
+    "./**/__tests__/**/*"
   ]
 }
