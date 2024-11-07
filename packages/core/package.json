@@ -19,13 +19,6 @@
   "bugs": {
     "url": "https://github.com/rhinobase/hono-openapi/issues"
   },
-  "dependencies": {},
-  "main": "./dist/index.cjs.js",
-  "module": "./dist/index.esm.js",
-  "files": [
-    "dist",
-    "!**/*.tsbuildinfo"
-  ],
   "peerDependencies": {
     "hono": "^4.6.4"
   },
