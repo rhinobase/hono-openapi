@@ -1,6 +1,6 @@
 import type { Env, Input, MiddlewareHandler } from "hono/types";
 import type { DescribeRouteOptions, OpenAPIRouteHandlerConfig } from "./types";
-import { uniqueSymbol } from "./utils";
+import { uniqueSymbol } from "./constants";
 
 export function describeRoute<
   E extends Env = Env,

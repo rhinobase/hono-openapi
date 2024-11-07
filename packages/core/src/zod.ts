@@ -3,7 +3,7 @@ import { type Hook, zValidator } from "@hono/zod-validator";
 import { createSchema, type CreateSchemaOptions } from "zod-openapi";
 import type { ResolverResult, OpenAPIRouteHandlerConfig } from "./types";
 import type { Env, Input, MiddlewareHandler, ValidationTargets } from "hono";
-import { uniqueSymbol } from "./utils";
+import { uniqueSymbol } from "./constants";
 import type { OpenAPIV3 } from "openapi-types";
 
 export function resolver<T extends ZodSchema>(schema: T): ResolverResult {

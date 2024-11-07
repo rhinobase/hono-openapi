@@ -20,9 +20,7 @@
     "url": "https://github.com/rhinobase/hono-openapi/issues"
   },
   "peerDependencies": {
-    "hono": "^4.6.4"
-  },
-  "optionalDependencies": {
+    "hono": "^4.6.4",
     "@hono/zod-validator": "^0.4.1",
     "zod": "^3.23.8",
     "zod-openapi": "^3.1.1"

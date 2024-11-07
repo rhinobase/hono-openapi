@@ -6,12 +6,8 @@ import type {
   OpenAPIRoute,
 } from "./types";
 import type { OpenAPIV3 } from "openapi-types";
-import {
-  filterPaths,
-  registerSchemaPath,
-  ALLOWED_METHODS,
-  uniqueSymbol,
-} from "./utils";
+import { filterPaths, registerSchemaPath, ALLOWED_METHODS } from "./utils";
+import { uniqueSymbol } from "./constants";
 
 export function openAPISpecs<
   E extends Env = Env,

@@ -1,8 +1,6 @@
 import type { OpenAPIV3 } from "openapi-types";
 import type { OpenAPIRoute } from "./types";
 
-export const uniqueSymbol = Symbol("openapi");
-
 export const ALLOWED_METHODS = [
   "GET",
   "PUT",
