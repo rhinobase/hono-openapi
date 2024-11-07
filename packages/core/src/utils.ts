@@ -59,8 +59,6 @@ export function registerSchemaPath({
   path = toOpenAPIPath(path);
   const method = _method.toLowerCase() as Lowercase<OpenAPIRoute["method"]>;
 
-  // TODO: Correctly merge these components
-
   schema[path] = {
     ...(schema[path] ? schema[path] : {}),
     [method]: {

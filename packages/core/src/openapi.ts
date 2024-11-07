@@ -39,7 +39,6 @@ export function openAPISpecs<
   };
   const schema: OpenAPIV3.PathsObject = {};
 
-  // TODO: Hide all the hidden routes
   for (const route of hono.routes) {
     // Finding routes with uniqueSymbol
     if (!(uniqueSymbol in route.handler)) continue;
@@ -86,6 +85,16 @@ export function openAPISpecs<
     }
   }
 
+  for (const path in schema) {
+    for (const method in schema[path]) {
+      // @ts-expect-error
+      if (schema[path][method].hide) {
+        // @ts-expect-error
+        delete schema[path][method];
+      }
+    }
+  }
+
   const specs = {
     openapi: config.version,
     ...{
@@ -111,11 +120,6 @@ export function openAPISpecs<
         schemas: {
           ...config.components,
           ...documentation.components?.schemas,
-          name: {
-            type: "string",
-            example: "Steven",
-            description: "User Name",
-          },
         },
       },
     },

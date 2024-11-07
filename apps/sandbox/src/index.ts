@@ -2,7 +2,7 @@ import { serve } from "@hono/node-server";
 import { apiReference } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { describeRoute, openAPISpecs } from "hono-openapi";
-import { validator as zValidator } from "hono-openapi/zod";
+import { resolver, validator as zValidator } from "hono-openapi/zod";
 import z from "zod";
 import "zod-openapi/extend";
 
@@ -19,15 +19,13 @@ app.get(
   "/",
   describeRoute({
     description: "Say hello to the user",
+    hide: true,
     responses: {
       200: {
         description: "Successful greeting response",
         content: {
           "text/plain": {
-            schema: {
-              type: "string",
-              example: "Hello Steven!",
-            },
+            schema: resolver(z.string().openapi({ example: "Hello Steven!" })),
           },
         },
       },
