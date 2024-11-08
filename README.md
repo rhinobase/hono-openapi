@@ -48,7 +48,8 @@ const responseSchema = z.string().openapi({ example: "Hello Steven!" });
 
 Extending the Zod schema with OpenAPI properties is optional, but it will help you generate the OpenAPI specification. You can learn more about it here - [https://github.com/samchungy/zod-openapi](https://github.com/samchungy/zod-openapi).
 
-> [!Tip] > `querySchema` schema will be registered as "#/components/schemas/Query" refs in the OpenAPI document. If you want to register the schema as referenced components, use .openapi() method.
+> [!Tip]
+> The `querySchema` schema will be registered as "#/components/schemas/Query" refs in the OpenAPI document. If you want to register the schema as referenced components, use .openapi() method.
 
 Next, create your route -
 
