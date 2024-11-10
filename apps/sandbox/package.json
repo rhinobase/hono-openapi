@@ -1,6 +1,6 @@
 {
   "name": "sandbox",
-  "version": "0.0.5",
+  "version": "0.0.7",
   "scripts": {
     "serve": "tsx watch src/index.ts"
   },
@@ -9,7 +9,7 @@
     "@hono/node-server": "^1.13.2",
     "@hono/zod-validator": "^0.4.1",
     "hono": "^4.6.4",
-    "hono-openapi": "^0.1.4",
+    "hono-openapi": "^0.1.5",
     "zod": "^3.23.8",
     "zod-openapi": "^3.1.1"
   },
