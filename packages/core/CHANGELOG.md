@@ -1,3 +1,9 @@
+## 0.1.5 (2024-11-10)
+
+### 🩹 Fixes
+
+- **core:** passed the schemaType metadata in the resolver ([63def23](https://github.com/rhinobase/hono-openapi/commit/63def23))
+
 ## 0.1.4 (2024-11-07)
 
 This was a version bump only for core to align it with other projects, there were no code changes.
