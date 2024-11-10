@@ -17,6 +17,8 @@ export function resolver<T extends ZodSchema>(schema: T): ResolverResult {
               openapi: options.version,
               components:
                 options.components as CreateSchemaOptions["components"],
+              schemaType:
+                options.schemaType as CreateSchemaOptions["schemaType"],
             }
           : undefined
       ),
