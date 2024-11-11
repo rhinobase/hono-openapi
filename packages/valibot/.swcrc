@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json.schemastore.org/swcrc",
+  "jsc": {
+    "target": "es2022",
+    "parser": {
+      "syntax": "typescript",
+      "decorators": true,
+      "dynamicImport": true
+    },
+    "transform": {
+      "decoratorMetadata": true,
+      "legacyDecorator": true
+    },
+    "keepClassNames": true,
+    "externalHelpers": false,
+    "loose": true
+  },
+  "module": {
+    "type": "es6",
+    "strictMode": true,
+    "noInterop": false
+  },
+  "minify": true,
+  "sourceMaps": false,
+  "exclude": [
+    "vite.config.ts",
+    ".*\\.spec.tsx?$",
+    ".*\\.test.tsx?$",
+    "./src/vite-setup.ts$",
+    "./**/vite-setup.ts$",
+    ".*.js$",
+    "./**/__tests__/**/*"
+  ]
+}

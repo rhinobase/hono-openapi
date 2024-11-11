@@ -5,6 +5,10 @@
       "name": "core:                 anything core specific"
     },
     {
+      "value": "valibot",
+      "name": "valibot:              anything valibot specific"
+    },
+    {
       "value": "sb",
       "name": "sandbox:              anything sandbox specific"
     }

@@ -16,6 +16,8 @@ import type {
   ValidationTargets,
 } from "hono";
 import { generateValidatorDocs, uniqueSymbol } from "./utils";
+import type { Response } from "hono/dist/types/client/types";
+import { createSchema } from "valibot-openapi";
 
 type Hook<
   T extends GenericSchema | GenericSchemaAsync,
@@ -30,8 +32,8 @@ export function resolver<T extends GenericSchema | GenericSchemaAsync>(
   schema: T
 ): ResolverResult {
   return {
-    // @ts-expect-error Need to fix the type
-    builder: (options?: OpenAPIRouteHandlerConfig) => ({}),
+    builder: (options?: OpenAPIRouteHandlerConfig) =>
+      createSchema(schema, options),
     validator: async (value) => {
       await parseAsync(schema, value);
     },
