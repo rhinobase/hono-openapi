@@ -1,10 +1,13 @@
 import type { z, ZodSchema } from "zod";
 import { type Hook, zValidator } from "@hono/zod-validator";
 import { createSchema, type CreateSchemaOptions } from "zod-openapi";
-import type { ResolverResult, OpenAPIRouteHandlerConfig } from "./types";
+import type {
+  ResolverResult,
+  OpenAPIRouteHandlerConfig,
+  HasUndefined,
+} from "./types";
 import type { Env, Input, MiddlewareHandler, ValidationTargets } from "hono";
-import { uniqueSymbol } from "./constants";
-import type { OpenAPIV3 } from "openapi-types";
+import { generateValidatorDocs, uniqueSymbol } from "./utils";
 
 export function resolver<T extends ZodSchema>(schema: T): ResolverResult {
   return {
@@ -25,8 +28,6 @@ export function resolver<T extends ZodSchema>(schema: T): ResolverResult {
     validator: schema.parse,
   };
 }
-
-type HasUndefined<T> = undefined extends T ? true : false;
 
 export function validator<
   T extends ZodSchema,
@@ -60,50 +61,8 @@ export function validator<
   // @ts-expect-error not typed well
   return Object.assign(middleware, {
     [uniqueSymbol]: {
-      resolver: (config: OpenAPIRouteHandlerConfig) => {
-        const result = resolver(schema).builder(config);
-
-        const docs: Pick<
-          OpenAPIV3.OperationObject,
-          "parameters" | "requestBody"
-        > = {};
-
-        if (target === "form" || target === "json") {
-          docs.requestBody = {
-            content: {
-              [target === "json"
-                ? "application/json"
-                : "application/x-www-form-urlencoded"]: {
-                schema: result.schema,
-              },
-            },
-          };
-        } else {
-          const parameters = [];
-
-          if ("$ref" in result.schema) {
-            parameters.push({
-              in: target,
-              name: result.schema.$ref,
-              schema: result.schema,
-            });
-          } else {
-            for (const [key, value] of Object.entries(
-              result.schema.properties ?? {}
-            )) {
-              parameters.push({
-                in: target,
-                name: key,
-                schema: value,
-              });
-            }
-          }
-
-          docs.parameters = parameters;
-        }
-
-        return { docs, components: result.components };
-      },
+      resolver: (config: OpenAPIRouteHandlerConfig) =>
+        generateValidatorDocs(target, resolver(schema).builder(config)),
       metadata: { schemaType: "input" },
     },
   });

@@ -1,5 +1,7 @@
 import type { OpenAPIV3 } from "openapi-types";
-import type { ALLOWED_METHODS } from "./utils";
+import type { ALLOWED_METHODS } from "./helper";
+
+export type HasUndefined<T> = undefined extends T ? true : false;
 
 export type OpenAPIRouteHandlerConfig = {
   version: "3.0.0" | "3.0.1" | "3.0.2" | "3.0.3" | "3.1.0";
