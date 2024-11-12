@@ -17,7 +17,7 @@ import type {
 } from "hono";
 import { generateValidatorDocs, uniqueSymbol } from "./utils";
 import type { Response } from "hono/dist/types/client/types";
-import { createSchema } from "valibot-openapi";
+import { createSchema } from "./sample";
 
 type Hook<
   T extends GenericSchema | GenericSchemaAsync,

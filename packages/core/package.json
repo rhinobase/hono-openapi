@@ -1,7 +1,7 @@
 {
   "name": "hono-openapi",
   "description": "OpenAPI schema generator for Hono",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "license": "MIT",
   "keywords": [
     "hono",
@@ -26,9 +26,10 @@
   "optionalDependencies": {
     "@hono/valibot-validator": "^0.5.0",
     "@hono/zod-validator": "^0.4.1",
+    "@valibot/to-json-schema": "^1.0.0-beta.2",
     "valibot": "^1.0.0-beta.3",
     "valibot-openapi": "^0.1.0",
-    "zod": "^4.0.0",
+    "zod": "^3.23.8",
     "zod-openapi": "^3.1.1"
   },
   "devDependencies": {
@@ -38,12 +39,17 @@
     ".": {
       "import": "./index.esm.js",
       "require": "./index.cjs.js",
-      "types": "./index.cjs.d.ts"
+      "types": "./index.esm.d.ts"
     },
     "./zod": {
       "import": "./zod.esm.js",
       "require": "./zod.cjs.js",
-      "types": "./zod.cjs.d.ts"
+      "types": "./zod.esm.d.ts"
+    },
+    "./valibot": {
+      "import": "./valibot.esm.js",
+      "require": "./valibot.cjs.js",
+      "types": "./valibot.esm.d.ts"
     }
   }
 }
