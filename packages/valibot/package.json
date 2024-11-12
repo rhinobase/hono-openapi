@@ -2,7 +2,8 @@
   "name": "valibot-openapi",
   "version": "0.0.1",
   "dependencies": {
-    "@valibot/to-json-schema": "^1.0.0-beta.2"
+    "@valibot/to-json-schema": "^1.0.0-beta.2",
+    "openapi-json-schema": "^2.0.0"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
