@@ -1,32 +1,20 @@
-import { vValidator } from "@hono/valibot-validator";
+import { vValidator, type Hook } from "@hono/valibot-validator";
 import {
   type GenericSchema,
   type GenericSchemaAsync,
   type InferInput,
   type InferOutput,
-  type SafeParseResult,
   parseAsync,
 } from "valibot";
 import type { ResolverResult, OpenAPIRouteHandlerConfig } from "./types";
 import type {
   Env,
   Input as HonoInput,
-  Context,
   MiddlewareHandler,
   ValidationTargets,
 } from "hono";
 import { generateValidatorDocs, uniqueSymbol } from "./utils";
-import type { Response } from "hono/dist/types/client/types";
 import { createSchema } from "valibot-openapi";
-
-type Hook<
-  T extends GenericSchema | GenericSchemaAsync,
-  E extends Env,
-  P extends string
-> = (
-  result: SafeParseResult<T>,
-  c: Context<E, P>
-) => Response | Promise<Response> | undefined | Promise<Response | undefined>;
 
 export function resolver<T extends GenericSchema | GenericSchemaAsync>(
   schema: T

@@ -41,7 +41,16 @@ export function createSchema<T extends GenericSchema | GenericSchemaAsync>(
     getterMap: new Map(),
   };
 
-  const openAPISchema = convertSchema({}, schema, config, context);
+  const openAPISchema = convertSchema(
+    {},
+    // @ts-expect-error
+    schema,
+    config,
+    context
+  );
 
-  return openAPISchema;
+  return {
+    schema: openAPISchema,
+    components: context.definitions,
+  };
 }

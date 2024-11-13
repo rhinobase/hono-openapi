@@ -4,6 +4,7 @@ import type * as v from "valibot";
 export type ConversionConfig = {
   version: "3.0.0" | "3.0.1" | "3.0.2" | "3.0.3" | "3.1.0";
   components: OpenAPIV3.ComponentsObject["schemas"];
+  errorMode?: "ignore" | "warn" | "throw";
 };
 
 export type ConversionResponse = {
