@@ -5,24 +5,9 @@
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": false,
     "moduleResolution": "bundler",
-    "types": [
-      "node"
-    ]
+    "types": ["node"]
   },
-  "include": [
-    "src/**/*.ts"
-  ],
+  "include": ["src/**/*.ts"],
   "references": [],
-  "exclude": [
-    "vite.config.ts",
-    "vitest.config.ts",
-    "src/**/*.test.ts",
-    "src/**/*.spec.ts",
-    "src/**/*.test.tsx",
-    "src/**/*.spec.tsx",
-    "src/**/*.test.js",
-    "src/**/*.spec.js",
-    "src/**/*.test.jsx",
-    "src/**/*.spec.jsx"
-  ]
+  "exclude": ["vite.config.ts", "vitest.config.ts", "src/__tests__/**/*.ts"]
 }
