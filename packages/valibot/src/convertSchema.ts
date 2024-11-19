@@ -4,7 +4,6 @@ import type {
   OpenAPIVersions,
   Schema as OpenAPISchema,
   OpenAPI,
-  Schema3_1,
 } from "./types";
 import * as v from "valibot";
 import { handleError } from "./utils";
@@ -202,7 +201,8 @@ export function convertSchema<T extends OpenAPIVersions>(
       }
 
       case "null": {
-        apiSchema.nullable = true;
+        if (isOpenAPIv3(apiSchema, config)) apiSchema.nullable = true;
+        else apiSchema.type = "null";
         break;
       }
 
@@ -245,13 +245,14 @@ export function convertSchema<T extends OpenAPIVersions>(
         apiSchema.type = "array";
 
         // Add OpenAPI Schema of items
-        const items: OpenAPI<
-          T,
-          OpenAPIV3_1.ArraySchemaObject["items"],
-          OpenAPIV3.ArraySchemaObject["items"]
-        > = { oneOf: [] };
+        const items: {
+          oneOf: (
+            | OpenAPIV3_1.ArraySchemaObject["items"]
+            | OpenAPIV3.ArraySchemaObject["items"]
+          )[];
+        } = { oneOf: [] };
         for (const item of valibotSchema.items) {
-          items.oneOf?.push(
+          items.oneOf.push(
             convertSchema({}, item as SchemaOrPipe, config, context)
           );
         }
@@ -348,19 +349,42 @@ export function convertSchema<T extends OpenAPIVersions>(
 
       case "nullable":
       case "nullish": {
-        // Add union of wrapped schema and null to JSON Schema
-        apiSchema.anyOf = [
-          convertSchema(
-            {},
-            valibotSchema.wrapped as SchemaOrPipe,
-            config,
-            context
-          ),
-          { nullable: true },
-        ];
+        apiSchema = convertSchema(
+          {},
+          valibotSchema.wrapped as SchemaOrPipe,
+          config,
+          context
+        );
+
+        // Add null to OpenAPI Schema
+        if (isOpenAPIv3(apiSchema, config)) {
+          apiSchema.nullable = true;
+
+          if (valibotSchema.wrapped.type === "picklist") {
+            apiSchema.enum = apiSchema.enum || [];
+            apiSchema.enum.push(null);
+          }
+        } else if (isOpenAPIv3_1(apiSchema, config)) {
+          if (
+            valibotSchema.wrapped.type === "union" ||
+            valibotSchema.wrapped.type === "variant"
+          ) {
+            apiSchema.anyOf = apiSchema.anyOf || [];
+            apiSchema.anyOf.push({ type: "null" });
+          } else {
+            if (Array.isArray(apiSchema.type)) {
+              if (!apiSchema.type.includes("null")) {
+                apiSchema.type.push("null");
+              }
+            } else {
+              if (apiSchema.type != null)
+                apiSchema.type = [apiSchema.type, "null"];
+            }
+          }
+        }
 
         // Add default value to JSON Schema, if available
-        if (valibotSchema.default !== undefined) {
+        if (valibotSchema.default !== undefined && !("$ref" in apiSchema)) {
           apiSchema.default = v.getDefault(valibotSchema);
         }
 
@@ -397,16 +421,21 @@ export function convertSchema<T extends OpenAPIVersions>(
             config
           );
         }
-        // @ts-expect-error
-        apiSchema.const = valibotSchema.literal;
+
+        apiSchema.type = typeof valibotSchema.literal as
+          | "boolean"
+          | "number"
+          | "string";
+
+        if (isOpenAPIv3_1(apiSchema, config)) {
+          apiSchema.const = valibotSchema.literal;
+        } else {
+          apiSchema.enum = [valibotSchema.literal];
+        }
         break;
       }
 
-      case "enum": {
-        apiSchema.enum = valibotSchema.options;
-        break;
-      }
-
+      case "enum":
       case "picklist": {
         if (
           valibotSchema.options.some(
@@ -418,6 +447,15 @@ export function convertSchema<T extends OpenAPIVersions>(
             config
           );
         }
+
+        if (valibotSchema.options.every((option) => typeof option === "number"))
+          apiSchema.type = "number";
+        else if (
+          valibotSchema.options.every((option) => typeof option === "string")
+        )
+          apiSchema.type = "string";
+        else apiSchema.type = ["string", "number"];
+
         // @ts-expect-error
         apiSchema.enum = valibotSchema.options;
         break;
@@ -483,4 +521,19 @@ export function convertSchema<T extends OpenAPIVersions>(
 
   // Return converted OpenAPI Schema
   return apiSchema;
+}
+
+function isOpenAPIv3_1<T extends OpenAPIVersions>(
+  apiSchema: OpenAPISchema<T>,
+  config: ConversionConfig<T> = {}
+  // @ts-expect-error
+): apiSchema is OpenAPIV3_1.SchemaObject {
+  return config?.version === "3.1.0";
+}
+
+function isOpenAPIv3<T extends OpenAPIVersions>(
+  apiSchema: OpenAPISchema<T>,
+  config: ConversionConfig<T> = {}
+): apiSchema is OpenAPIV3.SchemaObject {
+  return config?.version !== "3.1.0";
 }

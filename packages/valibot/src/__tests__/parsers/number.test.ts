@@ -25,64 +25,14 @@ describe("Create number schema", () => {
     expect(result.schema).toStrictEqual(expected);
   });
 
-  it.skip("creates a number schema with lt or gt", () => {
-    const expected: Schema = {
-      type: "number",
-      // @ts-expect-error
-      exclusiveMinimum: 0,
-      // @ts-expect-error
-      exclusiveMaximum: 10,
-    };
-
-    // const schema = z.number().lt(10).gt(0);
-    const schema = v.number();
-
-    const result = createSchema(schema);
-
-    expect(result.schema).toStrictEqual(expected);
-  });
-
-  it.skip("creates a number schema with lte or gte", () => {
+  it("creates a number schema with minValue or maxValue", () => {
     const expected: Schema = {
       type: "number",
       minimum: 0,
       maximum: 10,
     };
 
-    // const schema = z.number().lte(10).gte(0);
-    const schema = v.number();
-
-    const result = createSchema(schema);
-
-    expect(result.schema).toStrictEqual(expected);
-  });
-
-  it.skip("creates a number schema with lte or gte in openapi 3.0.0", () => {
-    const expected: Schema = {
-      type: "number",
-      minimum: 0,
-      maximum: 10,
-    };
-
-    // const schema = z.number().lte(10).gte(0);
-    const schema = v.number();
-
-    const result = createSchema(schema);
-
-    expect(result.schema).toStrictEqual(expected);
-  });
-
-  it.skip("creates a number schema with lt or gt in openapi 3.0.0", () => {
-    const expected: Schema = {
-      type: "number",
-      minimum: 0,
-      exclusiveMinimum: true,
-      maximum: 10,
-      exclusiveMaximum: true,
-    };
-
-    // const schema = z.number().lt(10).gt(0);
-    const schema = v.number();
+    const schema = v.pipe(v.number(), v.minValue(0), v.maxValue(10));
 
     const result = createSchema(schema);
 

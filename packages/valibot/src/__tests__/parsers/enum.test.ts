@@ -3,7 +3,7 @@ import { createSchema } from "valibot-openapi";
 import type { Schema } from "../types";
 
 describe("Create enum schema", () => {
-  it.skip("creates a string enum schema", () => {
+  it("creates a string enum schema", () => {
     const expected: Schema = {
       type: "string",
       enum: ["a", "b"],

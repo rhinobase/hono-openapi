@@ -3,7 +3,7 @@ import { createSchema } from "valibot-openapi";
 import type { Schema, Schema3_1 } from "../types";
 
 describe("Create native enum schema", () => {
-  it.skip("creates a string schema from a string enum", () => {
+  it("creates a string schema from a string enum", () => {
     const expected: Schema = {
       type: "string",
       enum: ["Up", "Down", "Left", "Right"],
@@ -23,7 +23,7 @@ describe("Create native enum schema", () => {
     expect(result.schema).toStrictEqual(expected);
   });
 
-  it.skip("creates a number schema from an number enum", () => {
+  it("creates a number schema from an number enum", () => {
     const expected: Schema = {
       type: "number",
       enum: [0, 1, 2, 3],
@@ -43,10 +43,10 @@ describe("Create native enum schema", () => {
     expect(result.schema).toStrictEqual(expected);
   });
 
-  it.skip("creates a string and number schema from a mixed enum", () => {
+  it("creates a string and number schema from a mixed enum", () => {
     const expected: Schema3_1 = {
       type: ["string", "number"],
-      enum: ["Right", 0, 1, 2],
+      enum: [0, 1, 2, "Right"],
     };
 
     // biome-ignore lint/style/useEnumInitializers: <explanation>

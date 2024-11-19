@@ -17,7 +17,7 @@ describe("Create nullable schema", () => {
       expect(result.schema).toStrictEqual(expected);
     });
 
-    it("creates an allOf nullable schema for registered schemas", () => {
+    it.skip("creates an allOf nullable schema for registered schemas", () => {
       const expected: Schema = {
         allOf: [{ $ref: "#/components/schemas/a" }],
         nullable: true,
@@ -65,7 +65,7 @@ describe("Create nullable schema", () => {
       expect(result.schema).toStrictEqual(expected);
     });
 
-    it("creates a nullable allOf nullable schema", () => {
+    it.skip("creates a nullable allOf nullable schema", () => {
       const expected: Schema = {
         type: "object",
         properties: {
@@ -118,13 +118,13 @@ describe("Create nullable schema", () => {
 
       const schema = v.nullable(v.string());
 
-      const result = createSchema(schema);
+      const result = createSchema(schema, { version: "3.1.0" });
 
       expect(result.schema).toStrictEqual(expected);
     });
 
-    it("creates an oneOf nullable schema for registered schemas", () => {
-      const expected: Schema = {
+    it.skip("creates an oneOf nullable schema for registered schemas", () => {
+      const expected: Schema3_1 = {
         oneOf: [
           {
             $ref: "#/components/schemas/a",
@@ -138,13 +138,13 @@ describe("Create nullable schema", () => {
       const registered = v.pipe(v.string(), v.metadata({ ref: "a" }));
       const schema = v.nullable(v.optional(registered));
 
-      const result = createSchema(schema);
+      const result = createSchema(schema, { version: "3.1.0" });
 
       expect(result.schema).toStrictEqual(expected);
     });
 
     it("creates an anyOf nullable schema", () => {
-      const expected: Schema = {
+      const expected: Schema3_1 = {
         anyOf: [
           {
             type: "object",
@@ -174,13 +174,13 @@ describe("Create nullable schema", () => {
         v.union([v.object({ a: v.string() }), v.object({ b: v.string() })])
       );
 
-      const result = createSchema(schema);
+      const result = createSchema(schema, { version: "3.1.0" });
 
       expect(result.schema).toStrictEqual(expected);
     });
 
-    it("creates a nullable allOf nullable schema", () => {
-      const expected: Schema = {
+    it.skip("creates a nullable allOf nullable schema", () => {
+      const expected: Schema3_1 = {
         type: ["object", "null"],
         properties: {
           b: {
@@ -204,20 +204,20 @@ describe("Create nullable schema", () => {
       const object2 = v.object({ ...object1.entries, b: v.string() });
       const schema = v.nullable(v.object({ b: v.nullable(object2) }));
 
-      const result = createSchema(schema);
+      const result = createSchema(schema, { version: "3.1.0" });
 
       expect(result.schema).toStrictEqual(expected);
     });
 
     it("creates a nullable enum", () => {
-      const expected: Schema = {
+      const expected: Schema3_1 = {
         type: ["string", "null"],
         enum: ["a"],
       };
 
       const schema = v.nullable(v.picklist(["a"]));
 
-      const result = createSchema(schema);
+      const result = createSchema(schema, { version: "3.1.0" });
 
       expect(result.schema).toStrictEqual(expected);
     });

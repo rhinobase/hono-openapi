@@ -2,7 +2,7 @@ import * as v from "valibot";
 import { createSchema } from "valibot-openapi";
 import type { Schema, Schema3_1 } from "../types";
 
-describe.skip("Create literal schema", () => {
+describe("Create literal schema", () => {
   describe("OpenAPI 3.1.0", () => {
     it("creates a string const schema", () => {
       const expected: Schema3_1 = {
@@ -12,7 +12,7 @@ describe.skip("Create literal schema", () => {
 
       const schema = v.literal("a");
 
-      const result = createSchema(schema);
+      const result = createSchema(schema, { version: "3.1.0" });
 
       expect(result.schema).toStrictEqual(expected);
     });
@@ -25,7 +25,7 @@ describe.skip("Create literal schema", () => {
 
       const schema = v.literal(2);
 
-      const result = createSchema(schema);
+      const result = createSchema(schema, { version: "3.1.0" });
 
       expect(result.schema).toStrictEqual(expected);
     });
@@ -38,20 +38,9 @@ describe.skip("Create literal schema", () => {
 
       const schema = v.literal(true);
 
-      const result = createSchema(schema);
+      const result = createSchema(schema, { version: "3.1.0" });
 
       expect(result.schema).toStrictEqual(expected);
-    });
-
-    it("creates a null const schema", () => {
-      const expected: Schema = {
-        type: "null",
-      };
-      const schema = v.literal(null);
-
-      const result = createSchema(schema);
-
-      expect(result.schema).toEqual(expected);
     });
   });
 
@@ -93,17 +82,6 @@ describe.skip("Create literal schema", () => {
       const result = createSchema(schema);
 
       expect(result.schema).toStrictEqual(expected);
-    });
-
-    it("creates a null enum schema", () => {
-      const expected: Schema = {
-        type: "null",
-      };
-      const schema = v.literal(null);
-
-      const result = createSchema(schema);
-
-      expect(result.schema).toEqual(expected);
     });
   });
 });

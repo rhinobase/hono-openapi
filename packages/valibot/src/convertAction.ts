@@ -89,7 +89,9 @@ type Action =
       v.ErrorMessage<v.MultipleOfIssue<number, number>> | undefined
     >
   | v.TitleAction<unknown, string>
-  | v.BrandAction<string, string>;
+  | v.BrandAction<string, string>
+  | v.ReadonlyAction<string>
+  | v.MetadataAction<string, Record<string, unknown>>;
 
 /**
  * Converts any supported Valibot action to the JSON Schema format.
@@ -273,6 +275,12 @@ export function convertAction<T extends OpenAPIVersions>(
       break;
     }
 
+    case "metadata": {
+      // TODO: Process all the ref for OpenAPI
+      break;
+    }
+
+    case "readonly":
     case "brand":
       break;
 
