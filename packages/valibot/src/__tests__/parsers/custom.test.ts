@@ -2,13 +2,15 @@ import * as v from "valibot";
 import { createSchema } from "../../index";
 import type { Schema } from "../types";
 
-describe("Create readonly schema", () => {
-  it("creates a simple string schema for a readonly string", () => {
+describe("Create custom schema", () => {
+  it("returns a schema when creating an output schema with preprocess", () => {
     const expected: Schema = {
       type: "string",
     };
-
-    const schema = v.pipe(v.string(), v.readonly());
+    const schema = v.pipe(
+      v.string(),
+      v.custom((check) => typeof check === "string")
+    );
 
     const result = createSchema(schema);
 

@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { createSchema } from "valibot-openapi";
+import { createSchema } from "../../index";
 import type { Schema, Schema3_1 } from "../types";
 
 describe("Create native enum schema", () => {

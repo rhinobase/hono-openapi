@@ -167,7 +167,6 @@ describe("Create string schema", () => {
   it("supports contentEncoding in 3.1.0", () => {
     const expected: Schema3_1 = {
       type: "string",
-      // @ts-ignore
       contentEncoding: "base64",
     };
 
