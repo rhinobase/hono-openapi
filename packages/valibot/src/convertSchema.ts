@@ -1,11 +1,15 @@
 import type {
   ConversionConfig,
   ConversionContext,
-  ConversionResponse,
+  OpenAPIVersions,
+  Schema as OpenAPISchema,
+  OpenAPI,
+  Schema3_1,
 } from "./types";
-import type * as v from "valibot";
+import * as v from "valibot";
 import { handleError } from "./utils";
-import type { OpenAPIV3 } from "openapi-types";
+import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
+import { convertAction } from "./convertAction";
 
 /**
  * Schema type.
@@ -92,7 +96,8 @@ type Schema =
       v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
       v.ErrorMessage<v.ArrayIssue> | undefined
     >
-  | v.LazySchema<v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>;
+  | v.LazySchema<v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>
+  | v.DateSchema<v.ErrorMessage<v.DateIssue> | undefined>;
 
 /**
  * Schema or pipe type.
@@ -117,12 +122,12 @@ let refCount = 0;
  *
  * @returns The converted OpenAPI Schema.
  */
-export function convertSchema(
-  _apiSchema: ConversionResponse["schema"],
+export function convertSchema<T extends OpenAPIVersions>(
+  _apiSchema: OpenAPISchema<T>,
   valibotSchema: SchemaOrPipe,
-  config: ConversionConfig | undefined,
-  context: ConversionContext
-): ConversionResponse["schema"] {
+  config: ConversionConfig<T> | undefined,
+  context: ConversionContext<T>
+): OpenAPISchema<T> {
   let apiSchema = _apiSchema;
 
   // If schema is in reference map, use reference and skip conversion
@@ -174,7 +179,7 @@ export function convertSchema(
         // Otherwise, convert Valibot action to JSON Schema
       } else {
         // @ts-expect-error
-        return convertAction(apiSchema, valibotPipeItem, config);
+        convertAction(apiSchema, valibotPipeItem, config);
       }
     }
 
@@ -183,7 +188,11 @@ export function convertSchema(
   }
 
   // Otherwise, convert individual schema to JSON Schema
-  if ("type" in apiSchema)
+  if (!("$ref" in apiSchema)) {
+    if ("fallback" in valibotSchema) {
+      apiSchema.default = valibotSchema.fallback;
+    }
+
     switch (valibotSchema.type) {
       // Primitive schemas
 
@@ -202,8 +211,14 @@ export function convertSchema(
         break;
       }
 
+      case "date":
       case "string": {
         apiSchema.type = "string";
+
+        if (valibotSchema.type === "date") {
+          apiSchema.format = "date";
+        }
+
         break;
       }
 
@@ -230,14 +245,22 @@ export function convertSchema(
         apiSchema.type = "array";
 
         // Add OpenAPI Schema of items
-        const items: OpenAPIV3.ArraySchemaObject["items"] = { oneOf: [] };
+        const items: OpenAPI<
+          T,
+          OpenAPIV3_1.ArraySchemaObject["items"],
+          OpenAPIV3.ArraySchemaObject["items"]
+        > = { oneOf: [] };
         for (const item of valibotSchema.items) {
           items.oneOf?.push(
             convertSchema({}, item as SchemaOrPipe, config, context)
           );
         }
 
-        let additionalProperties: OpenAPIV3.ArraySchemaObject["additionalProperties"];
+        let additionalProperties: OpenAPI<
+          T,
+          OpenAPIV3_1.ArraySchemaObject["additionalProperties"],
+          OpenAPIV3.ArraySchemaObject["additionalProperties"]
+        >;
 
         // Add additional items depending on schema type
         if (valibotSchema.type === "tuple_with_rest") {
@@ -255,7 +278,7 @@ export function convertSchema(
           ...apiSchema,
           type: "array",
           items,
-          additionalProperties,
+          ...(additionalProperties ? { additionalProperties } : {}),
         };
 
         break;
@@ -286,9 +309,8 @@ export function convertSchema(
             config,
             context
           );
-        } else {
-          apiSchema.additionalProperties =
-            valibotSchema.type === "loose_object";
+        } else if (valibotSchema.type === "loose_object") {
+          apiSchema.additionalProperties = true;
         }
 
         break;
@@ -339,7 +361,6 @@ export function convertSchema(
 
         // Add default value to JSON Schema, if available
         if (valibotSchema.default !== undefined) {
-          // @ts-expect-error
           apiSchema.default = v.getDefault(valibotSchema);
         }
 
@@ -458,6 +479,7 @@ export function convertSchema(
         );
       }
     }
+  }
 
   // Return converted OpenAPI Schema
   return apiSchema;

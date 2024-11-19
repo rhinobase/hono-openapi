@@ -6,7 +6,9 @@
       "sharedGlobals"
     ],
     "production": [
-      "default"
+      "default",
+      "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
+      "!{projectRoot}/tsconfig.spec.json"
     ],
     "sharedGlobals": []
   },
@@ -27,6 +29,17 @@
       "plugin": "@nx/rollup/plugin",
       "options": {
         "buildTargetName": "build"
+      }
+    },
+    {
+      "plugin": "@nx/vite/plugin",
+      "options": {
+        "buildTargetName": "build",
+        "testTargetName": "test",
+        "serveTargetName": "serve",
+        "previewTargetName": "preview",
+        "serveStaticTargetName": "serve-static",
+        "typecheckTargetName": "typecheck"
       }
     }
   ],

@@ -4,6 +4,7 @@ import type {
   ConversionContext,
   ConversionConfig,
   ConversionResponse,
+  OpenAPIVersions,
 } from "./types";
 import { convertSchema } from "./convertSchema";
 
@@ -30,12 +31,12 @@ export const metadata = <
  *
  * @returns The converted OpenAPI Schema.
  */
-export function createSchema<T extends GenericSchema | GenericSchemaAsync>(
-  schema: T,
-  config?: ConversionConfig
-): ConversionResponse {
+export function createSchema<
+  T extends GenericSchema | GenericSchemaAsync,
+  U extends OpenAPIVersions
+>(schema: T, config?: ConversionConfig<U>): ConversionResponse<U> {
   // Initialize JSON Schema context
-  const context: ConversionContext = {
+  const context: ConversionContext<U> = {
     definitions: {},
     referenceMap: new Map(),
     getterMap: new Map(),

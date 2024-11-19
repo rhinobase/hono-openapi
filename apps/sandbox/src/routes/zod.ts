@@ -17,7 +17,6 @@ router.get(
   "/",
   describeRoute({
     description: "Say hello to the user",
-    hide: true,
     responses: {
       200: {
         description: "Successful greeting response",

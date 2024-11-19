@@ -12,16 +12,19 @@ import { generateValidatorDocs, uniqueSymbol } from "./utils";
 export function resolver<T extends ZodSchema>(schema: T): ResolverResult {
   return {
     // @ts-expect-error Need to fix the type
-    builder: (options?: OpenAPIRouteHandlerConfig) =>
-      createSchema(
+    builder: (options?: OpenAPIRouteHandlerConfig) => {
+      const { version, ...rest } = options ?? {};
+
+      return createSchema(
         schema,
         options
           ? {
-              openapi: options.version,
-              ...(options as CreateSchemaOptions),
+              openapi: version,
+              ...(rest as CreateSchemaOptions),
             }
           : undefined
-      ),
+      );
+    },
     validator: schema.parse,
   };
 }

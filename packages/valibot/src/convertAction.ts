@@ -1,7 +1,13 @@
 import type * as v from "valibot";
-import type { ConversionConfig } from "./types";
-import type { OpenAPIV3 } from "openapi-types";
+import type { ConversionConfig, OpenAPI, OpenAPIVersions } from "./types";
+import type { OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
 import { handleError } from "./utils";
+
+type SchemaObject<T extends OpenAPIVersions> = OpenAPI<
+  T,
+  OpenAPIV3_1.SchemaObject,
+  OpenAPIV3.SchemaObject
+>;
 
 // TODO: Add support for more actions (for example all regex-based actions)
 
@@ -12,14 +18,40 @@ type Action =
   | v.DescriptionAction<unknown, string>
   | v.EmailAction<string, v.ErrorMessage<v.EmailIssue<string>> | undefined>
   | v.IsoDateAction<string, v.ErrorMessage<v.IsoDateIssue<string>> | undefined>
+  | v.IsoTimeAction<string, v.ErrorMessage<v.IsoTimeIssue<string>> | undefined>
+  | v.IsoDateTimeAction<
+      string,
+      v.ErrorMessage<v.IsoDateTimeIssue<string>> | undefined
+    >
   | v.IsoTimestampAction<
       string,
       v.ErrorMessage<v.IsoTimestampIssue<string>> | undefined
     >
+  | v.Base64Action<string, v.ErrorMessage<v.Base64Issue<string>> | undefined>
   | v.Ipv4Action<string, v.ErrorMessage<v.Ipv4Issue<string>> | undefined>
   | v.Ipv6Action<string, v.ErrorMessage<v.Ipv6Issue<string>> | undefined>
   | v.UuidAction<string, v.ErrorMessage<v.UuidIssue<string>> | undefined>
+  | v.UrlAction<string, v.ErrorMessage<v.UrlIssue<string>> | undefined>
   | v.RegexAction<string, v.ErrorMessage<v.RegexIssue<string>> | undefined>
+  | v.StartsWithAction<
+      string,
+      string,
+      v.ErrorMessage<v.StartsWithIssue<string, string>> | undefined
+    >
+  | v.EndsWithAction<
+      string,
+      string,
+      v.ErrorMessage<v.EndsWithIssue<string, string>> | undefined
+    >
+  | v.IncludesAction<
+      string,
+      string,
+      v.ErrorMessage<v.IncludesIssue<string, string>> | undefined
+    >
+  | v.NonEmptyAction<
+      string,
+      v.ErrorMessage<v.NonEmptyIssue<string>> | undefined
+    >
   | v.IntegerAction<number, v.ErrorMessage<v.IntegerIssue<number>> | undefined>
   | v.LengthAction<
       v.LengthInput,
@@ -56,7 +88,8 @@ type Action =
       number,
       v.ErrorMessage<v.MultipleOfIssue<number, number>> | undefined
     >
-  | v.TitleAction<unknown, string>;
+  | v.TitleAction<unknown, string>
+  | v.BrandAction<string, string>;
 
 /**
  * Converts any supported Valibot action to the JSON Schema format.
@@ -67,11 +100,11 @@ type Action =
  *
  * @returns The converted JSON Schema.
  */
-export function convertAction(
-  jsonSchema: OpenAPIV3.SchemaObject,
+export function convertAction<T extends OpenAPIVersions>(
+  jsonSchema: SchemaObject<T>,
   valibotAction: Action,
-  config: ConversionConfig | undefined
-): OpenAPIV3.SchemaObject {
+  config: ConversionConfig<T> | undefined
+): SchemaObject<T> {
   switch (valibotAction.type) {
     case "description": {
       jsonSchema.description = valibotAction.description;
@@ -93,6 +126,12 @@ export function convertAction(
       break;
     }
 
+    case "iso_time": {
+      jsonSchema.format = "time";
+      break;
+    }
+
+    case "iso_date_time":
     case "iso_timestamp": {
       jsonSchema.format = "date-time";
       break;
@@ -109,13 +148,21 @@ export function convertAction(
     }
 
     case "length":
+    case "non_empty":
     case "min_length":
     case "max_length": {
       if (jsonSchema.type === "array") {
         if (valibotAction.type !== "max_length") {
-          jsonSchema.minItems = valibotAction.requirement;
+          if (valibotAction.type === "non_empty") {
+            jsonSchema.minItems = 1;
+          } else {
+            jsonSchema.minItems = valibotAction.requirement;
+          }
         }
-        if (valibotAction.type !== "min_length") {
+        if (
+          valibotAction.type !== "min_length" &&
+          valibotAction.type !== "non_empty"
+        ) {
           jsonSchema.maxItems = valibotAction.requirement;
         }
       } else {
@@ -126,9 +173,16 @@ export function convertAction(
           );
         }
         if (valibotAction.type !== "max_length") {
-          jsonSchema.minLength = valibotAction.requirement;
+          if (valibotAction.type === "non_empty") {
+            jsonSchema.minLength = 1;
+          } else {
+            jsonSchema.minLength = valibotAction.requirement;
+          }
         }
-        if (valibotAction.type !== "min_length") {
+        if (
+          valibotAction.type !== "min_length" &&
+          valibotAction.type !== "non_empty"
+        ) {
           jsonSchema.maxLength = valibotAction.requirement;
         }
       }
@@ -172,6 +226,21 @@ export function convertAction(
       break;
     }
 
+    case "starts_with": {
+      jsonSchema.pattern = `^${valibotAction.requirement}`;
+      break;
+    }
+
+    case "ends_with": {
+      jsonSchema.pattern = `${valibotAction.requirement}$`;
+      break;
+    }
+
+    case "includes": {
+      jsonSchema.pattern = valibotAction.requirement;
+      break;
+    }
+
     case "title": {
       jsonSchema.title = valibotAction.title;
       break;
@@ -179,6 +248,19 @@ export function convertAction(
 
     case "uuid": {
       jsonSchema.format = "uuid";
+      break;
+    }
+
+    case "url": {
+      jsonSchema.format = "uri";
+      break;
+    }
+
+    case "base64": {
+      if (config?.version === "3.1.0") {
+        // @ts-expect-error
+        jsonSchema.contentEncoding = "base64";
+      }
       break;
     }
 
@@ -190,6 +272,9 @@ export function convertAction(
       jsonSchema.const = valibotAction.requirement;
       break;
     }
+
+    case "brand":
+      break;
 
     default: {
       handleError(
