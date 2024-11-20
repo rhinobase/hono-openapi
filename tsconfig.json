@@ -8,6 +8,9 @@
     },
     {
       "path": "./apps/sandbox"
+    },
+    {
+      "path": "./packages/valibot"
     }
   ]
 }

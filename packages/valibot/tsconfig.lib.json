@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
+    "emitDeclarationOnly": false,
+    "moduleResolution": "bundler",
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "references": [],
+  "exclude": ["vite.config.ts", "vitest.config.ts", "src/__tests__/**/*.ts"]
+}

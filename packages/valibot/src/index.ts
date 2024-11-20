@@ -1,0 +1,57 @@
+import type { GenericSchema, GenericSchemaAsync } from "valibot";
+import * as v from "valibot";
+import type {
+  ConversionContext,
+  ConversionConfig,
+  ConversionResponse,
+  OpenAPIVersions,
+} from "./types";
+import { convertSchema } from "./convertSchema";
+
+export type OpenAPIMetadata<T = string> = {
+  description: string;
+  example: T;
+  examples: [T, ...T[]];
+  default: T;
+  ref: string;
+};
+
+export const metadata = <
+  TInput,
+  TMetadata extends Partial<OpenAPIMetadata<TInput>>
+>(
+  metadata: TMetadata
+) => v.metadata<TInput, TMetadata>(metadata);
+
+/**
+ * Converts a Valibot schema to the OpenAPI Schema format.
+ *
+ * @param schema The Valibot schema object.
+ * @param config The OpenAPI Schema configuration.
+ *
+ * @returns The converted OpenAPI Schema.
+ */
+export function createSchema<
+  T extends GenericSchema | GenericSchemaAsync,
+  U extends OpenAPIVersions
+>(schema: T, config?: ConversionConfig<U>): ConversionResponse<U> {
+  // Initialize JSON Schema context
+  const context: ConversionContext<U> = {
+    definitions: {},
+    referenceMap: new Map(),
+    getterMap: new Map(),
+  };
+
+  const openAPISchema = convertSchema(
+    {},
+    // @ts-expect-error
+    schema,
+    config,
+    context
+  );
+
+  return {
+    schema: openAPISchema,
+    components: context.definitions,
+  };
+}

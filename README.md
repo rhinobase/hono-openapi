@@ -11,6 +11,7 @@ Supported Validation Libraries:
 - [x] [Zod](https://zod.dev/)
 - [ ] [TypeBox](https://github.com/sinclairzx81/typebox)
 - [ ] [Valibot](https://valibot.dev/)
+- [ ] [ArkType](https://arktype.io/)
 
 > [!Note]
 > This package is still in development and your feedback is highly appreciated. If you have any suggestions or issues, please let us know by creating an issue on GitHub.
