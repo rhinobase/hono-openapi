@@ -76,7 +76,7 @@ export function filterPaths(
   }: {
     excludeStaticFile: boolean;
     exclude: (string | RegExp)[];
-  }
+  },
 ) {
   const newPaths: OpenAPIV3.PathsObject = {};
 
@@ -107,8 +107,8 @@ export function filterPaths(
                   !schema.parameters.find(
                     (params: Record<string, unknown>) =>
                       params.in === "path" &&
-                      params.name === x.slice(1, x.length - 1)
-                  )
+                      params.name === x.slice(1, x.length - 1),
+                  ),
               )
               .map((x) => ({
                 schema: { type: "string" },

@@ -1,18 +1,18 @@
 import type { Context, Env, Hono, Input } from "hono";
+import type { OpenAPIV3 } from "openapi-types";
+import { uniqueSymbol } from "./constants";
+import { ALLOWED_METHODS, filterPaths, registerSchemaPath } from "./helper";
 import type {
-  OpenApiSpecsOptions,
-  OpenAPIRouteHandlerConfig,
   HandlerResponse,
   OpenAPIRoute,
+  OpenAPIRouteHandlerConfig,
+  OpenApiSpecsOptions,
 } from "./types";
-import type { OpenAPIV3 } from "openapi-types";
-import { filterPaths, registerSchemaPath, ALLOWED_METHODS } from "./utils";
-import { uniqueSymbol } from "./constants";
 
 export function openAPISpecs<
   E extends Env = Env,
   P extends string = string,
-  I extends Input = Input
+  I extends Input = Input,
 >(
   hono: Hono,
   {
@@ -27,7 +27,7 @@ export function openAPISpecs<
     exclude: [],
     excludeMethods: ["OPTIONS"],
     excludeTags: [],
-  }
+  },
 ) {
   const config: OpenAPIRouteHandlerConfig = {
     version: "3.0.3",
@@ -96,7 +96,7 @@ export function openAPISpecs<
     ...{
       ...documentation,
       tags: documentation.tags?.filter(
-        (tag) => !excludeTags?.includes(tag?.name)
+        (tag) => !excludeTags?.includes(tag?.name),
       ),
       info: {
         title: "Hono Documentation",
