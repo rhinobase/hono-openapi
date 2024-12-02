@@ -29,7 +29,7 @@
     "version": {
       "preVersionCommand": "pnpm dlx nx run-many -t build"
     },
-    "projects": ["*"],
+    "projects": ["core"],
     "changelog": {
       "projectChangelogs": {
         "renderOptions": {
