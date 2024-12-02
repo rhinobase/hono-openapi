@@ -1,12 +1,12 @@
+import { Type } from "@sinclair/typebox";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
-import { resolver, validator as vValidator } from "hono-openapi/valibot";
-import * as v from "valibot";
+import { resolver, validator as tValidator } from "hono-openapi/typebox";
 
 const router = new Hono();
 
-const nameValidation = v.object({
-  name: v.string(),
+const nameValidation = Type.Object({
+  name: Type.String(),
 });
 
 router.get(
@@ -18,13 +18,13 @@ router.get(
         description: "Successful greeting response",
         content: {
           "text/plain": {
-            schema: resolver(v.string()),
+            schema: resolver(Type.String()),
           },
         },
       },
     },
   }),
-  vValidator("query", nameValidation),
+  tValidator("query", nameValidation),
   (c) => {
     const query = c.req.valid("query");
     return c.text(`Hello ${query?.name ?? "Hono"}!`);
@@ -49,11 +49,11 @@ router.post(
       },
     },
   }),
-  vValidator("query", nameValidation),
-  vValidator(
+  tValidator("query", nameValidation),
+  tValidator(
     "json",
-    v.object({
-      id: v.number(),
+    Type.Object({
+      id: Type.Number(),
     }),
   ),
   (c) => {
