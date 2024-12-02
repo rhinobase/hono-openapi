@@ -171,6 +171,43 @@ app.get(
 );
 ```
 
+#### Conditionaly Hiding Routes
+
+You can conditionally hide routes from the OpenAPI specification by using the `hide` property in the `describeRoute` function.
+
+```ts
+app.get(
+  "/",
+  describeRoute({
+    // ...
+    hide: process.env.NODE_ENV === "production",
+  }),
+  (c) => {
+    return c.text("Private Route");
+  }
+);
+```
+
+#### Validating Responses
+
+> [!Warning]
+> Experimental
+
+You can validate the responses using the `validateResponse` property in the `describeRoute` function. This will validate the response against the schema and return an error if the response is invalid.
+
+```ts
+app.get(
+  "/",
+  describeRoute({
+    // ...
+    validateResponse: process.env.NODE_ENV === "development",
+  }),
+  (c) => {
+    return c.text("Private Route");
+  }
+);
+```
+
 ## Contributing
 
 We would love to have more contributors involved!
