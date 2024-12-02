@@ -4,10 +4,10 @@ import type { ResolverResult } from "./types";
 
 export const uniqueSymbol = Symbol("openapi");
 
-export function generateValidatorDocs<Target extends keyof ValidationTargets>(
-  target: Target,
-  result: ReturnType<ResolverResult["builder"]>,
-) {
+export async function generateValidatorDocs<
+  Target extends keyof ValidationTargets,
+>(target: Target, _result: ReturnType<ResolverResult["builder"]>) {
+  const result = await _result;
   const docs: Pick<OpenAPIV3.OperationObject, "parameters" | "requestBody"> =
     {};
 

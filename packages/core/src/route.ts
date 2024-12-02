@@ -1,12 +1,12 @@
 import type { Env, Input, MiddlewareHandler } from "hono/types";
 import type { DescribeRouteOptions, OpenAPIRouteHandlerConfig } from "./types";
-import { uniqueSymbol } from "./constants";
+import { uniqueSymbol } from "./utils";
 
 export function describeRoute<
   E extends Env = Env,
   P extends string = string,
-  I extends Input = Input
->(specs: DescribeRouteOptions) {
+  I extends Input = Input,
+>(specs: DescribeRouteOptions): MiddlewareHandler<E, P, I> {
   const middleware: MiddlewareHandler<E, P, I> = async (c, next) => {
     await next();
 
@@ -34,7 +34,7 @@ export function describeRoute<
 
   return Object.assign(middleware, {
     [uniqueSymbol]: {
-      resolver: (config: OpenAPIRouteHandlerConfig) => {
+      resolver: async (config: OpenAPIRouteHandlerConfig) => {
         const docs = { ...specs };
         let components = {};
 
@@ -49,7 +49,7 @@ export function describeRoute<
               if (!raw) continue;
 
               if (raw.schema && "builder" in raw.schema) {
-                const result = raw.schema.builder(config);
+                const result = await raw.schema.builder(config);
                 raw.schema = result.schema;
                 if (result.components) {
                   components = {
