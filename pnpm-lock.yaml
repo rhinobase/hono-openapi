@@ -86,12 +86,21 @@ importers:
       '@scalar/hono-api-reference':
         specifier: ^0.5.155
         version: 0.5.155(hono@4.6.4)
+      '@sinclair/typebox':
+        specifier: ^0.34.9
+        version: 0.34.9
+      arktype:
+        specifier: 2.0.0-rc.25
+        version: 2.0.0-rc.25
       hono:
         specifier: ^4.6.4
         version: 4.6.4
       hono-openapi:
         specifier: ^0.1.5
         version: 0.1.5(@hono/zod-validator@0.4.1(hono@4.6.4)(zod@3.23.8))(hono@4.6.4)(openapi-types@12.1.3)(zod-openapi@4.1.0(zod@3.23.8))(zod@3.23.8)
+      valibot:
+        specifier: ^1.0.0-beta.9
+        version: 1.0.0-beta.9(typescript@5.5.4)
       zod:
         specifier: ^3.23.8
         version: 3.23.8
@@ -114,6 +123,9 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.4.1
         version: 0.4.1(hono@4.6.4)(zod@3.23.8)
+      '@openapi-contrib/json-schema-to-openapi-schema':
+        specifier: ^3.0.3
+        version: 3.0.3
       '@valibot/to-json-schema':
         specifier: ^1.0.0-beta.3
         version: 1.0.0-beta.3(valibot@1.0.0-beta.9(typescript@5.5.4))

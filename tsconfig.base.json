@@ -13,9 +13,7 @@
     "importHelpers": true,
     "incremental": true,
     "isolatedModules": true,
-    "lib": [
-      "es2022"
-    ],
+    "lib": ["es2022"],
     "module": "ESNext",
     "moduleResolution": "node",
     "noEmitOnError": true,
@@ -34,12 +32,9 @@
     "verbatimModuleSyntax": false,
     "baseUrl": ".",
     "paths": {
-      "hono-openapi": [
-        "packages/core/src/index.ts"
-      ],
-      "hono-openapi/zod": [
-        "packages/core/src/zod.ts"
-      ]
+      "hono-openapi": ["packages/core/src/index.ts"],
+      "hono-openapi/zod": ["packages/core/src/zod.ts"],
+      "hono-openapi/valibot": ["packages/core/src/valibot.ts"]
     }
   }
 }
