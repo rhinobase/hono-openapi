@@ -1,3 +1,4 @@
+import { HTTPException } from "hono/http-exception";
 import type { Env, Input, MiddlewareHandler } from "hono/types";
 import type { DescribeRouteOptions, OpenAPIRouteHandlerConfig } from "./types";
 import { uniqueSymbol } from "./utils";
@@ -6,30 +7,30 @@ export function describeRoute<
   E extends Env = Env,
   P extends string = string,
   I extends Input = Input,
->(specs: DescribeRouteOptions): MiddlewareHandler<E, P, I> {
+>(specs: DescribeRouteOptions<E, P, I>): MiddlewareHandler<E, P, I> {
   const middleware: MiddlewareHandler<E, P, I> = async (c, next) => {
     await next();
 
-    // if (specs.validateResponse && specs.responses) {
-    //   const status = c.res.status;
-    //   const contentType = c.res.headers.get("content-type");
+    if (specs.validateResponse && specs.responses) {
+      const status = c.res.status;
+      const contentType = c.res.headers.get("content-type");
 
-    //   if (status && contentType) {
-    //     const response = specs.responses[status];
-    //     if (response?.content) {
-    //       const content = response.content[contentType];
-    //       if (content?.schema && "validator" in content.schema) {
-    //         try {
-    //           await content.schema.validator(res.body);
-    //         } catch (error) {
-    //           throw new HTTPException(400, {
-    //             message: "Response validation failed!",
-    //           });
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
+      if (status && contentType) {
+        const response = specs.responses[status];
+        if (response && "content" in response && response.content) {
+          const content = response.content[contentType];
+          if (content?.schema && "validator" in content.schema) {
+            try {
+              await content.schema.validator(c.res.body);
+            } catch (error) {
+              throw new HTTPException(400, {
+                message: "Response validation failed!",
+              });
+            }
+          }
+        }
+      }
+    }
   };
 
   return Object.assign(middleware, {

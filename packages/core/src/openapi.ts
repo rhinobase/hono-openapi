@@ -32,12 +32,16 @@ export function openAPISpecs<
   },
 ) {
   const config: OpenAPIRouteHandlerConfig = {
-    version: "3.0.3",
+    version: "3.1.0",
     components: {},
   };
   const schema: OpenAPIV3.PathsObject = {};
 
+  let specs: OpenAPIV3.Document | null = null;
+
   return async (c: Context<E, P, I>) => {
+    if (specs) return c.json(specs);
+
     for (const route of hono.routes) {
       // Finding routes with uniqueSymbol
       if (!(uniqueSymbol in route.handler)) continue;
@@ -84,17 +88,22 @@ export function openAPISpecs<
       }
     }
 
+    // Hide routes
     for (const path in schema) {
       for (const method in schema[path]) {
         // @ts-expect-error
-        if (schema[path][method].hide) {
+        const valueOrFunc = schema[path][method]?.hide;
+        if (
+          valueOrFunc &&
+          (typeof valueOrFunc === "boolean" ? valueOrFunc : valueOrFunc(c))
+        ) {
           // @ts-expect-error
           delete schema[path][method];
         }
       }
     }
 
-    const specs = {
+    specs = {
       openapi: config.version,
       ...{
         ...documentation,
