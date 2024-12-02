@@ -9,8 +9,9 @@ This can automatically generate the OpenAPI specification for the Hono API using
 Supported Validation Libraries:
 
 - [x] [Zod](https://zod.dev/)
-- [ ] [TypeBox](https://github.com/sinclairzx81/typebox)
-- [ ] [Valibot](https://valibot.dev/)
+- [x] [TypeBox](https://github.com/sinclairzx81/typebox)
+- [x] [Valibot](https://valibot.dev/)
+- [x] [ArkType](https://arktype.io/)
 
 > [!Note]
 > This package is still in development and your feedback is highly appreciated. If you have any suggestions or issues, please let us know by creating an issue on GitHub.
@@ -167,6 +168,43 @@ app.get(
       ],
     },
   })
+);
+```
+
+#### Conditionaly Hiding Routes
+
+You can conditionally hide routes from the OpenAPI specification by using the `hide` property in the `describeRoute` function.
+
+```ts
+app.get(
+  "/",
+  describeRoute({
+    // ...
+    hide: process.env.NODE_ENV === "production",
+  }),
+  (c) => {
+    return c.text("Private Route");
+  }
+);
+```
+
+#### Validating Responses
+
+> [!Warning]
+> Experimental
+
+You can validate the responses using the `validateResponse` property in the `describeRoute` function. This will validate the response against the schema and return an error if the response is invalid.
+
+```ts
+app.get(
+  "/",
+  describeRoute({
+    // ...
+    validateResponse: process.env.NODE_ENV === "development",
+  }),
+  (c) => {
+    return c.text("Private Route");
+  }
 );
 ```
 

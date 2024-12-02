@@ -1,5 +1,10 @@
+import type { Context, Env, Input } from "hono";
+import type { BlankInput } from "hono/types";
 import type { OpenAPIV3 } from "openapi-types";
-import type { ALLOWED_METHODS } from "./utils";
+import type { ALLOWED_METHODS } from "./helper";
+
+export type HasUndefined<T> = undefined extends T ? true : false;
+export type PromiseOr<T> = T | Promise<T>;
 
 export type OpenAPIRouteHandlerConfig = {
   version: "3.0.0" | "3.0.1" | "3.0.2" | "3.0.3" | "3.1.0";
@@ -7,44 +12,56 @@ export type OpenAPIRouteHandlerConfig = {
 } & { [key: string]: unknown };
 
 export type ResolverResult = {
-  builder: (options?: OpenAPIRouteHandlerConfig) => {
+  builder: (options?: OpenAPIRouteHandlerConfig) => PromiseOr<{
     schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
     components?: OpenAPIV3.ComponentsObject["schemas"];
-  };
-  validator: (values: unknown) => void | Promise<void>;
+  }>;
+  validator: (values: unknown) => PromiseOr<void>;
 };
 
 export type HandlerResponse = {
-  resolver: (config: OpenAPIRouteHandlerConfig) => {
+  resolver: (config: OpenAPIRouteHandlerConfig) => PromiseOr<{
     docs: OpenAPIV3.OperationObject;
     components?: OpenAPIV3.ComponentsObject["schemas"];
-  };
+  }>;
   metadata?: Record<string, unknown>;
 };
 
-export type DescribeRouteOptions = Omit<
+export type DescribeRouteOptions<
+  E extends Env = Env,
+  P extends string = string,
+  I extends Input = BlankInput,
+> = Omit<
   OpenAPIV3.OperationObject,
   "responses" | "requestBody" | "parameters"
 > & {
   /**
    * Pass `true` to hide route from OpenAPI/swagger document
    */
-  hide?: boolean;
+  hide?: boolean | ((c: Context<E, P, I>) => boolean);
+
+  /**
+   * Validate response of the route
+   * @experimental
+   */
+  validateResponse?: boolean;
 
   /**
    * Responses of the request
    */
   responses?: {
-    [key: string]: OpenAPIV3.ResponseObject & {
-      content?: {
-        [key: string]: Omit<OpenAPIV3.MediaTypeObject, "schema"> & {
-          schema?:
-            | OpenAPIV3.ReferenceObject
-            | OpenAPIV3.SchemaObject
-            | ResolverResult;
-        };
-      };
-    };
+    [key: string]:
+      | (OpenAPIV3.ResponseObject & {
+          content?: {
+            [key: string]: Omit<OpenAPIV3.MediaTypeObject, "schema"> & {
+              schema?:
+                | OpenAPIV3.ReferenceObject
+                | OpenAPIV3.SchemaObject
+                | ResolverResult;
+            };
+          };
+        })
+      | OpenAPIV3.ReferenceObject;
   };
 };
 

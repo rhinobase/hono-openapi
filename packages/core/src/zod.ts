@@ -1,32 +1,33 @@
-import type { z, ZodSchema } from "zod";
 import { type Hook, zValidator } from "@hono/zod-validator";
-import { createSchema, type CreateSchemaOptions } from "zod-openapi";
-import type { ResolverResult, OpenAPIRouteHandlerConfig } from "./types";
 import type { Env, Input, MiddlewareHandler, ValidationTargets } from "hono";
-import { uniqueSymbol } from "./constants";
-import type { OpenAPIV3 } from "openapi-types";
+import type { ZodSchema, z } from "zod";
+import { type CreateSchemaOptions, createSchema } from "zod-openapi";
+import type {
+  HasUndefined,
+  OpenAPIRouteHandlerConfig,
+  ResolverResult,
+} from "./types";
+import { generateValidatorDocs, uniqueSymbol } from "./utils";
 
 export function resolver<T extends ZodSchema>(schema: T): ResolverResult {
   return {
     // @ts-expect-error Need to fix the type
-    builder: (options?: OpenAPIRouteHandlerConfig) =>
-      createSchema(
+    builder: (options?: OpenAPIRouteHandlerConfig) => {
+      const { version, ...rest } = options ?? {};
+
+      return createSchema(
         schema,
         options
           ? {
-              openapi: options.version,
-              components:
-                options.components as CreateSchemaOptions["components"],
-              schemaType:
-                options.schemaType as CreateSchemaOptions["schemaType"],
+              openapi: version,
+              ...(rest as CreateSchemaOptions),
             }
-          : undefined
-      ),
+          : undefined,
+      );
+    },
     validator: schema.parse,
   };
 }
-
-type HasUndefined<T> = undefined extends T ? true : false;
 
 export function validator<
   T extends ZodSchema,
@@ -49,61 +50,19 @@ export function validator<
         };
     out: { [K in Target]: Out };
   },
-  V extends I = I
+  V extends I = I,
 >(
   target: Target,
   schema: T,
-  hook?: Hook<z.infer<T>, E, P, Target>
+  hook?: Hook<z.infer<T>, E, P, Target>,
 ): MiddlewareHandler<E, P, V> {
   const middleware = zValidator(target, schema, hook);
 
   // @ts-expect-error not typed well
   return Object.assign(middleware, {
     [uniqueSymbol]: {
-      resolver: (config: OpenAPIRouteHandlerConfig) => {
-        const result = resolver(schema).builder(config);
-
-        const docs: Pick<
-          OpenAPIV3.OperationObject,
-          "parameters" | "requestBody"
-        > = {};
-
-        if (target === "form" || target === "json") {
-          docs.requestBody = {
-            content: {
-              [target === "json"
-                ? "application/json"
-                : "application/x-www-form-urlencoded"]: {
-                schema: result.schema,
-              },
-            },
-          };
-        } else {
-          const parameters = [];
-
-          if ("$ref" in result.schema) {
-            parameters.push({
-              in: target,
-              name: result.schema.$ref,
-              schema: result.schema,
-            });
-          } else {
-            for (const [key, value] of Object.entries(
-              result.schema.properties ?? {}
-            )) {
-              parameters.push({
-                in: target,
-                name: key,
-                schema: value,
-              });
-            }
-          }
-
-          docs.parameters = parameters;
-        }
-
-        return { docs, components: result.components };
-      },
+      resolver: async (config: OpenAPIRouteHandlerConfig) =>
+        generateValidatorDocs(target, await resolver(schema).builder(config)),
       metadata: { schemaType: "input" },
     },
   });
