@@ -38,16 +38,18 @@ export type DescribeRouteOptions = Omit<
    * Responses of the request
    */
   responses?: {
-    [key: string]: OpenAPIV3.ResponseObject & {
-      content?: {
-        [key: string]: Omit<OpenAPIV3.MediaTypeObject, "schema"> & {
-          schema?:
-            | OpenAPIV3.ReferenceObject
-            | OpenAPIV3.SchemaObject
-            | ResolverResult;
-        };
-      };
-    };
+    [key: string]:
+      | (OpenAPIV3.ResponseObject & {
+          content?: {
+            [key: string]: Omit<OpenAPIV3.MediaTypeObject, "schema"> & {
+              schema?:
+                | OpenAPIV3.ReferenceObject
+                | OpenAPIV3.SchemaObject
+                | ResolverResult;
+            };
+          };
+        })
+      | OpenAPIV3.ReferenceObject;
   };
 };
 
