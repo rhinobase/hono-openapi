@@ -9,9 +9,9 @@ This can automatically generate the OpenAPI specification for the Hono API using
 Supported Validation Libraries:
 
 - [x] [Zod](https://zod.dev/)
-- [x] [TypeBox](https://github.com/sinclairzx81/typebox)
 - [x] [Valibot](https://valibot.dev/)
 - [x] [ArkType](https://arktype.io/)
+- [x] [TypeBox](https://github.com/sinclairzx81/typebox)
 
 > [!Note]
 > This package is still in development and your feedback is highly appreciated. If you have any suggestions or issues, please let us know by creating an issue on GitHub.
@@ -22,8 +22,28 @@ Supported Validation Libraries:
 
 You can install the package using favorite package manager.
 
+#### For Zod
+
 ```bash
-pnpm add hono-openapi
+pnpm add hono-openapi @hono/zod-validator zod zod-openapi
+```
+
+#### For Valibot
+
+```bash
+pnpm add hono-openapi @hono/valibot-validator valibot @valibot/to-json-schema
+```
+
+#### For ArkType
+
+```bash
+pnpm add hono-openapi @hono/arktype-validator arktype
+```
+
+#### For TypeBox
+
+```bash
+pnpm add hono-openapi @hono/typebox-validator @sinclair/typebox"
 ```
 
 ### Basic Usage
