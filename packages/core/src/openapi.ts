@@ -1,6 +1,6 @@
-import type { Context, Env, Hono, Input } from "hono";
+import type { Context, Env, Hono, Input, Schema } from "hono";
+import type { BlankSchema } from "hono/types";
 import type { OpenAPIV3 } from "openapi-types";
-import { uniqueSymbol } from "./constants";
 import { ALLOWED_METHODS, filterPaths, registerSchemaPath } from "./helper";
 import type {
   HandlerResponse,
@@ -8,13 +8,15 @@ import type {
   OpenAPIRouteHandlerConfig,
   OpenApiSpecsOptions,
 } from "./types";
+import { uniqueSymbol } from "./utils";
 
 export function openAPISpecs<
   E extends Env = Env,
   P extends string = string,
   I extends Input = Input,
+  S extends Schema = BlankSchema,
 >(
-  hono: Hono,
+  hono: Hono<E, S, P>,
   {
     documentation = {},
     excludeStaticFile = true,
