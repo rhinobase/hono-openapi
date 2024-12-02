@@ -1,3 +1,16 @@
+## 0.2.0 (2024-12-02)
+
+### 🚀 Features
+
+- **core:** added responseValidation and made hide a function ([7896d99](https://github.com/rhinobase/hono-openapi/commit/7896d99))
+- **core:** added arktype and typebox ([05f6718](https://github.com/rhinobase/hono-openapi/commit/05f6718))
+- **core:** added valibot ([148c8ea](https://github.com/rhinobase/hono-openapi/commit/148c8ea))
+
+### 🩹 Fixes
+
+- **core:** resolved issues ([b9ab16a](https://github.com/rhinobase/hono-openapi/commit/b9ab16a))
+- **core:** passed the schemaType metadata in the resolver ([63def23](https://github.com/rhinobase/hono-openapi/commit/63def23))
+
 ## 0.1.5 (2024-11-10)
 
 ### 🩹 Fixes
