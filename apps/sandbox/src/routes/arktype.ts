@@ -1,12 +1,12 @@
+import { type } from "arktype";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
-import { resolver, validator as vValidator } from "hono-openapi/valibot";
-import * as v from "valibot";
+import { resolver, validator as vValidator } from "hono-openapi/arktype";
 
 const router = new Hono();
 
-const nameValidation = v.object({
-  name: v.string(),
+const nameValidation = type({
+  name: "string",
 });
 
 router.get(
@@ -18,7 +18,7 @@ router.get(
         description: "Successful greeting response",
         content: {
           "text/plain": {
-            schema: resolver(v.string()),
+            schema: resolver(type("string")),
           },
         },
       },
@@ -52,8 +52,8 @@ router.post(
   vValidator("query", nameValidation),
   vValidator(
     "json",
-    v.object({
-      id: v.number(),
+    type({
+      id: "number",
     }),
   ),
   (c) => {
