@@ -16,7 +16,11 @@ import {
   type InferOutput,
   parseAsync,
 } from "valibot";
-import type { OpenAPIRouteHandlerConfig, ResolverResult } from "./types";
+import type {
+  HasUndefined,
+  OpenAPIRouteHandlerConfig,
+  ResolverResult,
+} from "./types";
 import { generateValidatorDocs, uniqueSymbol } from "./utils";
 
 export function resolver<
@@ -31,8 +35,6 @@ export function resolver<
     },
   };
 }
-
-type HasUndefined<T> = undefined extends T ? true : false;
 
 export function validator<
   T extends GenericSchema | GenericSchemaAsync,
