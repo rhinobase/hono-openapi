@@ -1,13 +1,13 @@
+import type { JSONSchema } from "@apidevtools/json-schema-ref-parser";
 import type {
   JSONSchema4,
   JSONSchema6Definition,
   JSONSchema7Definition,
 } from "json-schema";
-import type { Options, SchemaType, SchemaTypeKeys } from "./types";
 import { Walker } from "json-schema-walker";
-import { allowedKeywords } from "./const";
 import type { OpenAPIV3 } from "openapi-types";
-import type { JSONSchema } from "@apidevtools/json-schema-ref-parser";
+import { allowedKeywords } from "./const";
+import type { Options, SchemaType, SchemaTypeKeys } from "./types";
 
 class InvalidTypeError extends Error {
   constructor(message: string) {
@@ -21,7 +21,7 @@ const oasExtensionPrefix = "x-";
 
 const handleDefinition = async <T extends JSONSchema4 = JSONSchema4>(
   def: JSONSchema7Definition | JSONSchema6Definition | JSONSchema4,
-  schema: T
+  schema: T,
 ) => {
   if (typeof def !== "object") {
     return def;
@@ -33,9 +33,10 @@ const handleDefinition = async <T extends JSONSchema4 = JSONSchema4>(
     const walker = new Walker<T>();
     await walker.loadSchema(
       {
-        definitions: schema["definitions"] || [],
+        definitions: schema.definitions || [],
         ...def,
-        $schema: schema["$schema"],
+        $schema: schema.$schema,
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
       } as any,
       {
         dereference: true,
@@ -45,11 +46,11 @@ const handleDefinition = async <T extends JSONSchema4 = JSONSchema4>(
             circular: "ignore",
           },
         },
-      }
+      },
     );
     await walker.walk(convertSchema, walker.vocabularies.DRAFT_07);
     if ("definitions" in walker.rootSchema) {
-      (<any>walker.rootSchema).definitions = undefined;
+      walker.rootSchema.definitions = undefined;
     }
     return walker.rootSchema;
   }
@@ -72,7 +73,7 @@ const handleDefinition = async <T extends JSONSchema4 = JSONSchema4>(
 
 const convert = async <T extends object = JSONSchema4>(
   schema: T,
-  options?: Options
+  options?: Options,
 ): Promise<OpenAPIV3.Document> => {
   const walker = new Walker<T>();
   const convertDefs = options?.convertUnreferencedDefinitions ?? true;
@@ -93,39 +94,43 @@ function stripIllegalKeywords(schema: SchemaType) {
   if (typeof schema !== "object") {
     return schema;
   }
-  schema["$schema"] = undefined;
-  schema["$id"] = undefined;
+  schema.$schema = undefined;
+  schema.$id = undefined;
   if ("id" in schema) {
-    schema["id"] = undefined;
+    schema.id = undefined;
   }
   return schema;
 }
 
 function convertSchema(schema?: SchemaType) {
-  if (!schema) {
-    return schema;
-  }
-  schema = stripIllegalKeywords(schema);
-  schema = convertTypes(schema);
-  schema = rewriteConst(schema);
-  schema = convertDependencies(schema);
-  schema = convertNullable(schema);
-  schema = rewriteIfThenElse(schema);
-  schema = rewriteExclusiveMinMax(schema);
-  schema = convertExamples(schema);
+  let _schema = schema;
 
-  if (typeof schema["patternProperties"] === "object") {
-    schema = convertPatternProperties(schema);
+  if (!_schema) {
+    return _schema;
   }
 
-  if (schema.type === "array" && typeof schema.items === "undefined") {
-    schema.items = {};
+  _schema = stripIllegalKeywords(_schema);
+  _schema = convertTypes(_schema);
+  _schema = rewriteConst(_schema);
+  _schema = convertDependencies(_schema);
+  _schema = convertNullable(_schema);
+  _schema = rewriteIfThenElse(_schema);
+  _schema = rewriteExclusiveMinMax(_schema);
+  _schema = convertExamples(_schema);
+
+  if (typeof _schema.patternProperties === "object") {
+    _schema = convertPatternProperties(_schema);
+  }
+
+  if (_schema.type === "array" && typeof _schema.items === "undefined") {
+    _schema.items = {};
   }
 
   // should be called last
-  schema = convertIllegalKeywordsAsExtensions(schema);
-  return schema;
+  _schema = convertIllegalKeywordsAsExtensions(_schema);
+  return _schema;
 }
+
 const validTypes = new Set([
   "null",
   "boolean",
@@ -135,14 +140,15 @@ const validTypes = new Set([
   "string",
   "integer",
 ]);
-function validateType(type: any) {
+
+function validateType(type: unknown) {
   if (typeof type === "object" && !Array.isArray(type)) {
     // Refs are allowed because they fix circular references
-    if (type.$ref) {
+    if (type && "$ref" in type && type.$ref) {
       return;
     }
     // this is a de-referenced circular ref
-    if (type.properties) {
+    if (type && "properties" in type && type.properties) {
       return;
     }
   }
@@ -284,9 +290,9 @@ function convertIllegalKeywordsAsExtensions(schema: SchemaType) {
 }
 
 function convertExamples(schema: SchemaType) {
-  if (schema["examples"] && Array.isArray(schema["examples"])) {
-    schema["example"] = schema["examples"][0];
-    schema["examples"] = undefined;
+  if (schema.examples && Array.isArray(schema.examples)) {
+    schema.example = schema.examples[0];
+    schema.examples = undefined;
   }
 
   return schema;
