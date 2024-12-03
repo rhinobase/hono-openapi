@@ -3,7 +3,14 @@
   "description": "OpenAPI schema generator for Hono",
   "version": "0.2.0",
   "license": "MIT",
-  "keywords": ["hono", "openapi", "zod", "valibot", "typebox", "arktype"],
+  "keywords": [
+    "hono",
+    "openapi",
+    "zod",
+    "valibot",
+    "typebox",
+    "arktype"
+  ],
   "homepage": "https://github.com/rhinobase/hono-openapi",
   "publishConfig": {
     "access": "public"
@@ -17,7 +24,7 @@
     "url": "https://github.com/rhinobase/hono-openapi/issues"
   },
   "dependencies": {
-    "@openapi-contrib/json-schema-to-openapi-schema": "^3.0.3"
+    "json-schema-walker": "^2.0.0"
   },
   "optionalDependencies": {
     "@hono/arktype-validator": "^2.0.0",
@@ -34,7 +41,9 @@
     "zod-openapi": "^4.0.0"
   },
   "devDependencies": {
-    "@rollup/plugin-terser": "^0.4.4"
+    "@rollup/plugin-terser": "^0.4.4",
+    "@apidevtools/json-schema-ref-parser": "^11.7.2",
+    "@types/json-schema": "^7.0.15"
   },
   "exports": {
     ".": {

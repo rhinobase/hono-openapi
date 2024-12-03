@@ -11,7 +11,7 @@
     "@sinclair/typebox": "^0.34.9",
     "arktype": "2.0.0-rc.25",
     "hono": "^4.6.4",
-    "hono-openapi": "^0.1.5",
+    "hono-openapi": "file:../../packages/core/dist",
     "valibot": "^1.0.0-beta.9",
     "zod": "^3.23.8",
     "zod-openapi": "^4.0.0"

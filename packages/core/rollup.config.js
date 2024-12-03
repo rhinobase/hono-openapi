@@ -22,6 +22,6 @@ module.exports = withNx(
       typebox: "./src/typebox.ts",
       arktype: "./src/arktype.ts",
     },
-    plugins: [terser()],
-  },
+    // plugins: [terser()],
+  }
 );

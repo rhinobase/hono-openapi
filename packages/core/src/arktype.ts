@@ -1,5 +1,5 @@
 import { type Hook, arktypeValidator } from "@hono/arktype-validator";
-import convert from "@openapi-contrib/json-schema-to-openapi-schema";
+import convert from "./toOpenAPISchema";
 import type { Type } from "arktype";
 import type { Env, MiddlewareHandler, ValidationTargets } from "hono";
 import type {
@@ -37,11 +37,11 @@ export function validator<
       ? { [K in Target]?: I }
       : { [K in Target]: I };
     out: { [K in Target]: O };
-  },
+  }
 >(
   target: Target,
   schema: T,
-  hook?: Hook<T["infer"], E, P>,
+  hook?: Hook<T["infer"], E, P>
 ): MiddlewareHandler<E, P, V> {
   const middleware = arktypeValidator(target, schema, hook);
 
