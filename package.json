@@ -12,7 +12,6 @@
     "@biomejs/biome": "^1.9.3",
     "@nx/js": "20.0.0",
     "@nx/rollup": "20.0.0",
-    "@openapi-contrib/json-schema-to-openapi-schema": "^3.0.3",
     "@sinclair/typebox": "^0.34.9",
     "@swc-node/register": "~1.9.1",
     "@swc/cli": "~0.3.12",

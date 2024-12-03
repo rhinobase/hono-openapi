@@ -101,7 +101,7 @@ function stripIllegalKeywords(schema: SchemaType) {
   return schema;
 }
 
-function convertSchema(schema: SchemaType | undefined) {
+function convertSchema(schema?: SchemaType) {
   if (!schema) {
     return schema;
   }

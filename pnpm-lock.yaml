@@ -17,9 +17,6 @@ importers:
       '@nx/rollup':
         specifier: 20.0.0
         version: 20.0.0(@babel/core@7.25.8)(@swc-node/register@1.9.2)(@swc/core@1.5.29)(@types/node@18.16.9)(nx@20.0.0)(typescript@5.5.4)(verdaccio@5.32.2)
-      '@openapi-contrib/json-schema-to-openapi-schema':
-        specifier: ^3.0.3
-        version: 3.0.3
       '@sinclair/typebox':
         specifier: ^0.34.9
         version: 0.34.9
@@ -2229,17 +2226,6 @@ packages:
       - debug
     dev: true
 
-  /@openapi-contrib/json-schema-to-openapi-schema@3.0.3:
-    resolution: {integrity: sha512-2/UmpUBebll6ShAJ4+vlBDqntvJmf7qQ/+/c6QLhZUgCSvfuygjYqQSUMtYuJzhIydatNB/ksO+7sPww+aGgvg==}
-    engines: {node: '>=18'}
-    hasBin: true
-    dependencies:
-      '@apidevtools/json-schema-ref-parser': 11.7.2
-      json-schema-walker: 2.0.0
-      openapi-types: 12.1.3
-      yargs: 17.7.2
-    dev: true
-
   /@rollup/plugin-babel@6.0.4(@babel/core@7.25.8)(rollup@4.24.0):
     resolution: {integrity: sha512-YF7Y52kFdFT/xVSuVdjkV5ZdX/3YtmX0QulG+x0taQOtJdHYzVU61aSSkAgVJ7NOv6qPkIYiJSgSWWN/DM5sGw==}
     engines: {node: '>=14.0.0'}
@@ -3763,6 +3749,7 @@ packages:
   /clone@2.1.2:
     resolution: {integrity: sha512-3Pe/CF1Nn94hyhIYpjtiLhdCoEoz0DqQ+988E9gmeEdQZlojxnOb74wctFyuwWQHzqyf9X7C7MG8juUpqBJT8w==}
     engines: {node: '>=0.8'}
+    dev: false
 
   /color-convert@1.9.3:
     resolution: {integrity: sha512-QfAUtd+vFdAtFQcC8CCyYt1fYWxSqAiK2cSD6zDB8N3cpsEBAvRxp9zOGg6G/SHHJYAT88/az/IuDGALsNVbGg==}
@@ -5290,7 +5277,7 @@ packages:
     resolution: {integrity: sha512-7vuh85V5cdDofPyxn58nrPjBktZo0u9x1g8WtjQol+jZDaE+fhN+cIvTj11GndBnMnyfrUOG1sZQxCdjKh+DKg==}
     engines: {node: '>= 10.13.0'}
     dependencies:
-      '@types/node': 20.16.11
+      '@types/node': 18.16.9
       merge-stream: 2.0.0
       supports-color: 8.1.1
     dev: true
@@ -5345,6 +5332,7 @@ packages:
     dependencies:
       '@apidevtools/json-schema-ref-parser': 11.7.2
       clone: 2.1.2
+    dev: false
 
   /json-schema@0.4.0:
     resolution: {integrity: sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==}
@@ -5959,6 +5947,8 @@ packages:
 
   /openapi-types@12.1.3:
     resolution: {integrity: sha512-N4YtSYJqghVu4iek2ZUvcN/0aqH1kRDuNqzcycDxhOUpg7GdvLa2F3DgS6yBNhInhv2r/6I0Flkn7CqL8+nIcw==}
+    dev: false
+    optional: true
 
   /ora@5.3.0:
     resolution: {integrity: sha512-zAKMgGXUim0Jyd6CXK9lraBnD3H5yPGBPPOkC23a2BG6hsm4Zu6OQSjQuEtV0BHDf4aKHcUFvJiGRrFuW3MG8g==}
