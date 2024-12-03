@@ -220,10 +220,10 @@ app.get(
   "/",
   describeRoute({
     // ...
-    validateResponse: process.env.NODE_ENV === "development",
+    validateResponse: true,
   }),
   (c) => {
-    return c.text("Private Route");
+    return c.json({ message: "This response will be validated" });
   }
 );
 ```
