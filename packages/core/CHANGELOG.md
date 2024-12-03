@@ -1,3 +1,10 @@
+## 0.2.1 (2024-12-03)
+
+### 🩹 Fixes
+
+- **core:** resolved json to openapi conversion issue ([8e7407a](https://github.com/rhinobase/hono-openapi/commit/8e7407a))
+- **core:** parameter was not getting marked required ([0958652](https://github.com/rhinobase/hono-openapi/commit/0958652))
+
 ## 0.2.0 (2024-12-02)
 
 ### 🚀 Features

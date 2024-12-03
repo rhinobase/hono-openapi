@@ -1,16 +1,9 @@
 {
   "name": "hono-openapi",
   "description": "OpenAPI schema generator for Hono",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "license": "MIT",
-  "keywords": [
-    "hono",
-    "openapi",
-    "zod",
-    "valibot",
-    "typebox",
-    "arktype"
-  ],
+  "keywords": ["hono", "openapi", "zod", "valibot", "typebox", "arktype"],
   "homepage": "https://github.com/rhinobase/hono-openapi",
   "publishConfig": {
     "access": "public"
