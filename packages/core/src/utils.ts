@@ -22,7 +22,10 @@ export async function generateValidatorDocs<
       },
     };
   } else {
-    const parameters = [];
+    const parameters: (
+      | OpenAPIV3.ReferenceObject
+      | OpenAPIV3.ParameterObject
+    )[] = [];
 
     if ("$ref" in result.schema) {
       parameters.push({
@@ -38,6 +41,7 @@ export async function generateValidatorDocs<
           in: target,
           name: key,
           schema: value,
+          required: result.schema.required?.includes(key),
         });
       }
     }
