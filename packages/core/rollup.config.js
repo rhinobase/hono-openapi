@@ -21,7 +21,8 @@ module.exports = withNx(
       valibot: "./src/valibot.ts",
       typebox: "./src/typebox.ts",
       arktype: "./src/arktype.ts",
+      effect: "./src/effect.ts",
     },
     plugins: [terser()],
-  }
+  },
 );

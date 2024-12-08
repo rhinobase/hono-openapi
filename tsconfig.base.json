@@ -17,7 +17,7 @@
       "es2022"
     ],
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "noEmitOnError": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
@@ -48,6 +48,9 @@
       ],
       "hono-openapi/zod": [
         "packages/core/src/zod.ts"
+      ],
+      "hono-openapi/effect": [
+        "packages/core/src/effect.ts"
       ]
     }
   }
