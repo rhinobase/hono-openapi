@@ -10,6 +10,7 @@
     "@scalar/hono-api-reference": "^0.5.155",
     "@sinclair/typebox": "^0.34.9",
     "arktype": "2.0.0-rc.25",
+    "effect": "^3.11.3",
     "hono": "^4.6.4",
     "hono-openapi": "workspace:*",
     "valibot": "^1.0.0-beta.9",

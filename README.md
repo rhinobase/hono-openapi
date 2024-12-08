@@ -12,6 +12,7 @@ Supported Validation Libraries:
 - [x] [Valibot](https://valibot.dev/)
 - [x] [ArkType](https://arktype.io/)
 - [x] [TypeBox](https://github.com/sinclairzx81/typebox)
+- [x] [Effect](https://effect.website/docs/schema/introduction/)
 
 > [!Note]
 > This package is still in development and your feedback is highly appreciated. If you have any suggestions or issues, please let us know by creating an issue on GitHub.
@@ -45,6 +46,17 @@ pnpm add hono-openapi @hono/arktype-validator arktype
 ```bash
 pnpm add hono-openapi @hono/typebox-validator @sinclair/typebox"
 ```
+
+#### For Effect
+
+```bash
+pnpm add hono-openapi @hono/effect-validator effect
+```
+
+> [!IMPORTANT]
+>
+> Requires `effect@^3.10.0`.
+> Also, use the `Schema` class from the `effect` package, as `@effect/schema` is not supported.
 
 ### Basic Usage
 
