@@ -98,26 +98,29 @@ export function filterPaths(
         if (key.includes("{")) {
           if (!schema.parameters) schema.parameters = [];
 
-          schema.parameters = [
-            ...key
-              .split("/")
-              .filter(
-                (x) =>
-                  x.startsWith("{") &&
-                  !schema.parameters.find(
-                    (params: Record<string, unknown>) =>
-                      params.in === "path" &&
-                      params.name === x.slice(1, x.length - 1),
-                  ),
-              )
-              .map((x) => ({
-                schema: { type: "string" },
-                in: "path",
-                name: x.slice(1, x.length - 1),
-                required: true,
-              })),
-            ...schema.parameters,
-          ];
+          const pathParameters = key
+            .split("/")
+            .filter(
+              (x) =>
+                x.startsWith("{") &&
+                !schema.parameters.find(
+                  (params: Record<string, unknown>) =>
+                    params.in === "path" &&
+                    params.name === x.slice(1, x.length - 1),
+                ),
+            );
+
+          for (const param of pathParameters) {
+            const paramName = param.slice(1, param.length - 1);
+
+            const index = schema.parameters.findIndex(
+              (x: OpenAPIV3.ParameterObject) =>
+                x.in === "param" && x.name === paramName,
+            );
+
+            if (index !== -1) schema.parameters[index].in = "path";
+            else schema.parameters.push(param);
+          }
         }
 
         if (!schema.responses)
