@@ -1,7 +1,7 @@
 import { type } from "arktype";
 import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
-import { resolver, validator as vValidator } from "hono-openapi/arktype";
+import { validator as aValidator, resolver } from "hono-openapi/arktype";
 
 const router = new Hono();
 
@@ -24,7 +24,7 @@ router.get(
       },
     },
   }),
-  vValidator("query", nameValidation),
+  aValidator("query", nameValidation),
   (c) => {
     const query = c.req.valid("query");
     return c.text(`Hello ${query?.name ?? "Hono"}!`);
@@ -49,8 +49,8 @@ router.post(
       },
     },
   }),
-  vValidator("query", nameValidation),
-  vValidator(
+  aValidator("query", nameValidation),
+  aValidator(
     "json",
     type({
       id: "number",
