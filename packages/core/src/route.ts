@@ -18,10 +18,22 @@ export function describeRoute<
       if (status && contentType) {
         const response = specs.responses[status];
         if (response && "content" in response && response.content) {
-          const content = response.content[contentType];
+          const splitedContentType = contentType.split(";")[0];
+          const content = response.content[splitedContentType];
+
           if (content?.schema && "validator" in content.schema) {
             try {
-              await content.schema.validator(c.res.body);
+              let data: unknown;
+
+              if (splitedContentType === "application/json") {
+                data = await c.res.json();
+              } else if (splitedContentType === "text/plain") {
+                data = await c.res.text();
+              }
+
+              if (!data) throw new Error("No data to validate!");
+
+              await content.schema.validator(data);
             } catch (error) {
               throw new HTTPException(400, {
                 message: "Response validation failed!",
