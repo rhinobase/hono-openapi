@@ -12,12 +12,16 @@
     "@biomejs/biome": "^1.9.3",
     "@nx/js": "20.0.0",
     "@nx/rollup": "20.0.0",
+    "@nx/vite": "20.0.0",
+    "@nx/web": "20.0.0",
     "@sinclair/typebox": "^0.34.9",
     "@swc-node/register": "~1.9.1",
     "@swc/cli": "~0.3.12",
     "@swc/core": "~1.5.7",
     "@swc/helpers": "~0.5.11",
     "@types/node": "18.16.9",
+    "@vitest/coverage-v8": "^1.0.4",
+    "@vitest/ui": "^1.3.1",
     "arktype": "2.0.0-rc.25",
     "czg": "^1.10.1",
     "husky": "^9.1.6",
@@ -29,7 +33,9 @@
     "tslib": "^2.3.0",
     "typescript": "~5.5.2",
     "valibot": "1.0.0-beta.9",
-    "verdaccio": "^5.0.4"
+    "verdaccio": "^5.0.4",
+    "vite": "^5.0.0",
+    "vitest": "^1.3.1"
   },
   "nx": {
     "includedScripts": [],
