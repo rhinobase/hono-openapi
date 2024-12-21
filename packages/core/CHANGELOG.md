@@ -1,3 +1,15 @@
+## 0.3.0 (2024-12-21)
+
+### 🚀 Features
+
+- **core:** support effect schema ([#16](https://github.com/rhinobase/hono-openapi/pull/16))
+
+### 🩹 Fixes
+
+- **core:** corrected the validation function ([#24](https://github.com/rhinobase/hono-openapi/pull/24))
+- **core:** duplicates path and param validation ([#19](https://github.com/rhinobase/hono-openapi/pull/19))
+- resolved biome errors ([9f57d0f](https://github.com/rhinobase/hono-openapi/commit/9f57d0f))
+
 ## 0.2.1 (2024-12-03)
 
 ### 🩹 Fixes
