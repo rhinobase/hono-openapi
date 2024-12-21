@@ -1,6 +1,6 @@
 {
   "name": "sandbox",
-  "version": "0.0.7",
+  "version": "0.0.9",
   "scripts": {
     "serve": "tsx watch src/index.ts"
   },
@@ -12,7 +12,7 @@
     "arktype": "2.0.0-rc.25",
     "effect": "^3.11.3",
     "hono": "^4.6.13",
-    "hono-openapi": "workspace:*",
+    "hono-openapi": "0.3.0",
     "valibot": "^1.0.0-beta.9",
     "zod": "^3.23.8",
     "zod-openapi": "^4.0.0"

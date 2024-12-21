@@ -114,7 +114,7 @@ importers:
         specifier: ^4.6.13
         version: 4.6.13
       hono-openapi:
-        specifier: workspace:*
+        specifier: 0.3.0
         version: link:../../packages/core
       valibot:
         specifier: ^1.0.0-beta.9
@@ -6145,7 +6145,7 @@ packages:
     resolution: {integrity: sha512-7vuh85V5cdDofPyxn58nrPjBktZo0u9x1g8WtjQol+jZDaE+fhN+cIvTj11GndBnMnyfrUOG1sZQxCdjKh+DKg==}
     engines: {node: '>= 10.13.0'}
     dependencies:
-      '@types/node': 18.16.9
+      '@types/node': 20.16.11
       merge-stream: 2.0.0
       supports-color: 8.1.1
     dev: true
