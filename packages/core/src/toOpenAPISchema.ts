@@ -1,4 +1,7 @@
-import type { JSONSchema } from "@apidevtools/json-schema-ref-parser";
+import type {
+  JSONSchema,
+  ParserOptions,
+} from "@apidevtools/json-schema-ref-parser";
 import type {
   JSONSchema4,
   JSONSchema6Definition,
@@ -6,8 +9,65 @@ import type {
 } from "json-schema";
 import { Walker } from "json-schema-walker";
 import type { OpenAPIV3 } from "openapi-types";
-import { allowedKeywords } from "./const";
-import type { Options, SchemaType, SchemaTypeKeys } from "./types";
+
+export type addPrefixToObject = {
+  [K in keyof JSONSchema as `x-${K}`]: JSONSchema[K];
+};
+
+export interface Options {
+  cloneSchema?: boolean;
+  dereference?: boolean;
+  convertUnreferencedDefinitions?: boolean;
+  dereferenceOptions?: ParserOptions | undefined;
+}
+type ExtendedJSONSchema = addPrefixToObject & JSONSchema;
+export type SchemaType = ExtendedJSONSchema & {
+  example?: JSONSchema["examples"][number];
+  "x-patternProperties"?: JSONSchema["patternProperties"];
+  nullable?: boolean;
+};
+export type SchemaTypeKeys = keyof SchemaType;
+
+const allowedKeywords = [
+  "$ref",
+  "definitions",
+  // From Schema
+  "title",
+  "multipleOf",
+  "maximum",
+  "exclusiveMaximum",
+  "minimum",
+  "exclusiveMinimum",
+  "maxLength",
+  "minLength",
+  "pattern",
+  "maxItems",
+  "minItems",
+  "uniqueItems",
+  "maxProperties",
+  "minProperties",
+  "required",
+  "enum",
+  "type",
+  "not",
+  "allOf",
+  "oneOf",
+  "anyOf",
+  "items",
+  "properties",
+  "additionalProperties",
+  "description",
+  "format",
+  "default",
+  "nullable",
+  "discriminator",
+  "readOnly",
+  "writeOnly",
+  "example",
+  "externalDocs",
+  "deprecated",
+  "xml",
+];
 
 class InvalidTypeError extends Error {
   constructor(message: string) {
