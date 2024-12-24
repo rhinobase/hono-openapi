@@ -1,3 +1,16 @@
+## 0.3.1 (2024-12-24)
+
+### 🚀 Features
+
+- **core:** support effect schema ([#16](https://github.com/rhinobase/hono-openapi/pull/16))
+
+### 🩹 Fixes
+
+- corrected filterPaths function ([3fc05f5](https://github.com/rhinobase/hono-openapi/commit/3fc05f5))
+- improved the types for describeRoute ([6bfa7b4](https://github.com/rhinobase/hono-openapi/commit/6bfa7b4))
+- **core:** corrected the validation function ([#24](https://github.com/rhinobase/hono-openapi/pull/24))
+- **core:** duplicates path and param validation ([#19](https://github.com/rhinobase/hono-openapi/pull/19))
+
 ## 0.3.0 (2024-12-21)
 
 ### 🚀 Features
