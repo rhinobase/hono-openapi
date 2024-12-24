@@ -7,11 +7,13 @@ export function describeRoute<
   E extends Env = Env,
   P extends string = string,
   I extends Input = Input,
->(specs: DescribeRouteOptions<E, P, I>): MiddlewareHandler<E, P, I> {
+>(specs: DescribeRouteOptions): MiddlewareHandler<E, P, I> {
+  const { validateResponse, ...docs } = specs;
+
   const middleware: MiddlewareHandler<E, P, I> = async (c, next) => {
     await next();
 
-    if (specs.validateResponse && specs.responses) {
+    if (validateResponse && specs.responses) {
       const status = c.res.status;
       const contentType = c.res.headers.get("content-type");
 
@@ -48,7 +50,6 @@ export function describeRoute<
   return Object.assign(middleware, {
     [uniqueSymbol]: {
       resolver: async (config: OpenAPIRouteHandlerConfig) => {
-        const docs = { ...specs };
         let components = {};
 
         if (docs.responses) {

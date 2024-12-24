@@ -27,18 +27,22 @@ export type HandlerResponse = {
   metadata?: Record<string, unknown>;
 };
 
-export type DescribeRouteOptions<
-  E extends Env = Env,
-  P extends string = string,
-  I extends Input = BlankInput,
-> = Omit<
+export type DescribeRouteOptions = Omit<
   OpenAPIV3.OperationObject,
   "responses" | "requestBody" | "parameters"
 > & {
   /**
    * Pass `true` to hide route from OpenAPI/swagger document
    */
-  hide?: boolean | ((c: Context<E, P, I>) => boolean);
+  hide?:
+    | boolean
+    | (<
+        E extends Env = Env,
+        P extends string = string,
+        I extends Input = BlankInput,
+      >(
+        c: Context<E, P, I>,
+      ) => boolean);
 
   /**
    * Validate response of the route
