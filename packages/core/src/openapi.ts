@@ -1,5 +1,10 @@
-import type { Context, Env, Hono, Input, Schema } from "hono";
-import type { BlankSchema, MiddlewareHandler } from "hono/types";
+import type { Env, Hono, Input, Schema } from "hono";
+import type {
+  BlankEnv,
+  BlankInput,
+  BlankSchema,
+  MiddlewareHandler,
+} from "hono/types";
 import type { OpenAPIV3 } from "openapi-types";
 import { ALLOWED_METHODS, filterPaths, registerSchemaPath } from "./helper";
 import type {
@@ -11,9 +16,9 @@ import type {
 import { uniqueSymbol } from "./utils";
 
 export function openAPISpecs<
-  E extends Env = Env,
+  E extends Env = BlankEnv,
   P extends string = string,
-  I extends Input = Input,
+  I extends Input = BlankInput,
   S extends Schema = BlankSchema,
 >(
   hono: Hono<E, S, P>,
@@ -39,7 +44,7 @@ export function openAPISpecs<
 
   let specs: OpenAPIV3.Document | null = null;
 
-  return async (c: Context<E, P, I>) => {
+  return async (c) => {
     if (specs) return c.json(specs);
 
     for (const route of hono.routes) {

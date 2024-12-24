@@ -1,16 +1,12 @@
 import { HTTPException } from "hono/http-exception";
-import type { Env, Input, MiddlewareHandler } from "hono/types";
+import type { MiddlewareHandler } from "hono/types";
 import type { DescribeRouteOptions, OpenAPIRouteHandlerConfig } from "./types";
 import { uniqueSymbol } from "./utils";
 
-export function describeRoute<
-  E extends Env = Env,
-  P extends string = string,
-  I extends Input = Input,
->(specs: DescribeRouteOptions): MiddlewareHandler<E, P, I> {
+export function describeRoute(specs: DescribeRouteOptions): MiddlewareHandler {
   const { validateResponse, ...docs } = specs;
 
-  const middleware: MiddlewareHandler<E, P, I> = async (c, next) => {
+  const middleware: MiddlewareHandler = async (c, next) => {
     await next();
 
     if (validateResponse && specs.responses) {
