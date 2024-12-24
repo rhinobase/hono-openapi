@@ -1,5 +1,5 @@
 import type { Context, Env, Hono, Input, Schema } from "hono";
-import type { BlankSchema } from "hono/types";
+import type { BlankSchema, MiddlewareHandler } from "hono/types";
 import type { OpenAPIV3 } from "openapi-types";
 import { ALLOWED_METHODS, filterPaths, registerSchemaPath } from "./helper";
 import type {
@@ -30,7 +30,7 @@ export function openAPISpecs<
     excludeMethods: ["OPTIONS"],
     excludeTags: [],
   },
-) {
+): MiddlewareHandler<E, P, I> {
   const config: OpenAPIRouteHandlerConfig = {
     version: "3.1.0",
     components: {},
