@@ -119,7 +119,13 @@ export function filterPaths(
             );
 
             if (index !== -1) schema.parameters[index].in = "path";
-            else schema.parameters.push(param);
+            else
+              schema.parameters.push({
+                schema: { type: "string" },
+                in: "path",
+                name: paramName,
+                required: true,
+              });
           }
         }
 
