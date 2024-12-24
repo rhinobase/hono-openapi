@@ -1,10 +1,7 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "namedInputs": {
-    "default": [
-      "{projectRoot}/**/*",
-      "sharedGlobals"
-    ],
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
     "production": [
       "default",
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
@@ -45,11 +42,11 @@
   ],
   "release": {
     "version": {
-      "preVersionCommand": "pnpm dlx nx run-many -t build"
+      "generatorOptions": {
+        "installIgnoreScripts": true
+      }
     },
-    "projects": [
-      "core"
-    ],
+    "projects": ["core"],
     "changelog": {
       "projectChangelogs": {
         "renderOptions": {
