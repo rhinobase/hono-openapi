@@ -1,8 +1,8 @@
 import { type Hook, tbValidator } from "@hono/typebox-validator";
-import convert from "./toOpenAPISchema";
 import type { Static, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import type { Env, MiddlewareHandler, ValidationTargets } from "hono";
+import convert from "./toOpenAPISchema";
 import type { OpenAPIRouteHandlerConfig, ResolverResult } from "./types";
 import { generateValidatorDocs, uniqueSymbol } from "./utils";
 
@@ -25,11 +25,11 @@ export function validator<
   V extends {
     in: { [K in Target]: Static<T> };
     out: { [K in Target]: Static<T> };
-  }
+  },
 >(
   target: Target,
   schema: T,
-  hook?: Hook<Static<T>, E, P>
+  hook?: Hook<Static<T>, E, P>,
 ): MiddlewareHandler<E, P, V> {
   const middleware = tbValidator(target, schema, hook);
 
