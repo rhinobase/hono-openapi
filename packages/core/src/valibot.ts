@@ -16,6 +16,7 @@ import {
   type InferOutput,
   parseAsync,
 } from "valibot";
+import type { ConversionConfig } from "@valibot/to-json-schema";
 import type {
   HasUndefined,
   OpenAPIRouteHandlerConfig,
@@ -25,10 +26,10 @@ import { generateValidatorDocs, uniqueSymbol } from "./utils";
 
 export function resolver<
   T extends BaseSchema<unknown, unknown, BaseIssue<unknown>>
->(schema: T): ResolverResult {
+>(schema: T, config?: ConversionConfig): ResolverResult {
   return {
     builder: async (options?: OpenAPIRouteHandlerConfig) => ({
-      schema: await convert(toJsonSchema(schema)),
+      schema: await convert(toJsonSchema(schema, config)),
     }),
     validator: async (value) => {
       await parseAsync(schema, value);
