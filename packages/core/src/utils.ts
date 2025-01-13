@@ -1,6 +1,6 @@
 import type { ValidationTargets } from "hono";
 import type { OpenAPIV3 } from "openapi-types";
-import type { ResolverResult } from "./types";
+import type { ResolverResult } from "./types.js";
 
 export const uniqueSymbol = Symbol("openapi");
 
