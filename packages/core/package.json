@@ -30,7 +30,7 @@
   "dependencies": {
     "json-schema-walker": "^2.0.0"
   },
-  "optionalDependencies": {
+  "peerDependencies": {
     "@hono/arktype-validator": "^2.0.0",
     "@hono/effect-validator": "^1.2.0",
     "@hono/typebox-validator": "^0.2.0 || ^0.3.0",
@@ -45,6 +45,22 @@
     "valibot": "^1.0.0-beta.9",
     "zod": "^3.23.8",
     "zod-openapi": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@hono/arktype-validator": { "optional": true },
+    "@hono/effect-validator": { "optional": true },
+    "@hono/typebox-validator": { "optional": true },
+    "@hono/valibot-validator": { "optional": true },
+    "@hono/zod-validator": { "optional": true },
+    "@sinclair/typebox": { "optional": true },
+    "@valibot/to-json-schema": { "optional": true },
+    "arktype": { "optional": true },
+    "effect": { "optional": true },
+    "hono": { "optional": true },
+    "openapi-types": { "optional": true },
+    "valibot": { "optional": true },
+    "zod": { "optional": true },
+    "zod-openapi": { "optional": true }
   },
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^11.7.3",
