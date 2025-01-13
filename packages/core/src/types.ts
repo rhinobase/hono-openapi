@@ -32,7 +32,7 @@ export type HandlerResponse = {
 
 export type DescribeRouteOptions = Omit<
   OpenAPIV3.OperationObject,
-  "responses" | "requestBody" | "parameters"
+  "responses"
 > & {
   /**
    * Pass `true` to hide route from OpenAPI/swagger document
