@@ -2,6 +2,8 @@ import { serve } from "@hono/node-server";
 import { apiReference } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { openAPISpecs } from "hono-openapi";
+import { resolver } from "hono-openapi/zod";
+import { z } from "zod";
 import routes from "./routes";
 
 const app = new Hono();
@@ -23,6 +25,27 @@ app.get(
           description: "Local server",
         },
       ],
+    },
+    defaultOptions: {
+      GET: {
+        responses: {
+          400: {
+            description: "Zod Error",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z
+                    .object({
+                      status: z.literal(400),
+                      message: z.string(),
+                    })
+                    .openapi({ ref: "Bad Request" }),
+                ),
+              },
+            },
+          },
+        },
+      },
     },
   }),
 );
