@@ -10,7 +10,7 @@ module.exports = withNx(
     compiler: "swc",
     format: ["cjs", "esm"],
     assets: [{ input: ".", output: ".", glob: "README.md" }],
-    external: Object.keys(pkg.optionalDependencies ?? {}),
+    external: Object.keys(pkg.optionalDependencies),
   },
   {
     input: {
