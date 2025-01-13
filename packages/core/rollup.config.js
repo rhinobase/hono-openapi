@@ -31,10 +31,16 @@ export default defineConfig({
     }),
     terser(),
     copy({
+      hook: "writeBundle",
       targets: [
         {
           src: ["./README.md", "./packages/core/package.json"],
           dest: "./packages/core/dist",
+        },
+        {
+          src: ["./packages/core/dist/*.d.ts"],
+          dest: "./packages/core/dist",
+          rename: (name, extension) => `${name}.c${extension}`,
         },
       ],
     }),
