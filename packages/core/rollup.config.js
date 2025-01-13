@@ -2,7 +2,6 @@ import terser from "@rollup/plugin-terser";
 import typescript from "@rollup/plugin-typescript";
 import { defineConfig } from "rollup";
 import copy from "rollup-plugin-copy";
-import pkg from "./package.json" with { type: "json" };
 
 export default defineConfig({
   input: {
@@ -24,17 +23,22 @@ export default defineConfig({
       entryFileNames: "[name].cjs",
     },
   ],
-  external: Object.keys(pkg.optionalDependencies),
   plugins: [
     typescript({
       tsconfig: "./packages/core/tsconfig.lib.json",
     }),
     terser(),
     copy({
+      hook: "writeBundle",
       targets: [
         {
           src: ["./README.md", "./packages/core/package.json"],
           dest: "./packages/core/dist",
+        },
+        {
+          src: ["./packages/core/dist/*.d.ts"],
+          dest: "./packages/core/dist",
+          rename: (name, extension) => `${name}.c${extension}`,
         },
       ],
     }),

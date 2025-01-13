@@ -15,13 +15,13 @@ import {
   type InferOutput,
   parseAsync,
 } from "valibot";
-import convert from "./toOpenAPISchema";
+import convert from "./toOpenAPISchema.js";
 import type {
   HasUndefined,
   OpenAPIRouteHandlerConfig,
   ResolverResult,
-} from "./types";
-import { generateValidatorDocs, uniqueSymbol } from "./utils";
+} from "./types.js";
+import { generateValidatorDocs, uniqueSymbol } from "./utils.js";
 
 /**
  * Generate a resolver for a Valibot schema
