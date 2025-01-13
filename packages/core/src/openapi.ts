@@ -53,6 +53,7 @@ export async function generateSpecs<
     exclude = [],
     excludeMethods = ["OPTIONS"],
     excludeTags = [],
+    defaultOptions,
   }: OpenApiSpecsOptions = {
     documentation: {},
     excludeStaticFile: true,
@@ -93,7 +94,13 @@ export async function generateSpecs<
       uniqueSymbol
     ] as HandlerResponse;
 
-    const { docs, components } = await resolver({ ...config, ...metadata });
+    const defaultOptionsForThisMethod =
+      defaultOptions?.[route.method as OpenAPIRoute["method"]];
+
+    const { docs, components } = await resolver(
+      { ...config, ...metadata },
+      defaultOptionsForThisMethod,
+    );
 
     config.components = {
       ...config.components,

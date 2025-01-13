@@ -20,7 +20,10 @@ export type ResolverResult = {
 };
 
 export type HandlerResponse = {
-  resolver: (config: OpenAPIRouteHandlerConfig) => PromiseOr<{
+  resolver: (
+    config: OpenAPIRouteHandlerConfig,
+    defaultOptions?: DescribeRouteOptions,
+  ) => PromiseOr<{
     docs: OpenAPIV3.OperationObject;
     components?: OpenAPIV3.ComponentsObject["schemas"];
   }>;
@@ -112,4 +115,11 @@ export type OpenApiSpecsOptions = {
    * Exclude tags from OpenAPI
    */
   excludeTags?: string[];
+
+  /**
+   * Default options for `describeRoute` method
+   */
+  defaultOptions?: Partial<
+    Record<(typeof ALLOWED_METHODS)[number] | "ALL", DescribeRouteOptions>
+  >;
 };
