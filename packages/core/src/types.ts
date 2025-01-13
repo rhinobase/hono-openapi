@@ -49,7 +49,6 @@ export type DescribeRouteOptions = Omit<
 
   /**
    * Validate response of the route
-   * @experimental
    */
   validateResponse?: boolean;
 

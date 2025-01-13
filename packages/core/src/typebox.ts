@@ -6,6 +6,11 @@ import convert from "./toOpenAPISchema";
 import type { OpenAPIRouteHandlerConfig, ResolverResult } from "./types";
 import { generateValidatorDocs, uniqueSymbol } from "./utils";
 
+/**
+ * Generate a resolver for a TypeBox schema
+ * @param schema TypeBox schema
+ * @returns Resolver result
+ */
 export function resolver<T extends TSchema>(schema: T): ResolverResult {
   return {
     builder: async (options?: OpenAPIRouteHandlerConfig) => ({
@@ -17,6 +22,13 @@ export function resolver<T extends TSchema>(schema: T): ResolverResult {
   };
 }
 
+/**
+ * Create a validator middleware
+ * @param target Target for validation
+ * @param schema TypeBox schema
+ * @param hook Hook for validation
+ * @returns Middleware handler
+ */
 export function validator<
   T extends TSchema,
   Target extends keyof ValidationTargets,

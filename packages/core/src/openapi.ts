@@ -15,6 +15,12 @@ import type {
 } from "./types";
 import { uniqueSymbol } from "./utils";
 
+/**
+ * Route handler for OpenAPI specs
+ * @param hono Instance of Hono
+ * @param options Options for generating OpenAPI specs
+ * @returns Middleware handler for OpenAPI specs
+ */
 export function openAPISpecs<
   E extends Env = BlankEnv,
   P extends string = string,
@@ -40,6 +46,14 @@ export function openAPISpecs<
   };
 }
 
+/**
+ * Generate OpenAPI specs for the given Hono instance
+ * @param hono Instance of Hono
+ * @param options Options for generating OpenAPI specs
+ * @param config Configuration for OpenAPI route handler
+ * @param Context Route context for hiding routes
+ * @returns OpenAPI specs
+ */
 export async function generateSpecs<
   E extends Env = BlankEnv,
   P extends string = string,

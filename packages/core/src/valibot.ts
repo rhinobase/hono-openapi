@@ -23,6 +23,11 @@ import type {
 } from "./types";
 import { generateValidatorDocs, uniqueSymbol } from "./utils";
 
+/**
+ * Generate a resolver for a Valibot schema
+ * @param schema Valibot schema
+ * @returns Resolver result
+ */
 export function resolver<
   T extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
 >(schema: T): ResolverResult {
@@ -36,6 +41,13 @@ export function resolver<
   };
 }
 
+/**
+ * Create a validator middleware
+ * @param target Target for validation
+ * @param schema Valibot schema
+ * @param hook Hook for validation
+ * @returns Middleware handler
+ */
 export function validator<
   T extends GenericSchema | GenericSchemaAsync,
   Target extends keyof ValidationTargets,

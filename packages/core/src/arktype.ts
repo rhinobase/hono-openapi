@@ -9,6 +9,11 @@ import type {
 } from "./types";
 import { generateValidatorDocs, uniqueSymbol } from "./utils";
 
+/**
+ * Generate a resolver for an Arktype schema
+ * @param schema Arktype schema
+ * @returns Resolver result
+ */
 export function resolver<T extends Type>(schema: T): ResolverResult {
   return {
     builder: async (options?: OpenAPIRouteHandlerConfig) => ({
@@ -20,6 +25,13 @@ export function resolver<T extends Type>(schema: T): ResolverResult {
   };
 }
 
+/**
+ * Create a validator middleware
+ * @param target Target for validation
+ * @param schema Arktype schema
+ * @param hook Hook for validation
+ * @returns Middleware handler
+ */
 export function validator<
   T extends Type,
   Target extends keyof ValidationTargets,

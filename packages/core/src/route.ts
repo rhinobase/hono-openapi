@@ -3,6 +3,11 @@ import type { MiddlewareHandler } from "hono/types";
 import type { DescribeRouteOptions, OpenAPIRouteHandlerConfig } from "./types";
 import { uniqueSymbol } from "./utils";
 
+/**
+ * Describe a route with OpenAPI specs.
+ * @param specs Options for describing a route
+ * @returns Middleware handler
+ */
 export function describeRoute(specs: DescribeRouteOptions): MiddlewareHandler {
   const { validateResponse, ...docs } = specs;
 
@@ -53,6 +58,12 @@ export function describeRoute(specs: DescribeRouteOptions): MiddlewareHandler {
   });
 }
 
+/**
+ * Generate OpenAPI specs for the given route
+ * @param config Route handler configuration
+ * @param docs Route description in OpenAPI specs
+ * @param defaultOptions Default options for describing a route
+ */
 export async function generateRouteSpecs(
   config: OpenAPIRouteHandlerConfig,
   docs: DescribeRouteOptions,

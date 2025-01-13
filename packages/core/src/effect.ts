@@ -14,6 +14,11 @@ import type {
 } from "./types";
 import { generateValidatorDocs, uniqueSymbol } from "./utils";
 
+/**
+ * Generate a resolver for an Effect schema
+ * @param schema Effect schema
+ * @returns Resolver result
+ */
 export function resolver<Type, Context>(
   schema: Schema.Schema<Type, Context, never>,
 ): ResolverResult {
@@ -27,6 +32,12 @@ export function resolver<Type, Context>(
   };
 }
 
+/**
+ * Create a validator middleware
+ * @param target Target for validation
+ * @param schema Effect schema
+ * @returns Middleware handler
+ */
 export function validator<
   Type,
   Context,
