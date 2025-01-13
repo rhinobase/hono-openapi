@@ -1,26 +1,42 @@
-const { withNx } = require("@nx/rollup/with-nx");
-const terser = require("@rollup/plugin-terser");
-const pkg = require("./package.json");
+import terser from "@rollup/plugin-terser";
+import typescript from "@rollup/plugin-typescript";
+import { defineConfig } from "rollup";
+import copy from "rollup-plugin-copy";
+import pkg from "./package.json" with { type: "json" };
 
-module.exports = withNx(
-  {
-    main: "./src/index.ts",
-    outputPath: "./dist",
-    tsConfig: "./tsconfig.lib.json",
-    compiler: "swc",
-    format: ["cjs", "esm"],
-    assets: [{ input: ".", output: ".", glob: "README.md" }],
-    external: Object.keys(pkg.optionalDependencies),
+export default defineConfig({
+  input: {
+    index: "./packages/core/src/index.ts",
+    zod: "./packages/core/src/zod.ts",
+    valibot: "./packages/core/src/valibot.ts",
+    typebox: "./packages/core/src/typebox.ts",
+    arktype: "./packages/core/src/arktype.ts",
+    effect: "./packages/core/src/effect.ts",
   },
-  {
-    input: {
-      index: "./src/index.ts",
-      zod: "./src/zod.ts",
-      valibot: "./src/valibot.ts",
-      typebox: "./src/typebox.ts",
-      arktype: "./src/arktype.ts",
-      effect: "./src/effect.ts",
+  output: [
+    {
+      dir: "./packages/core/dist",
+      format: "esm",
     },
-    plugins: [terser()],
-  },
-);
+    {
+      dir: "./packages/core/dist",
+      format: "cjs",
+      entryFileNames: "[name].cjs",
+    },
+  ],
+  external: Object.keys(pkg.optionalDependencies),
+  plugins: [
+    typescript({
+      tsconfig: "./packages/core/tsconfig.lib.json",
+    }),
+    terser(),
+    copy({
+      targets: [
+        {
+          src: ["./README.md", "./packages/core/package.json"],
+          dest: "./packages/core/dist",
+        },
+      ],
+    }),
+  ],
+});

@@ -2,6 +2,10 @@
   "name": "hono-openapi",
   "description": "OpenAPI schema generator for Hono",
   "version": "0.3.1",
+  "main": "./index.cjs",
+  "type": "module",
+  "module": "./index.js",
+  "types": "./index.d.ts",
   "license": "MIT",
   "keywords": [
     "hono",
@@ -50,64 +54,34 @@
   },
   "exports": {
     ".": {
-      "import": {
-        "default": "./index.esm.js",
-        "types": "./index.esm.d.ts"
-      },
-      "require": {
-        "default": "./index.cjs.js",
-        "types": "./index.cjs.d.ts"
-      }
+      "types": "./index.d.ts",
+      "import": "./index.js",
+      "require": "./index.cjs"
     },
     "./zod": {
-      "import": {
-        "default": "./zod.esm.js",
-        "types": "./zod.esm.d.ts"
-      },
-      "require": {
-        "default": "./zod.cjs.js",
-        "types": "./zod.cjs.d.ts"
-      }
+      "types": "./zod.d.ts",
+      "import": "./zod.js",
+      "require": "./zod.cjs"
     },
     "./valibot": {
-      "import": {
-        "default": "./valibot.esm.js",
-        "types": "./valibot.esm.d.ts"
-      },
-      "require": {
-        "default": "./valibot.cjs.js",
-        "types": "./valibot.cjs.d.ts"
-      }
+      "types": "./valibot.d.ts",
+      "import": "./valibot.js",
+      "require": "./valibot.cjs"
     },
     "./typebox": {
-      "import": {
-        "default": "./typebox.esm.js",
-        "types": "./typebox.esm.d.ts"
-      },
-      "require": {
-        "default": "./typebox.cjs.js",
-        "types": "./typebox.cjs.d.ts"
-      }
+      "types": "./typebox.d.ts",
+      "import": "./typebox.js",
+      "require": "./typebox.cjs"
     },
     "./arktype": {
-      "import": {
-        "default": "./arktype.esm.js",
-        "types": "./arktype.esm.d.ts"
-      },
-      "require": {
-        "default": "./arktype.cjs.js",
-        "types": "./arktype.cjs.d.ts"
-      }
+      "types": "./arktype.d.ts",
+      "import": "./arktype.js",
+      "require": "./arktype.cjs"
     },
     "./effect": {
-      "import": {
-        "default": "./effect.esm.js",
-        "types": "./effect.esm.d.ts"
-      },
-      "require": {
-        "default": "./effect.cjs.js",
-        "types": "./effect.cjs.d.ts"
-      }
+      "types": "./effect.d.ts",
+      "import": "./effect.js",
+      "require": "./effect.cjs"
     }
   }
 }

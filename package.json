@@ -11,9 +11,9 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@nx/js": "20.0.0",
-    "@nx/rollup": "20.0.0",
     "@nx/vite": "20.0.0",
     "@nx/web": "20.0.0",
+    "@rollup/plugin-typescript": "^12.1.2",
     "@sinclair/typebox": "^0.34.13",
     "@swc-node/register": "~1.10.9",
     "@swc/cli": "~0.3.14",
@@ -29,6 +29,7 @@
     "nano-staged": "^0.8.0",
     "nx": "20.0.0",
     "rollup": "^4.29.1",
+    "rollup-plugin-copy": "^3.5.0",
     "swc-loader": "0.1.15",
     "tslib": "^2.8.1",
     "typescript": "~5.7.2",
