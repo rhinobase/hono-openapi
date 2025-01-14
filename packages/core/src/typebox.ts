@@ -2,9 +2,9 @@ import { type Hook, tbValidator } from "@hono/typebox-validator";
 import type { Static, TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 import type { Env, MiddlewareHandler, ValidationTargets } from "hono";
-import convert from "./toOpenAPISchema";
-import type { OpenAPIRouteHandlerConfig, ResolverResult } from "./types";
-import { generateValidatorDocs, uniqueSymbol } from "./utils";
+import convert from "./toOpenAPISchema.js";
+import type { OpenAPIRouteHandlerConfig, ResolverResult } from "./types.js";
+import { generateValidatorDocs, uniqueSymbol } from "./utils.js";
 
 /**
  * Generate a resolver for a TypeBox schema

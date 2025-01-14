@@ -6,14 +6,14 @@ import type {
   MiddlewareHandler,
 } from "hono/types";
 import type { OpenAPIV3 } from "openapi-types";
-import { ALLOWED_METHODS, filterPaths, registerSchemaPath } from "./helper";
+import { ALLOWED_METHODS, filterPaths, registerSchemaPath } from "./helper.js";
 import type {
   HandlerResponse,
   OpenAPIRoute,
   OpenAPIRouteHandlerConfig,
   OpenApiSpecsOptions,
-} from "./types";
-import { uniqueSymbol } from "./utils";
+} from "./types.js";
+import { uniqueSymbol } from "./utils.js";
 
 /**
  * Route handler for OpenAPI specs

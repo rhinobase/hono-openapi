@@ -1,7 +1,10 @@
 import { HTTPException } from "hono/http-exception";
 import type { MiddlewareHandler } from "hono/types";
-import type { DescribeRouteOptions, OpenAPIRouteHandlerConfig } from "./types";
-import { uniqueSymbol } from "./utils";
+import type {
+  DescribeRouteOptions,
+  OpenAPIRouteHandlerConfig,
+} from "./types.js";
+import { uniqueSymbol } from "./utils.js";
 
 /**
  * Describe a route with OpenAPI specs.

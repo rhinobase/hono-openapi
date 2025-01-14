@@ -1,7 +1,7 @@
 import type { Context, Env, Input } from "hono";
 import type { BlankInput } from "hono/types";
 import type { OpenAPIV3 } from "openapi-types";
-import type { ALLOWED_METHODS } from "./helper";
+import type { ALLOWED_METHODS } from "./helper.js";
 
 export type HasUndefined<T> = undefined extends T ? true : false;
 export type PromiseOr<T> = T | Promise<T>;
