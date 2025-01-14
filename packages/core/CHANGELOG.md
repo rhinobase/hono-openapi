@@ -1,3 +1,19 @@
+## 0.4.0 (2025-01-14)
+
+### 🚀 Features
+
+- add default options support ([#43](https://github.com/rhinobase/hono-openapi/pull/43))
+- seprated the generation function ([0aa04f0](https://github.com/rhinobase/hono-openapi/commit/0aa04f0))
+- **core:** support effect schema ([#16](https://github.com/rhinobase/hono-openapi/pull/16))
+
+### 🩹 Fixes
+
+- **core:** remove unnecessary omit from DescribeRouteOptions type ([#32](https://github.com/rhinobase/hono-openapi/pull/32))
+- corrected filterPaths function ([3fc05f5](https://github.com/rhinobase/hono-openapi/commit/3fc05f5))
+- improved the types for describeRoute ([6bfa7b4](https://github.com/rhinobase/hono-openapi/commit/6bfa7b4))
+- **core:** corrected the validation function ([#24](https://github.com/rhinobase/hono-openapi/pull/24))
+- **core:** duplicates path and param validation ([#19](https://github.com/rhinobase/hono-openapi/pull/19))
+
 ## 0.3.1 (2024-12-24)
 
 ### 🚀 Features

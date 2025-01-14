@@ -1,7 +1,7 @@
 {
   "name": "hono-openapi",
   "description": "OpenAPI schema generator for Hono",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "types": "./index.d.ts",
   "main": "./index.js",
   "type": "module",
@@ -47,20 +47,48 @@
     "zod-openapi": "^4.0.0"
   },
   "peerDependenciesMeta": {
-    "@hono/arktype-validator": { "optional": true },
-    "@hono/effect-validator": { "optional": true },
-    "@hono/typebox-validator": { "optional": true },
-    "@hono/valibot-validator": { "optional": true },
-    "@hono/zod-validator": { "optional": true },
-    "@sinclair/typebox": { "optional": true },
-    "@valibot/to-json-schema": { "optional": true },
-    "arktype": { "optional": true },
-    "effect": { "optional": true },
-    "hono": { "optional": true },
-    "openapi-types": { "optional": true },
-    "valibot": { "optional": true },
-    "zod": { "optional": true },
-    "zod-openapi": { "optional": true }
+    "@hono/arktype-validator": {
+      "optional": true
+    },
+    "@hono/effect-validator": {
+      "optional": true
+    },
+    "@hono/typebox-validator": {
+      "optional": true
+    },
+    "@hono/valibot-validator": {
+      "optional": true
+    },
+    "@hono/zod-validator": {
+      "optional": true
+    },
+    "@sinclair/typebox": {
+      "optional": true
+    },
+    "@valibot/to-json-schema": {
+      "optional": true
+    },
+    "arktype": {
+      "optional": true
+    },
+    "effect": {
+      "optional": true
+    },
+    "hono": {
+      "optional": true
+    },
+    "openapi-types": {
+      "optional": true
+    },
+    "valibot": {
+      "optional": true
+    },
+    "zod": {
+      "optional": true
+    },
+    "zod-openapi": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^11.7.3",
