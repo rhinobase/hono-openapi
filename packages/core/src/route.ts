@@ -1,8 +1,16 @@
 import { HTTPException } from "hono/http-exception";
 import type { MiddlewareHandler } from "hono/types";
-import type { DescribeRouteOptions, OpenAPIRouteHandlerConfig } from "./types";
-import { uniqueSymbol } from "./utils";
+import type {
+  DescribeRouteOptions,
+  OpenAPIRouteHandlerConfig,
+} from "./types.js";
+import { uniqueSymbol } from "./utils.js";
 
+/**
+ * Describe a route with OpenAPI specs.
+ * @param specs Options for describing a route
+ * @returns Middleware handler
+ */
 export function describeRoute(specs: DescribeRouteOptions): MiddlewareHandler {
   const { validateResponse, ...docs } = specs;
 
@@ -45,35 +53,59 @@ export function describeRoute(specs: DescribeRouteOptions): MiddlewareHandler {
 
   return Object.assign(middleware, {
     [uniqueSymbol]: {
-      resolver: async (config: OpenAPIRouteHandlerConfig) => {
-        let components = {};
-
-        if (docs.responses) {
-          for (const key of Object.keys(docs.responses)) {
-            const response = docs.responses[key];
-            if (response && !("content" in response)) continue;
-
-            for (const contentKey of Object.keys(response.content ?? {})) {
-              const raw = response.content?.[contentKey];
-
-              if (!raw) continue;
-
-              if (raw.schema && "builder" in raw.schema) {
-                const result = await raw.schema.builder(config);
-                raw.schema = result.schema;
-                if (result.components) {
-                  components = {
-                    ...components,
-                    ...result.components,
-                  };
-                }
-              }
-            }
-          }
-        }
-
-        return { docs, components };
-      },
+      resolver: (
+        config: OpenAPIRouteHandlerConfig,
+        defaultOptions?: DescribeRouteOptions,
+      ) => generateRouteSpecs(config, docs, defaultOptions),
     },
   });
+}
+
+/**
+ * Generate OpenAPI specs for the given route
+ * @param config Route handler configuration
+ * @param docs Route description in OpenAPI specs
+ * @param defaultOptions Default options for describing a route
+ */
+export async function generateRouteSpecs(
+  config: OpenAPIRouteHandlerConfig,
+  docs: DescribeRouteOptions,
+  defaultOptions: DescribeRouteOptions = {},
+) {
+  let components = {};
+  const tmp = {
+    ...defaultOptions,
+    ...docs,
+    responses: {
+      ...defaultOptions?.responses,
+      ...docs.responses,
+    },
+  };
+
+  if (tmp.responses) {
+    for (const key of Object.keys(tmp.responses)) {
+      const response = tmp.responses[key];
+
+      if (!response || !("content" in response)) continue;
+
+      for (const contentKey of Object.keys(response.content ?? {})) {
+        const raw = response.content?.[contentKey];
+
+        if (!raw) continue;
+
+        if (raw.schema && "builder" in raw.schema) {
+          const result = await raw.schema.builder(config);
+          raw.schema = result.schema;
+          if (result.components) {
+            components = {
+              ...components,
+              ...result.components,
+            };
+          }
+        }
+      }
+    }
+  }
+
+  return { docs: tmp, components };
 }

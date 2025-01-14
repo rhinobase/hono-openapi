@@ -2,6 +2,9 @@
   "name": "hono-openapi",
   "description": "OpenAPI schema generator for Hono",
   "version": "0.3.1",
+  "types": "./index.d.ts",
+  "main": "./index.js",
+  "type": "module",
   "license": "MIT",
   "keywords": [
     "hono",
@@ -27,15 +30,15 @@
   "dependencies": {
     "json-schema-walker": "^2.0.0"
   },
-  "optionalDependencies": {
+  "peerDependencies": {
     "@hono/arktype-validator": "^2.0.0",
     "@hono/effect-validator": "^1.2.0",
-    "@hono/typebox-validator": "^0.2.6",
+    "@hono/typebox-validator": "^0.2.0 || ^0.3.0",
     "@hono/valibot-validator": "^0.5.1",
     "@hono/zod-validator": "^0.4.1",
     "@sinclair/typebox": "^0.34.9",
     "@valibot/to-json-schema": "^1.0.0-beta.3",
-    "arktype": "2.0.0-rc.25",
+    "arktype": "^2.0.0-rc.25",
     "effect": "^3.11.3",
     "hono": "^4.6.13",
     "openapi-types": "^12.1.3",
@@ -43,70 +46,86 @@
     "zod": "^3.23.8",
     "zod-openapi": "^4.0.0"
   },
+  "peerDependenciesMeta": {
+    "@hono/arktype-validator": { "optional": true },
+    "@hono/effect-validator": { "optional": true },
+    "@hono/typebox-validator": { "optional": true },
+    "@hono/valibot-validator": { "optional": true },
+    "@hono/zod-validator": { "optional": true },
+    "@sinclair/typebox": { "optional": true },
+    "@valibot/to-json-schema": { "optional": true },
+    "arktype": { "optional": true },
+    "effect": { "optional": true },
+    "hono": { "optional": true },
+    "openapi-types": { "optional": true },
+    "valibot": { "optional": true },
+    "zod": { "optional": true },
+    "zod-openapi": { "optional": true }
+  },
   "devDependencies": {
-    "@apidevtools/json-schema-ref-parser": "^11.7.2",
+    "@apidevtools/json-schema-ref-parser": "^11.7.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@types/json-schema": "^7.0.15"
   },
   "exports": {
     ".": {
       "import": {
-        "default": "./index.esm.js",
-        "types": "./index.esm.d.ts"
+        "types": "./index.d.ts",
+        "default": "./index.js"
       },
       "require": {
-        "default": "./index.cjs.js",
-        "types": "./index.cjs.d.ts"
+        "types": "./index.d.cts",
+        "default": "./index.cjs"
       }
     },
     "./zod": {
       "import": {
-        "default": "./zod.esm.js",
-        "types": "./zod.esm.d.ts"
+        "types": "./zod.d.ts",
+        "default": "./zod.js"
       },
       "require": {
-        "default": "./zod.cjs.js",
-        "types": "./zod.cjs.d.ts"
+        "types": "./zod.d.cts",
+        "default": "./zod.cjs"
       }
     },
     "./valibot": {
       "import": {
-        "default": "./valibot.esm.js",
-        "types": "./valibot.esm.d.ts"
+        "types": "./valibot.d.ts",
+        "default": "./valibot.js"
       },
       "require": {
-        "default": "./valibot.cjs.js",
-        "types": "./valibot.cjs.d.ts"
+        "types": "./valibot.d.cts",
+        "default": "./valibot.cjs"
       }
     },
     "./typebox": {
       "import": {
-        "default": "./typebox.esm.js",
-        "types": "./typebox.esm.d.ts"
+        "types": "./typebox.d.ts",
+        "default": "./typebox.js"
       },
       "require": {
-        "default": "./typebox.cjs.js",
-        "types": "./typebox.cjs.d.ts"
+        "types": "./typebox.d.cts",
+        "default": "./typebox.cjs"
       }
     },
     "./arktype": {
       "import": {
-        "default": "./arktype.esm.js",
-        "types": "./arktype.esm.d.ts"
+        "types": "./arktype.d.ts",
+        "default": "./arktype.js"
       },
       "require": {
-        "default": "./arktype.cjs.js",
-        "types": "./arktype.cjs.d.ts"
+        "types": "./arktype.d.cts",
+        "default": "./arktype.cjs"
       }
     },
     "./effect": {
       "import": {
-        "default": "./effect.esm.js",
-        "types": "./effect.esm.d.ts"
+        "types": "./effect.d.ts",
+        "default": "./effect.js"
       },
       "require": {
-        "default": "./effect.cjs.js",
-        "types": "./effect.cjs.d.ts"
+        "types": "./effect.d.cts",
+        "default": "./effect.cjs"
       }
     }
   }

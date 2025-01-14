@@ -1,7 +1,7 @@
 import type { Context, Env, Input } from "hono";
 import type { BlankInput } from "hono/types";
 import type { OpenAPIV3 } from "openapi-types";
-import type { ALLOWED_METHODS } from "./helper";
+import type { ALLOWED_METHODS } from "./helper.js";
 
 export type HasUndefined<T> = undefined extends T ? true : false;
 export type PromiseOr<T> = T | Promise<T>;
@@ -20,7 +20,10 @@ export type ResolverResult = {
 };
 
 export type HandlerResponse = {
-  resolver: (config: OpenAPIRouteHandlerConfig) => PromiseOr<{
+  resolver: (
+    config: OpenAPIRouteHandlerConfig,
+    defaultOptions?: DescribeRouteOptions,
+  ) => PromiseOr<{
     docs: OpenAPIV3.OperationObject;
     components?: OpenAPIV3.ComponentsObject["schemas"];
   }>;
@@ -29,7 +32,7 @@ export type HandlerResponse = {
 
 export type DescribeRouteOptions = Omit<
   OpenAPIV3.OperationObject,
-  "responses" | "requestBody" | "parameters"
+  "responses"
 > & {
   /**
    * Pass `true` to hide route from OpenAPI/swagger document
@@ -46,7 +49,6 @@ export type DescribeRouteOptions = Omit<
 
   /**
    * Validate response of the route
-   * @experimental
    */
   validateResponse?: boolean;
 
@@ -112,4 +114,11 @@ export type OpenApiSpecsOptions = {
    * Exclude tags from OpenAPI
    */
   excludeTags?: string[];
+
+  /**
+   * Default options for `describeRoute` method
+   */
+  defaultOptions?: Partial<
+    Record<(typeof ALLOWED_METHODS)[number] | "ALL", DescribeRouteOptions>
+  >;
 };

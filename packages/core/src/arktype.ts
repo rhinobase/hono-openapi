@@ -1,14 +1,19 @@
 import { type Hook, arktypeValidator } from "@hono/arktype-validator";
-import convert from "./toOpenAPISchema";
 import type { Type } from "arktype";
 import type { Env, MiddlewareHandler, ValidationTargets } from "hono";
+import convert from "./toOpenAPISchema.js";
 import type {
   HasUndefined,
   OpenAPIRouteHandlerConfig,
   ResolverResult,
-} from "./types";
-import { generateValidatorDocs, uniqueSymbol } from "./utils";
+} from "./types.js";
+import { generateValidatorDocs, uniqueSymbol } from "./utils.js";
 
+/**
+ * Generate a resolver for an Arktype schema
+ * @param schema Arktype schema
+ * @returns Resolver result
+ */
 export function resolver<T extends Type>(schema: T): ResolverResult {
   return {
     builder: async (options?: OpenAPIRouteHandlerConfig) => ({
@@ -20,6 +25,13 @@ export function resolver<T extends Type>(schema: T): ResolverResult {
   };
 }
 
+/**
+ * Create a validator middleware
+ * @param target Target for validation
+ * @param schema Arktype schema
+ * @param hook Hook for validation
+ * @returns Middleware handler
+ */
 export function validator<
   T extends Type,
   Target extends keyof ValidationTargets,
@@ -37,11 +49,11 @@ export function validator<
       ? { [K in Target]?: I }
       : { [K in Target]: I };
     out: { [K in Target]: O };
-  }
+  },
 >(
   target: Target,
   schema: T,
-  hook?: Hook<T["infer"], E, P>
+  hook?: Hook<T["infer"], E, P>,
 ): MiddlewareHandler<E, P, V> {
   const middleware = arktypeValidator(target, schema, hook);
 

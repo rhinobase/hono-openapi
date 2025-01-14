@@ -1,3 +1,3 @@
-export { describeRoute } from "./route";
-export { openAPISpecs } from "./openapi";
-export type * from "./types";
+export { describeRoute } from "./route.js";
+export { openAPISpecs, generateSpecs } from "./openapi.js";
+export type * from "./types.js";
