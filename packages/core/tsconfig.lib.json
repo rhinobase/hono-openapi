@@ -7,8 +7,7 @@
     "tsBuildInfoFile": "dist/tsconfig.lib.tsbuildinfo",
     "emitDeclarationOnly": false,
     "declarationMap": false,
-    "module": "Node16",
-    "moduleResolution": "node16",
+    "module": "ESNext",
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],

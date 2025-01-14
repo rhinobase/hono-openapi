@@ -1,46 +1,57 @@
-import terser from "@rollup/plugin-terser";
-import typescript from "@rollup/plugin-typescript";
-import { defineConfig } from "rollup";
-import copy from "rollup-plugin-copy";
+const { withNx } = require("@nx/rollup/with-nx");
+const terser = require("@rollup/plugin-terser");
+const copy = require("rollup-plugin-copy");
 
-export default defineConfig({
-  input: {
-    index: "./packages/core/src/index.ts",
-    zod: "./packages/core/src/zod.ts",
-    valibot: "./packages/core/src/valibot.ts",
-    typebox: "./packages/core/src/typebox.ts",
-    arktype: "./packages/core/src/arktype.ts",
-    effect: "./packages/core/src/effect.ts",
+const config = withNx(
+  {
+    main: "./src/index.ts",
+    outputPath: "./dist",
+    tsConfig: "./tsconfig.lib.json",
+    compiler: "swc",
+    format: ["cjs", "esm"],
+    assets: [{ input: ".", output: ".", glob: "README.md" }],
   },
-  output: [
-    {
-      dir: "./packages/core/dist",
-      format: "esm",
+  {
+    input: {
+      index: "./src/index.ts",
+      zod: "./src/zod.ts",
+      valibot: "./src/valibot.ts",
+      typebox: "./src/typebox.ts",
+      arktype: "./src/arktype.ts",
+      effect: "./src/effect.ts",
     },
-    {
-      dir: "./packages/core/dist",
-      format: "cjs",
-      entryFileNames: "[name].cjs",
-    },
-  ],
-  plugins: [
-    typescript({
-      tsconfig: "./packages/core/tsconfig.lib.json",
-    }),
-    terser(),
-    copy({
-      hook: "writeBundle",
-      targets: [
-        {
-          src: ["./README.md", "./packages/core/package.json"],
-          dest: "./packages/core/dist",
-        },
-        {
-          src: ["./packages/core/dist/*.d.ts"],
-          dest: "./packages/core/dist",
-          rename: (name, extension) => `${name}.c${extension}`,
-        },
-      ],
-    }),
-  ],
+    plugins: [
+      copy({
+        hook: "writeBundle",
+        targets: [
+          {
+            src: ["./dist/*.d.ts"],
+            dest: "./dist",
+            rename: (name, extension) => `${name}.c${extension}`,
+          },
+          {
+            src: ["./dist/*.d.ts"],
+            dest: "./dist",
+            transform: (contents, filename) =>
+              contents
+                .toString()
+                .replace(
+                  /export \* from "(\.\/src\/[a-z]+)";/g,
+                  'export type * from "$1.js";',
+                ),
+          },
+        ],
+      }),
+      terser(),
+    ],
+  },
+);
+
+config.output = config.output.map((output) => {
+  const ext = output.format === "cjs" ? "cjs" : "js";
+  output.entryFileNames = `[name].${ext}`;
+  output.chunkFileNames = `[name].${ext}`;
+  return output;
 });
+
+module.exports = config;

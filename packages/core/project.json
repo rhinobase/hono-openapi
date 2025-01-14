@@ -10,9 +10,6 @@
       "options": {
         "packageRoot": "{projectRoot}/dist"
       }
-    },
-    "build": {
-      "command": "rollup -c={projectRoot}/rollup.config.js"
     }
   }
 }

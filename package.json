@@ -11,6 +11,7 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@nx/js": "20.0.0",
+    "@nx/rollup": "^20.0.0",
     "@nx/vite": "20.0.0",
     "@nx/web": "20.0.0",
     "@rollup/plugin-typescript": "^12.1.2",
@@ -50,5 +51,6 @@
         }
       }
     }
-  }
+  },
+  "packageManager": "pnpm@8.10.5+sha1.4370a069f21873a0ad83c785b8048ed8caf6e6e9"
 }
