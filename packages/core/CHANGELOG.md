@@ -1,3 +1,9 @@
+## 0.4.1 (2025-01-15)
+
+### 🩹 Fixes
+
+- **core:** corrected rollup config ([c7aceab](https://github.com/rhinobase/hono-openapi/commit/c7aceab))
+
 ## 0.4.0 (2025-01-14)
 
 ### 🚀 Features
