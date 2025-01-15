@@ -9,7 +9,14 @@ const config = withNx(
     tsConfig: "./tsconfig.lib.json",
     compiler: "swc",
     format: ["cjs", "esm"],
-    assets: [{ input: ".", output: ".", glob: "README.md" }],
+    assets: [
+      { input: ".", output: ".", glob: "README.md" },
+      {
+        input: "./packages/core",
+        output: ".",
+        glob: "package.json",
+      },
+    ],
   },
   {
     input: {
@@ -53,5 +60,9 @@ config.output = config.output.map((output) => {
   output.chunkFileNames = `[name].${ext}`;
   return output;
 });
+
+config.plugins = config.plugins.filter(
+  (plugin) => plugin.name !== "rollup-plugin-nx-generate-package-json",
+);
 
 module.exports = config;
