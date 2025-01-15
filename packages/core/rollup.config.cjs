@@ -37,7 +37,7 @@ const config = withNx(
                 .toString()
                 .replace(
                   /export \* from "(\.\/src\/[a-z]+)";/g,
-                  'export type * from "$1.js";',
+                  'export * from "$1.js";',
                 ),
           },
         ],
