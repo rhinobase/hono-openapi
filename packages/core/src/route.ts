@@ -30,11 +30,12 @@ export function describeRoute(specs: DescribeRouteOptions): MiddlewareHandler {
           if (content?.schema && "validator" in content.schema) {
             try {
               let data: unknown;
+              const clonedRes = c.res.clone();
 
               if (splitedContentType === "application/json") {
-                data = await c.res.json();
+                data = await clonedRes.json();
               } else if (splitedContentType === "text/plain") {
-                data = await c.res.text();
+                data = await clonedRes.text();
               }
 
               if (!data) throw new Error("No data to validate!");
