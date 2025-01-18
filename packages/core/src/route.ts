@@ -43,6 +43,7 @@ export function describeRoute(specs: DescribeRouteOptions): MiddlewareHandler {
             } catch (error) {
               throw new HTTPException(400, {
                 message: "Response validation failed!",
+                cause: error,
               });
             }
           }
