@@ -6,7 +6,7 @@ const config = withNx(
   {
     main: "./src/index.ts",
     outputPath: "./dist",
-    tsConfig: "./tsconfig.lib.json",
+    tsConfig: "./tsconfig.build.json",
     compiler: "swc",
     format: ["cjs", "esm"],
     assets: [
