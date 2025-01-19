@@ -1,5 +1,5 @@
 import type { OpenAPIV3 } from "openapi-types";
-import type { OpenAPIRoute } from "./types.js";
+import type { OpenAPIRoute, OpenApiSpecsOptions } from "./types.js";
 
 export const ALLOWED_METHODS = [
   "GET",
@@ -73,16 +73,14 @@ export function filterPaths(
   {
     excludeStaticFile = true,
     exclude = [],
-  }: {
-    excludeStaticFile: boolean;
-    exclude: (string | RegExp)[];
-  },
+  }: Pick<OpenApiSpecsOptions, "excludeStaticFile" | "exclude">,
 ) {
   const newPaths: OpenAPIV3.PathsObject = {};
+  const _exclude = Array.isArray(exclude) ? exclude : [exclude];
 
   for (const [key, value] of Object.entries(paths)) {
     if (
-      !exclude.some((x) => {
+      !_exclude.some((x) => {
         if (typeof x === "string") return key === x;
 
         return x.test(key);

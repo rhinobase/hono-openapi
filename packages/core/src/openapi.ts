@@ -175,7 +175,7 @@ export async function generateSpecs<
       paths: {
         ...filterPaths(schema, {
           excludeStaticFile,
-          exclude: Array.isArray(exclude) ? exclude : [exclude],
+          exclude,
         }),
         ...documentation.paths,
       },
