@@ -1,7 +1,7 @@
 {
   "name": "hono-openapi",
   "description": "OpenAPI schema generator for Hono",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "types": "./index.d.ts",
   "main": "./index.js",
   "type": "module",
