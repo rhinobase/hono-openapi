@@ -1,3 +1,16 @@
+## 0.4.2 (2025-01-20)
+
+### 🚀 Features
+
+- **core:** Add the cause of validation error to HTTPException ([62a0876](https://github.com/rhinobase/hono-openapi/commit/62a0876))
+
+### 🩹 Fixes
+
+- **core:** minor type corrections ([9cea732](https://github.com/rhinobase/hono-openapi/commit/9cea732))
+- **core:** update TypeScript configuration for build process ([529d5c5](https://github.com/rhinobase/hono-openapi/commit/529d5c5))
+- **core:** clone response before reading data for validation ([7bc444a](https://github.com/rhinobase/hono-openapi/commit/7bc444a))
+- **core:** corrected rollup config ([c7aceab](https://github.com/rhinobase/hono-openapi/commit/c7aceab))
+
 ## 0.4.1 (2025-01-15)
 
 ### 🩹 Fixes
