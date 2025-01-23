@@ -1,5 +1,9 @@
 import type { Context, Env, Input } from "hono";
 import type { BlankInput } from "hono/types";
+import type {
+  ClientErrorStatusCode,
+  ServerErrorStatusCode,
+} from "hono/utils/http-status";
 import type { OpenAPIV3 } from "openapi-types";
 import type { ALLOWED_METHODS } from "./helper.js";
 
@@ -50,7 +54,12 @@ export type DescribeRouteOptions = Omit<
   /**
    * Validate response of the route
    */
-  validateResponse?: boolean;
+  validateResponse?:
+    | boolean
+    | {
+        status: ClientErrorStatusCode | ServerErrorStatusCode;
+        message?: string;
+      };
 
   /**
    * Responses of the request

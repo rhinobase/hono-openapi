@@ -1,6 +1,10 @@
 import { HTTPException } from "hono/http-exception";
 import type { MiddlewareHandler } from "hono/types";
 import type {
+  ClientErrorStatusCode,
+  ServerErrorStatusCode,
+} from "hono/utils/http-status";
+import type {
   DescribeRouteOptions,
   OpenAPIRouteHandlerConfig,
 } from "./types.js";
@@ -42,8 +46,23 @@ export function describeRoute(specs: DescribeRouteOptions): MiddlewareHandler {
 
               await content.schema.validator(data);
             } catch (error) {
-              throw new HTTPException(400, {
+              let httpExceptionOptions: {
+                status: ClientErrorStatusCode | ServerErrorStatusCode;
+                message: string;
+              } = {
+                status: 500,
                 message: "Response validation failed!",
+              };
+
+              if (typeof validateResponse === "object") {
+                httpExceptionOptions = {
+                  ...httpExceptionOptions,
+                  ...validateResponse,
+                };
+              }
+
+              throw new HTTPException(httpExceptionOptions.status, {
+                message: httpExceptionOptions.message,
                 cause: error,
               });
             }
