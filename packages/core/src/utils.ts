@@ -2,8 +2,14 @@ import type { ValidationTargets } from "hono";
 import type { OpenAPIV3 } from "openapi-types";
 import type { ResolverResult } from "./types.js";
 
+/**
+ * The unique symbol for the middlewares, which makes it easier to identify them. Not meant to be used directly, unless you're creating a custom middleware.
+ */
 export const uniqueSymbol = Symbol("openapi");
 
+/**
+ * Generate OpenAPI docs for a validator middleware. Not meant to be used directly, unless you're creating a custom middleware.
+ */
 export async function generateValidatorDocs<
   Target extends keyof ValidationTargets,
 >(target: Target, _result: ReturnType<ResolverResult["builder"]>) {
