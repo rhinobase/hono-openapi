@@ -1,3 +1,11 @@
+## 0.4.4 (2025-01-29)
+
+### 🩹 Fixes
+
+- **core:** update exports in index.ts to include utils ([e0496d6](https://github.com/rhinobase/hono-openapi/commit/e0496d6))
+- **core:** enhance HTTPException handling and update validateResponse type ([02562ed](https://github.com/rhinobase/hono-openapi/commit/02562ed))
+- **core:** add jsdocs for uniqueSymbol and generateValidatorDocs ([7451f38](https://github.com/rhinobase/hono-openapi/commit/7451f38))
+
 ## 0.4.3 (2025-01-20)
 
 This was a version bump only for core to align it with other projects, there were no code changes.
