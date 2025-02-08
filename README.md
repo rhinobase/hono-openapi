@@ -44,7 +44,7 @@ pnpm add hono-openapi @hono/arktype-validator arktype
 #### For TypeBox
 
 ```bash
-pnpm add hono-openapi @hono/typebox-validator @sinclair/typebox"
+pnpm add hono-openapi @hono/typebox-validator @sinclair/typebox
 ```
 
 #### For Effect
