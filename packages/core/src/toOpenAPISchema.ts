@@ -359,7 +359,7 @@ function convertExamples(schema: SchemaType) {
 }
 
 function rewriteConst(schema: SchemaType) {
-  if (!Object.hasOwnProperty.call(schema, "enum") && Object.hasOwnProperty.call(schema, "const")) {
+  if (typeof schema.const !== 'undefined') {
     schema.enum = [schema.const];
     schema.const = undefined;
   }
