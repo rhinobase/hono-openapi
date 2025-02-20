@@ -64,8 +64,45 @@ export function registerSchemaPath({
       ...(schema[path]?.[method] ?? {}),
       operationId: generateOperationId(method, path),
       ...data,
+      parameters: mergeParameters(
+        schema[path]?.[method]?.parameters ?? [],
+        data.parameters ?? [],
+      ),
     } satisfies OpenAPIV3.OperationObject,
   };
+}
+
+type Parameter = OpenAPIV3.ReferenceObject | OpenAPIV3.ParameterObject;
+
+function mergeParameters(
+  params1: Parameter[],
+  params2: Parameter[],
+): Parameter[] {
+  const paramKey = (param: Parameter) =>
+    "$ref" in param ? param.$ref : `${param.in} ${param.name}`;
+
+  if (params1.length === 0 || params2.length === 0) {
+    return params1.length === 0 ? params2 : params1;
+  }
+
+  const params2Map = params2.reduce((acc, param) => {
+    acc.set(paramKey(param), param);
+    return acc;
+  }, new Map<string, Parameter>());
+
+  const merged = params1.reduce((acc, param1) => {
+    const key = paramKey(param1);
+    const param2 = params2Map.get(key);
+
+    params2Map.delete(key);
+    acc.push(param2 ?? param1);
+
+    return acc;
+  }, [] as Parameter[]);
+
+  merged.push(...params2Map.values());
+
+  return merged;
 }
 
 export function filterPaths(
