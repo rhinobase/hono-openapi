@@ -1,3 +1,50 @@
+## 0.4.4 (2025-01-29)
+
+### 🩹 Fixes
+
+- **core:** update exports in index.ts to include utils ([e0496d6](https://github.com/rhinobase/hono-openapi/commit/e0496d6))
+- **core:** enhance HTTPException handling and update validateResponse type ([02562ed](https://github.com/rhinobase/hono-openapi/commit/02562ed))
+- **core:** add jsdocs for uniqueSymbol and generateValidatorDocs ([7451f38](https://github.com/rhinobase/hono-openapi/commit/7451f38))
+
+## 0.4.3 (2025-01-20)
+
+This was a version bump only for core to align it with other projects, there were no code changes.
+
+## 0.4.2 (2025-01-20)
+
+### 🚀 Features
+
+- **core:** Add the cause of validation error to HTTPException ([62a0876](https://github.com/rhinobase/hono-openapi/commit/62a0876))
+
+### 🩹 Fixes
+
+- **core:** minor type corrections ([9cea732](https://github.com/rhinobase/hono-openapi/commit/9cea732))
+- **core:** update TypeScript configuration for build process ([529d5c5](https://github.com/rhinobase/hono-openapi/commit/529d5c5))
+- **core:** clone response before reading data for validation ([7bc444a](https://github.com/rhinobase/hono-openapi/commit/7bc444a))
+- **core:** corrected rollup config ([c7aceab](https://github.com/rhinobase/hono-openapi/commit/c7aceab))
+
+## 0.4.1 (2025-01-15)
+
+### 🩹 Fixes
+
+- **core:** corrected rollup config ([c7aceab](https://github.com/rhinobase/hono-openapi/commit/c7aceab))
+
+## 0.4.0 (2025-01-14)
+
+### 🚀 Features
+
+- add default options support ([#43](https://github.com/rhinobase/hono-openapi/pull/43))
+- seprated the generation function ([0aa04f0](https://github.com/rhinobase/hono-openapi/commit/0aa04f0))
+- **core:** support effect schema ([#16](https://github.com/rhinobase/hono-openapi/pull/16))
+
+### 🩹 Fixes
+
+- **core:** remove unnecessary omit from DescribeRouteOptions type ([#32](https://github.com/rhinobase/hono-openapi/pull/32))
+- corrected filterPaths function ([3fc05f5](https://github.com/rhinobase/hono-openapi/commit/3fc05f5))
+- improved the types for describeRoute ([6bfa7b4](https://github.com/rhinobase/hono-openapi/commit/6bfa7b4))
+- **core:** corrected the validation function ([#24](https://github.com/rhinobase/hono-openapi/pull/24))
+- **core:** duplicates path and param validation ([#19](https://github.com/rhinobase/hono-openapi/pull/19))
+
 ## 0.3.1 (2024-12-24)
 
 ### 🚀 Features

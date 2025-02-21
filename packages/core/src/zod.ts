@@ -6,9 +6,14 @@ import type {
   HasUndefined,
   OpenAPIRouteHandlerConfig,
   ResolverResult,
-} from "./types";
-import { generateValidatorDocs, uniqueSymbol } from "./utils";
+} from "./types.js";
+import { generateValidatorDocs, uniqueSymbol } from "./utils.js";
 
+/**
+ * Generate a resolver for a Zod schema
+ * @param schema Zod schema
+ * @returns Resolver result
+ */
 export function resolver<T extends ZodSchema>(schema: T): ResolverResult {
   return {
     // @ts-expect-error Need to fix the type
@@ -29,6 +34,13 @@ export function resolver<T extends ZodSchema>(schema: T): ResolverResult {
   };
 }
 
+/**
+ * Create a validator middleware
+ * @param target Target for validation
+ * @param schema Zod schema
+ * @param hook Hook for validation
+ * @returns Middleware handler
+ */
 export function validator<
   T extends ZodSchema,
   Target extends keyof ValidationTargets,

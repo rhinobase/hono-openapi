@@ -1,5 +1,5 @@
 import type { OpenAPIV3 } from "openapi-types";
-import type { OpenAPIRoute } from "./types";
+import type { OpenAPIRoute, OpenApiSpecsOptions } from "./types.js";
 
 export const ALLOWED_METHODS = [
   "GET",
@@ -30,7 +30,15 @@ export const toOpenAPIPath = (path: string) =>
 export const capitalize = (word: string) =>
   word.charAt(0).toUpperCase() + word.slice(1);
 
+const generateOperationIdCache = new Map<string, string>();
+
 export const generateOperationId = (method: string, paths: string) => {
+  const key = `${method}:${paths}`;
+
+  if (generateOperationIdCache.has(key)) {
+    return generateOperationIdCache.get(key) as string;
+  }
+
   let operationId = method;
 
   if (paths === "/") return `${operationId}Index`;
@@ -42,6 +50,8 @@ export const generateOperationId = (method: string, paths: string) => {
       operationId += capitalize(path);
     }
   }
+
+  generateOperationIdCache.set(key, operationId);
 
   return operationId;
 };
@@ -61,11 +71,48 @@ export function registerSchemaPath({
     ...(schema[path] ? schema[path] : {}),
     [method]: {
       responses: {},
-      ...(schema[path]?.[method] ?? {}),
       operationId: generateOperationId(method, path),
+      ...(schema[path]?.[method] ?? {}),
       ...data,
+      parameters: mergeParameters(
+        schema[path]?.[method]?.parameters ?? [],
+        data.parameters ?? [],
+      ),
     } satisfies OpenAPIV3.OperationObject,
   };
+}
+
+type Parameter = OpenAPIV3.ReferenceObject | OpenAPIV3.ParameterObject;
+
+function mergeParameters(
+  params1: Parameter[],
+  params2: Parameter[],
+): Parameter[] {
+  const paramKey = (param: Parameter) =>
+    "$ref" in param ? param.$ref : `${param.in} ${param.name}`;
+
+  if (params1.length === 0 || params2.length === 0) {
+    return params1.length === 0 ? params2 : params1;
+  }
+
+  const params2Map = params2.reduce((acc, param) => {
+    acc.set(paramKey(param), param);
+    return acc;
+  }, new Map<string, Parameter>());
+
+  const merged = params1.reduce((acc, param1) => {
+    const key = paramKey(param1);
+    const param2 = params2Map.get(key);
+
+    params2Map.delete(key);
+    acc.push(param2 ?? param1);
+
+    return acc;
+  }, [] as Parameter[]);
+
+  merged.push(...params2Map.values());
+
+  return merged;
 }
 
 export function filterPaths(
@@ -73,16 +120,14 @@ export function filterPaths(
   {
     excludeStaticFile = true,
     exclude = [],
-  }: {
-    excludeStaticFile: boolean;
-    exclude: (string | RegExp)[];
-  },
+  }: Pick<OpenApiSpecsOptions, "excludeStaticFile" | "exclude">,
 ) {
   const newPaths: OpenAPIV3.PathsObject = {};
+  const _exclude = Array.isArray(exclude) ? exclude : [exclude];
 
   for (const [key, value] of Object.entries(paths)) {
     if (
-      !exclude.some((x) => {
+      !_exclude.some((x) => {
         if (typeof x === "string") return key === x;
 
         return x.test(key);

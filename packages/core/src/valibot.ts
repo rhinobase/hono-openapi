@@ -1,6 +1,5 @@
 import { type Hook, vValidator } from "@hono/valibot-validator";
-import convert from "./toOpenAPISchema";
-import { toJsonSchema } from "@valibot/to-json-schema";
+import { toJsonSchema, type ConversionConfig } from "@valibot/to-json-schema";
 import type {
   Env,
   Input as HonoInput,
@@ -16,16 +15,21 @@ import {
   type InferOutput,
   parseAsync,
 } from "valibot";
-import type { ConversionConfig } from "@valibot/to-json-schema";
+import convert from "./toOpenAPISchema.js";
 import type {
   HasUndefined,
   OpenAPIRouteHandlerConfig,
   ResolverResult,
-} from "./types";
-import { generateValidatorDocs, uniqueSymbol } from "./utils";
+} from "./types.js";
+import { generateValidatorDocs, uniqueSymbol } from "./utils.js";
 
+/**
+ * Generate a resolver for a Valibot schema
+ * @param schema Valibot schema
+ * @returns Resolver result
+ */
 export function resolver<
-  T extends BaseSchema<unknown, unknown, BaseIssue<unknown>>
+  T extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
 >(schema: T, config?: ConversionConfig): ResolverResult {
   return {
     builder: async (options?: OpenAPIRouteHandlerConfig) => ({
@@ -37,6 +41,13 @@ export function resolver<
   };
 }
 
+/**
+ * Create a validator middleware
+ * @param target Target for validation
+ * @param schema Valibot schema
+ * @param hook Hook for validation
+ * @returns Middleware handler
+ */
 export function validator<
   T extends GenericSchema | GenericSchemaAsync,
   Target extends keyof ValidationTargets,
@@ -50,19 +61,19 @@ export function validator<
           [K in Target]?: K extends "json"
             ? In
             : HasUndefined<keyof ValidationTargets[K]> extends true
-            ? { [K2 in keyof In]?: ValidationTargets[K][K2] }
-            : { [K2 in keyof In]: ValidationTargets[K][K2] };
+              ? { [K2 in keyof In]?: ValidationTargets[K][K2] }
+              : { [K2 in keyof In]: ValidationTargets[K][K2] };
         }
       : {
           [K in Target]: K extends "json"
             ? In
             : HasUndefined<keyof ValidationTargets[K]> extends true
-            ? { [K2 in keyof In]?: ValidationTargets[K][K2] }
-            : { [K2 in keyof In]: ValidationTargets[K][K2] };
+              ? { [K2 in keyof In]?: ValidationTargets[K][K2] }
+              : { [K2 in keyof In]: ValidationTargets[K][K2] };
         };
     out: { [K in Target]: Out };
   },
-  V extends I = I
+  V extends I = I,
 >(target: Target, schema: T, hook?: Hook<T, E, P>): MiddlewareHandler<E, P, V> {
   const middleware = vValidator(target, schema, hook);
 

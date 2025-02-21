@@ -6,14 +6,19 @@ import type {
   MiddlewareHandler,
   ValidationTargets,
 } from "hono";
-import convert from "./toOpenAPISchema";
+import convert from "./toOpenAPISchema.js";
 import type {
   HasUndefined,
   OpenAPIRouteHandlerConfig,
   ResolverResult,
-} from "./types";
-import { generateValidatorDocs, uniqueSymbol } from "./utils";
+} from "./types.js";
+import { generateValidatorDocs, uniqueSymbol } from "./utils.js";
 
+/**
+ * Generate a resolver for an Effect schema
+ * @param schema Effect schema
+ * @returns Resolver result
+ */
 export function resolver<Type, Context>(
   schema: Schema.Schema<Type, Context, never>,
 ): ResolverResult {
@@ -27,6 +32,12 @@ export function resolver<Type, Context>(
   };
 }
 
+/**
+ * Create a validator middleware
+ * @param target Target for validation
+ * @param schema Effect schema
+ * @returns Middleware handler
+ */
 export function validator<
   Type,
   Context,
