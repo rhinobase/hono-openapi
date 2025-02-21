@@ -20,7 +20,7 @@ export function resolver<T extends Type>(schema: T): ResolverResult {
       schema: await convert(schema.toJsonSchema()),
     }),
     validator: (value) => {
-      schema(value);
+      schema.assert(value);
     },
   };
 }
