@@ -30,7 +30,15 @@ export const toOpenAPIPath = (path: string) =>
 export const capitalize = (word: string) =>
   word.charAt(0).toUpperCase() + word.slice(1);
 
+const generateOperationIdCache = new Map<string, string>();
+
 export const generateOperationId = (method: string, paths: string) => {
+  const key = `${method}:${paths}`;
+
+  if (generateOperationIdCache.has(key)) {
+    return generateOperationIdCache.get(key) as string;
+  }
+
   let operationId = method;
 
   if (paths === "/") return `${operationId}Index`;
@@ -42,6 +50,8 @@ export const generateOperationId = (method: string, paths: string) => {
       operationId += capitalize(path);
     }
   }
+
+  generateOperationIdCache.set(key, operationId);
 
   return operationId;
 };
@@ -61,8 +71,8 @@ export function registerSchemaPath({
     ...(schema[path] ? schema[path] : {}),
     [method]: {
       responses: {},
-      ...(schema[path]?.[method] ?? {}),
       operationId: generateOperationId(method, path),
+      ...(schema[path]?.[method] ?? {}),
       ...data,
       parameters: mergeParameters(
         schema[path]?.[method]?.parameters ?? [],
