@@ -1,3 +1,14 @@
+## 0.4.5 (2025-02-23)
+
+### 🩹 Fixes
+
+- update requestBody content type for form submissions ([c34919c](https://github.com/rhinobase/hono-openapi/commit/c34919c))
+- **core/toOpenAPISchema:** "`anyOf` enum schema is lost" attempt ([#53](https://github.com/rhinobase/hono-openapi/pull/53))
+- **core:** replace arktype schema validation with assert method ([b76cc84](https://github.com/rhinobase/hono-openapi/commit/b76cc84))
+- **core:** optimize generateOperationId ([0561f7c](https://github.com/rhinobase/hono-openapi/commit/0561f7c))
+- **core:** allow to use validator repeatedly - merge parameters ([#64](https://github.com/rhinobase/hono-openapi/pull/64))
+- **core:** include generateRouteSpecs in exports ([7654bd5](https://github.com/rhinobase/hono-openapi/commit/7654bd5))
+
 ## 0.4.4 (2025-01-29)
 
 ### 🩹 Fixes
