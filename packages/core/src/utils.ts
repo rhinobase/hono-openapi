@@ -20,9 +20,7 @@ export async function generateValidatorDocs<
   if (target === "form" || target === "json") {
     docs.requestBody = {
       content: {
-        [target === "json"
-          ? "application/json"
-          : "application/x-www-form-urlencoded"]: {
+        [target === "json" ? "application/json" : "multipart/form-data"]: {
           schema: result.schema,
         },
       },
