@@ -23,7 +23,7 @@ export function resolver<Type, Context>(
   schema: Schema.Schema<Type, Context, never>,
 ): ResolverResult {
   return {
-    builder: async (options?: OpenAPIRouteHandlerConfig) => ({
+    builder: async () => ({
       schema: await convert(JSONSchema.make(schema)),
     }),
     validator: async (value) => {

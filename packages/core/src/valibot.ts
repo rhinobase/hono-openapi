@@ -1,5 +1,5 @@
 import { type Hook, vValidator } from "@hono/valibot-validator";
-import { toJsonSchema, type ConversionConfig } from "@valibot/to-json-schema";
+import { type ConversionConfig, toJsonSchema } from "@valibot/to-json-schema";
 import type {
   Env,
   Input as HonoInput,
@@ -32,7 +32,7 @@ export function resolver<
   T extends BaseSchema<unknown, unknown, BaseIssue<unknown>>,
 >(schema: T, config?: ConversionConfig): ResolverResult {
   return {
-    builder: async (options?: OpenAPIRouteHandlerConfig) => ({
+    builder: async () => ({
       schema: await convert(toJsonSchema(schema, config)),
     }),
     validator: async (value) => {

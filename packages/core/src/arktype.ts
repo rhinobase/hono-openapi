@@ -16,7 +16,7 @@ import { generateValidatorDocs, uniqueSymbol } from "./utils.js";
  */
 export function resolver<T extends Type>(schema: T): ResolverResult {
   return {
-    builder: async (options?: OpenAPIRouteHandlerConfig) => ({
+    builder: async () => ({
       schema: await convert(schema.toJsonSchema()),
     }),
     validator: (value) => {

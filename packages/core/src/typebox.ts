@@ -13,7 +13,7 @@ import { generateValidatorDocs, uniqueSymbol } from "./utils.js";
  */
 export function resolver<T extends TSchema>(schema: T): ResolverResult {
   return {
-    builder: async (options?: OpenAPIRouteHandlerConfig) => ({
+    builder: async () => ({
       schema: await convert(schema),
     }),
     validator: (value) => {
