@@ -56,6 +56,8 @@ export const generateOperationId = (method: string, paths: string) => {
   return operationId;
 };
 
+const schemaPathContext = new Map<string, OpenAPIRoute["data"]>();
+
 export function registerSchemaPath({
   path,
   method: _method,
@@ -67,52 +69,53 @@ export function registerSchemaPath({
   path = toOpenAPIPath(path);
   const method = _method.toLowerCase() as Lowercase<OpenAPIRoute["method"]>;
 
-  schema[path] = {
-    ...(schema[path] ? schema[path] : {}),
-    [method]: {
-      responses: {},
-      operationId: generateOperationId(method, path),
-      ...(schema[path]?.[method] ?? {}),
-      ...data,
-      parameters: mergeParameters(
-        schema[path]?.[method]?.parameters ?? [],
-        data.parameters ?? [],
-      ),
-    } satisfies OpenAPIV3.OperationObject,
-  };
+  if (method === "all") {
+    if (schemaPathContext.has(path)) {
+      const prev = schemaPathContext.get(path) ?? {};
+
+      schemaPathContext.set(path, {
+        ...prev,
+        ...data,
+        parameters: mergeParameters(prev.parameters, data.parameters),
+      });
+    } else {
+      schemaPathContext.set(path, data);
+    }
+  } else {
+    const dataFromContext = schemaPathContext.get(path);
+
+    schema[path] = {
+      ...(schema[path] ? schema[path] : {}),
+      [method]: {
+        responses: {},
+        operationId: generateOperationId(method, path),
+        ...dataFromContext,
+        ...(schema[path]?.[method] ?? {}),
+        ...data,
+        parameters: mergeParameters(
+          dataFromContext?.parameters,
+          schema[path]?.[method]?.parameters,
+          data.parameters,
+        ),
+      } satisfies OpenAPIV3.OperationObject,
+    };
+  }
 }
 
 type Parameter = OpenAPIV3.ReferenceObject | OpenAPIV3.ParameterObject;
 
-function mergeParameters(
-  params1: Parameter[],
-  params2: Parameter[],
-): Parameter[] {
-  const paramKey = (param: Parameter) =>
-    "$ref" in param ? param.$ref : `${param.in} ${param.name}`;
+const paramKey = (param: Parameter) =>
+  "$ref" in param ? param.$ref : `${param.in} ${param.name}`;
 
-  if (params1.length === 0 || params2.length === 0) {
-    return params1.length === 0 ? params2 : params1;
-  }
+function mergeParameters(...params: (Parameter[] | undefined)[]): Parameter[] {
+  const _params = params.flatMap((x) => x ?? []);
 
-  const params2Map = params2.reduce((acc, param) => {
+  const merged = _params.reduce((acc, param) => {
     acc.set(paramKey(param), param);
     return acc;
   }, new Map<string, Parameter>());
 
-  const merged = params1.reduce((acc, param1) => {
-    const key = paramKey(param1);
-    const param2 = params2Map.get(key);
-
-    params2Map.delete(key);
-    acc.push(param2 ?? param1);
-
-    return acc;
-  }, [] as Parameter[]);
-
-  merged.push(...params2Map.values());
-
-  return merged;
+  return Array.from(merged.values());
 }
 
 export function filterPaths(

@@ -121,23 +121,12 @@ export async function generateSpecs<
       ...(components ?? {}),
     };
 
-    if (route.method === "ALL") {
-      for (const method of ALLOWED_METHODS) {
-        registerSchemaPath({
-          path: route.path,
-          data: docs,
-          method,
-          schema,
-        });
-      }
-    } else {
-      registerSchemaPath({
-        method: route.method as OpenAPIRoute["method"],
-        path: route.path,
-        data: docs,
-        schema,
-      });
-    }
+    registerSchemaPath({
+      method: route.method as OpenAPIRoute["method"],
+      path: route.path,
+      data: docs,
+      schema,
+    });
   }
 
   // Hide routes

@@ -82,7 +82,7 @@ export type DescribeRouteOptions = Omit<
 
 export interface OpenAPIRoute {
   path: string;
-  method: (typeof ALLOWED_METHODS)[number];
+  method: (typeof ALLOWED_METHODS)[number] | "ALL";
   data:
     | DescribeRouteOptions
     | Pick<OpenAPIV3.OperationObject, "parameters" | "requestBody">;
