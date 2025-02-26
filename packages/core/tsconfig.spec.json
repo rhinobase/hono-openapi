@@ -15,12 +15,9 @@
     "vitest.config.ts",
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
-    "src/**/*.test.tsx",
-    "src/**/*.spec.tsx",
     "src/**/*.test.js",
     "src/**/*.spec.js",
-    "src/**/*.test.jsx",
-    "src/**/*.spec.jsx",
-    "src/**/*.d.ts"
+    "src/**/*.d.ts",
+    "src/**/__tests__/*"
   ]
 }

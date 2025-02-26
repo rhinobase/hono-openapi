@@ -1,5 +1,6 @@
 import { type } from "arktype";
 import { resolver } from "../arktype";
+import { jsonify } from "./utils";
 
 const simple = type({
   name: "string",
@@ -8,7 +9,7 @@ const simple = type({
 
 describe("arktype test", () => {
   it("should resolve schema", async () => {
-    const result = await resolver(simple).builder();
+    const result = jsonify(await resolver(simple).builder());
     expect(result).toEqual({
       schema: {
         type: "object",
@@ -16,7 +17,7 @@ describe("arktype test", () => {
           name: { type: "string" },
           age: { type: "number" },
         },
-        required: ["name", "age"],
+        required: ["age", "name"],
       },
     });
   });

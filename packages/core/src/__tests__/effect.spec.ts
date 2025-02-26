@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 import { resolver } from "../effect";
+import { jsonify } from "./utils";
 
 const simple = Schema.Struct({
   name: Schema.String,
@@ -8,10 +9,11 @@ const simple = Schema.Struct({
 
 describe("effect test", () => {
   it("should resolve schema", async () => {
-    const result = await resolver(simple).builder();
+    const result = jsonify(await resolver(simple).builder());
     expect(result).toEqual({
       schema: {
         type: "object",
+        additionalProperties: false,
         properties: {
           name: { type: "string" },
           age: { type: "number" },
