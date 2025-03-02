@@ -1,3 +1,13 @@
+## 0.4.6 (2025-03-02)
+
+### 🩹 Fixes
+
+- **core:** minor change ([ccefc50](https://github.com/rhinobase/hono-openapi/commit/ccefc50))
+- **core:** minor improvements ([167289b](https://github.com/rhinobase/hono-openapi/commit/167289b))
+- extend DescribeRouteOptions to include parameters resolved field ([2653035](https://github.com/rhinobase/hono-openapi/commit/2653035))
+- handled all method correctly ([0d1bb1a](https://github.com/rhinobase/hono-openapi/commit/0d1bb1a))
+- remove unused options parameter in resolver builder functions ([6b5e539](https://github.com/rhinobase/hono-openapi/commit/6b5e539))
+
 ## 0.4.5 (2025-02-23)
 
 ### 🩹 Fixes
