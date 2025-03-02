@@ -69,20 +69,26 @@ function getProperty<T>(
   defaultValue: T,
 ): T {
   // @ts-expect-error
-  return obj && key in obj ? obj[key] : defaultValue;
+  return obj && key in obj ? (obj[key] ?? defaultValue) : defaultValue;
 }
 
 function mergeRouteData(...data: (OpenAPIRoute["data"] | undefined)[]) {
   return data.reduce<OpenAPIRoute["data"]>((acc, route) => {
     if (!route) return acc;
+
+    let tags: DescribeRouteOptions["tags"] = undefined;
+    if (("tags" in acc && acc.tags) || ("tags" in route && route.tags)) {
+      tags = [
+        ...getProperty(acc, "tags", []),
+        ...getProperty(route, "tags", []),
+      ];
+    }
+
     return {
       // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
       ...acc,
       ...route,
-      tags: [
-        ...getProperty(acc, "tags", []),
-        ...getProperty(route, "tags", []),
-      ],
+      tags,
       responses: {
         ...getProperty(acc, "responses", {}),
         ...getProperty(route, "responses", {}),
