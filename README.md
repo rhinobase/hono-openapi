@@ -144,7 +144,7 @@ app.get(
 Now, you can access the OpenAPI specification by visiting `http://localhost:3000/openapi`, and you can use this specification to generate client libraries, documentation, and more. Some tools that I used to generate documentation are -
 
 - [Swagger UI](https://github.com/honojs/middleware/tree/main/packages/swagger-ui)
-- [Scalar](https://github.com/scalar/scalar/tree/main/packages/hono-api-reference)
+- [Scalar](https://www.npmjs.com/package/@scalar/hono-api-reference)
 
 ##### Scalar Example
 
