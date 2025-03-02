@@ -1,5 +1,9 @@
 import type { OpenAPIV3 } from "openapi-types";
-import type { OpenAPIRoute, OpenApiSpecsOptions } from "./types.js";
+import type {
+  DescribeRouteOptions,
+  OpenAPIRoute,
+  OpenApiSpecsOptions,
+} from "./types.js";
 
 export const ALLOWED_METHODS = [
   "GET",
@@ -58,6 +62,16 @@ export const generateOperationId = (method: string, paths: string) => {
 
 const schemaPathContext = new Map<string, OpenAPIRoute["data"]>();
 
+// TODO: Improve the types
+function getProperty<T>(
+  obj: OpenAPIRoute["data"],
+  key: keyof DescribeRouteOptions,
+  defaultValue: T,
+): T {
+  // @ts-expect-error
+  return obj && key in obj ? obj[key] : defaultValue;
+}
+
 function mergeRouteData(...data: (OpenAPIRoute["data"] | undefined)[]) {
   return data.reduce<OpenAPIRoute["data"]>((acc, route) => {
     if (!route) return acc;
@@ -65,9 +79,13 @@ function mergeRouteData(...data: (OpenAPIRoute["data"] | undefined)[]) {
       // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
       ...acc,
       ...route,
+      tags: [
+        ...getProperty(acc, "tags", []),
+        ...getProperty(route, "tags", []),
+      ],
       responses: {
-        ...("responses" in acc ? acc.responses : {}),
-        ...("responses" in route ? route.responses : {}),
+        ...getProperty(acc, "responses", {}),
+        ...getProperty(route, "responses", {}),
       },
       parameters: mergeParameters(acc.parameters, route.parameters),
     };
