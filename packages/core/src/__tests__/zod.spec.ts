@@ -1,14 +1,14 @@
 import z from "zod";
 import { resolver } from "../zod";
 
-const simple = z.object({
-  name: z.string(),
-  age: z.number(),
-});
-
 describe("zod test", () => {
   it("should resolve schema", async () => {
-    const result = await resolver(simple).builder();
+    const result = await resolver(
+      z.object({
+        name: z.string(),
+        age: z.number(),
+      }),
+    ).builder();
     expect(result).toEqual({
       schema: {
         type: "object",

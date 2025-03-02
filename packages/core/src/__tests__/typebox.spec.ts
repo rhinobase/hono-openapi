@@ -2,14 +2,16 @@ import { Type } from "@sinclair/typebox";
 import { resolver } from "../typebox";
 import { jsonify } from "./utils";
 
-const simple = Type.Object({
-  name: Type.String(),
-  age: Type.Number(),
-});
-
 describe("typebox test", () => {
   it("should resolve schema", async () => {
-    const result = jsonify(await resolver(simple).builder());
+    const result = jsonify(
+      await resolver(
+        Type.Object({
+          name: Type.String(),
+          age: Type.Number(),
+        }),
+      ).builder(),
+    );
     expect(result).toEqual({
       schema: {
         type: "object",

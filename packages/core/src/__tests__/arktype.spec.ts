@@ -1,15 +1,14 @@
 import { type } from "arktype";
 import { resolver } from "../arktype";
-import { jsonify } from "./utils";
-
-const simple = type({
-  name: "string",
-  age: "number",
-});
 
 describe("arktype test", () => {
   it("should resolve schema", async () => {
-    const result = jsonify(await resolver(simple).builder());
+    const result = await resolver(
+      type({
+        name: "string",
+        age: "number",
+      }),
+    ).builder();
     expect(result).toEqual({
       schema: {
         type: "object",
