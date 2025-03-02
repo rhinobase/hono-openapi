@@ -58,6 +58,37 @@ export const generateOperationId = (method: string, paths: string) => {
 
 const schemaPathContext = new Map<string, OpenAPIRoute["data"]>();
 
+function mergeRouteData(...data: (OpenAPIRoute["data"] | undefined)[]) {
+  return data.reduce<OpenAPIRoute["data"]>((acc, route) => {
+    if (!route) return acc;
+    return {
+      // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
+      ...acc,
+      ...route,
+      responses: {
+        ...("responses" in acc ? acc.responses : {}),
+        ...("responses" in route ? route.responses : {}),
+      },
+      parameters: mergeParameters(acc.parameters, route.parameters),
+    };
+  }, {});
+}
+
+function getPathContext(path: string) {
+  const keys = Array.from(schemaPathContext.keys());
+
+  let context: OpenAPIRoute["data"] = {};
+
+  for (const key of keys) {
+    if (path.match(key)) {
+      const data = schemaPathContext.get(key) ?? {};
+      context = mergeRouteData(context, data);
+    }
+  }
+
+  return context;
+}
+
 export function registerSchemaPath({
   path,
   method: _method,
@@ -82,21 +113,14 @@ export function registerSchemaPath({
       schemaPathContext.set(path, data);
     }
   } else {
-    const dataFromContext = schemaPathContext.get(path);
+    const dataFromContext = getPathContext(path);
 
     schema[path] = {
       ...(schema[path] ? schema[path] : {}),
       [method]: {
         responses: {},
         operationId: generateOperationId(method, path),
-        ...dataFromContext,
-        ...(schema[path]?.[method] ?? {}),
-        ...data,
-        parameters: mergeParameters(
-          dataFromContext?.parameters,
-          schema[path]?.[method]?.parameters,
-          data.parameters,
-        ),
+        ...mergeRouteData(dataFromContext, schema[path]?.[method], data),
       } satisfies OpenAPIV3.OperationObject,
     };
   }

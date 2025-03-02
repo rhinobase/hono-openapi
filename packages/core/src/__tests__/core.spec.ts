@@ -4,7 +4,7 @@ import { generateSpecs } from "../openapi";
 import { describeRoute } from "../route";
 import { resolver, validator } from "../zod";
 
-describe("parameters shouldn't duplicate", () => {
+describe("parameters should be merged", () => {
   it("multiple same parameters in resolvers", async () => {
     const app = new Hono().get(
       "/",
@@ -126,5 +126,86 @@ describe("parameters shouldn't duplicate", () => {
         },
       },
     ]);
+  });
+});
+
+describe("describeRoute with .use", () => {
+  it("should merge properties", async () => {
+    const app = new Hono()
+      .use(
+        describeRoute({
+          responses: {
+            "400": {
+              description: "Bad Request",
+              content: {
+                "text/plain": {
+                  schema: resolver(z.string()),
+                },
+              },
+            },
+          },
+        }),
+      )
+      .get(
+        "/",
+        describeRoute({
+          responses: {
+            "200": {
+              description: "OK",
+              content: {
+                "text/plain": {
+                  schema: resolver(z.string()),
+                },
+              },
+            },
+          },
+        }),
+        validator("param", z.object({ id: z.string() })),
+        (c) => {
+          return c.text("Hello");
+        },
+      );
+
+    const result = await generateSpecs(app);
+
+    const path = result.paths["/"];
+
+    expect(path).toEqual({
+      get: {
+        operationId: "getIndex",
+        parameters: [
+          {
+            name: "id",
+            in: "param",
+            required: true,
+            schema: {
+              type: "string",
+            },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "OK",
+            content: {
+              "text/plain": {
+                schema: {
+                  type: "string",
+                },
+              },
+            },
+          },
+          "400": {
+            description: "Bad Request",
+            content: {
+              "text/plain": {
+                schema: {
+                  type: "string",
+                },
+              },
+            },
+          },
+        },
+      },
+    });
   });
 });
