@@ -36,7 +36,7 @@ export type HandlerResponse = {
 
 export type DescribeRouteOptions = Omit<
   OpenAPIV3.OperationObject,
-  "responses"
+  "responses" | "parameters"
 > & {
   /**
    * Pass `true` to hide route from OpenAPI/swagger document
@@ -78,6 +78,16 @@ export type DescribeRouteOptions = Omit<
         })
       | OpenAPIV3.ReferenceObject;
   };
+
+  /**
+   * Parameters of the request
+   */
+  parameters?: (
+    | OpenAPIV3.ParameterObject
+    | (OpenAPIV3.ParameterObject & {
+        schema: ResolverResult;
+      })
+  )[];
 };
 
 export interface OpenAPIRoute {
