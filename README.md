@@ -240,6 +240,28 @@ app.get(
 );
 ```
 
+#### Persisting OpenAPI Spec to a file
+
+You can save the spec to a file for cache or any other external use.
+
+```ts
+import fs from 'node:fs';
+import { openAPISpecs, generateSpecs } from 'hono-openapi';
+
+const options = {/* ... */};
+const app = new Hono()
+  .get(
+    "/openapi",
+    openAPISpecs(app, options),
+  );
+
+generateSpecs(app, options)
+  .then(spec => {
+    const pathToSpec = "openapi.json"
+    fs.writeFileSync(pathToSpec, JSON.stringify(spec, null, 2));
+  })
+```
+
 ## Contributing
 
 We would love to have more contributors involved!
