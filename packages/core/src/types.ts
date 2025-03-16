@@ -51,7 +51,7 @@ export type DescribeRouteOptions = Omit<
 
   /**
    * Validate response of the route
-   * @deprecated This will be
+   * @deprecated This will be removed in the future
    */
   validateResponse?:
     | boolean
