@@ -94,7 +94,7 @@ export type DescribeRouteOptions = Omit<
 export interface OpenAPIRoute {
   path: string;
   method: (typeof ALLOWED_METHODS)[number] | "ALL";
-  data:
+  data?:
     | DescribeRouteOptions
     | Pick<OpenAPIV3.OperationObject, "parameters" | "requestBody">;
 }
@@ -110,6 +110,13 @@ export type OpenApiSpecsOptions = {
     | "x-express-openapi-additional-middleware"
     | "x-express-openapi-validation-strict"
   >;
+
+  /**
+   * Include paths which don't have the handlers.
+   * This is useful when you want to document the
+   * API without implementing it or index all the paths.
+   */
+  includeEmptyPaths?: boolean;
 
   /**
    * Determine if Swagger should exclude static files.

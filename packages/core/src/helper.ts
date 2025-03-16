@@ -71,8 +71,8 @@ function getProperty<T>(
   return obj && key in obj ? (obj[key] ?? defaultValue) : defaultValue;
 }
 
-function mergeRouteData(...data: (OpenAPIRoute["data"] | undefined)[]) {
-  return data.reduce<OpenAPIRoute["data"]>((acc, route) => {
+function mergeRouteData(...data: OpenAPIRoute["data"][]) {
+  return data.reduce<NonNullable<OpenAPIRoute["data"]>>((acc, route) => {
     if (!route) return acc;
 
     let tags: DescribeRouteOptions["tags"] = undefined;
@@ -123,7 +123,7 @@ export function registerSchemaPath({
   path = toOpenAPIPath(path);
   const method = _method.toLowerCase() as Lowercase<OpenAPIRoute["method"]>;
 
-  if (method === "all") {
+  if (method === "all" && data) {
     if (schemaPathContext.has(path)) {
       const prev = schemaPathContext.get(path) ?? {};
 
