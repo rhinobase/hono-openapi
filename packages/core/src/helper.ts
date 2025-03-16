@@ -68,7 +68,6 @@ function getProperty<T>(
   key: keyof DescribeRouteOptions,
   defaultValue: T,
 ): T {
-  // @ts-expect-error
   return obj && key in obj ? (obj[key] ?? defaultValue) : defaultValue;
 }
 
@@ -178,6 +177,7 @@ export function filterPaths(
 
   for (const [key, value] of Object.entries(paths)) {
     if (
+      value &&
       !_exclude.some((x) => {
         if (typeof x === "string") return key === x;
 
@@ -186,9 +186,7 @@ export function filterPaths(
       !key.includes("*") &&
       (excludeStaticFile ? !key.includes(".") : true)
     ) {
-      // @ts-expect-error
       for (const method of Object.keys(value)) {
-        // @ts-expect-error
         const schema = value[method];
 
         if (key.includes("{")) {

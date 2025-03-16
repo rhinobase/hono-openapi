@@ -132,7 +132,6 @@ export async function generateSpecs<
   // Hide routes
   for (const path in schema) {
     for (const method in schema[path]) {
-      // @ts-expect-error
       const valueOrFunc = schema[path][method]?.hide;
       if (
         valueOrFunc &&
@@ -142,7 +141,6 @@ export async function generateSpecs<
             ? valueOrFunc(c)
             : false)
       ) {
-        // @ts-expect-error
         delete schema[path][method];
       }
     }

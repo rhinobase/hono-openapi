@@ -1,7 +1,6 @@
 import { type } from "arktype";
 import { Hono } from "hono";
-import { describeRoute } from "hono-openapi";
-import { validator as aValidator, resolver } from "hono-openapi/arktype";
+import { validator as aValidator, describeRoute, resolver } from "hono-openapi";
 
 const router = new Hono();
 

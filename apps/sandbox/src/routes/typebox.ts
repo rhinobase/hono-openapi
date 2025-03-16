@@ -1,7 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import { Hono } from "hono";
-import { describeRoute } from "hono-openapi";
-import { resolver, validator as tValidator } from "hono-openapi/typebox";
+import { describeRoute, resolver, validator as tValidator } from "hono-openapi";
 
 const router = new Hono();
 

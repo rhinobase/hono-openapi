@@ -1,6 +1,5 @@
 import { Hono } from "hono";
-import { describeRoute } from "hono-openapi";
-import { resolver, validator as zValidator } from "hono-openapi/zod";
+import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
 import z from "zod";
 import "zod-openapi/extend";
 

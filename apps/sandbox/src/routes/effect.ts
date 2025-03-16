@@ -1,7 +1,6 @@
 import { Schema } from "effect";
 import { Hono } from "hono";
-import { describeRoute } from "hono-openapi";
-import { validator as effectValidator, resolver } from "hono-openapi/effect";
+import { describeRoute, validator as eValidator, resolver } from "hono-openapi";
 
 const router = new Hono();
 
@@ -24,7 +23,7 @@ router.get(
       },
     },
   }),
-  effectValidator("query", nameValidation),
+  eValidator("query", nameValidation),
   (c) => {
     const query = c.req.valid("query");
     return c.text(`Hello ${query?.name ?? "Hono"}!`);
@@ -49,8 +48,8 @@ router.post(
       },
     },
   }),
-  effectValidator("query", nameValidation),
-  effectValidator(
+  eValidator("query", nameValidation),
+  eValidator(
     "json",
     Schema.Struct({
       id: Schema.Number,
