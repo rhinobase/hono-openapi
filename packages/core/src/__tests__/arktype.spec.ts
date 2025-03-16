@@ -1,5 +1,6 @@
 import { type } from "arktype";
-import { resolver } from "../arktype";
+import { describe, expect, it } from "vitest";
+import { resolver } from "../index";
 
 describe("arktype test", () => {
   it("should resolve schema", async () => {

@@ -1,8 +1,9 @@
 import { Hono } from "hono";
+import { describe, expect, it } from "vitest";
 import z from "zod";
+import { resolver } from "../index";
 import { generateSpecs } from "../openapi";
 import { describeRoute } from "../route";
-import { resolver, validator } from "../zod";
 
 describe("parameters should be merged", () => {
   it("multiple same parameters in resolvers", async () => {

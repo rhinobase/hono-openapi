@@ -1,5 +1,6 @@
 import { Type } from "@sinclair/typebox";
-import { resolver } from "../typebox";
+import { describe, expect, it } from "vitest";
+import { resolver } from "../index";
 import { jsonify } from "./utils";
 
 describe("typebox test", () => {
