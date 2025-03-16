@@ -1,53 +1,43 @@
-import { type Hook, zValidator } from "@hono/zod-validator";
+import { type Hook, sValidator } from "@hono/standard-validator";
+import { toOpenAPISchema } from "@standard-community/standard-openapi";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { Env, Input, MiddlewareHandler, ValidationTargets } from "hono";
-import type { ZodSchema, z } from "zod";
-import { type CreateSchemaOptions, createSchema } from "zod-openapi";
 import type {
   HasUndefined,
   OpenAPIRouteHandlerConfig,
   ResolverResult,
 } from "./types.js";
 import { generateValidatorDocs, uniqueSymbol } from "./utils.js";
-
 /**
- * Generate a resolver for a Zod schema
- * @param schema Zod schema
+ * Generate a resolver for a Standard Schema
+ * @param schema Standard Schema
  * @returns Resolver result
  */
-export function resolver<T extends ZodSchema>(schema: T): ResolverResult {
+export function resolver<T extends StandardSchemaV1>(
+  schema: T,
+): ResolverResult {
   return {
-    // @ts-expect-error Need to fix the type
-    builder: (options?: OpenAPIRouteHandlerConfig) => {
-      const { version, ...rest } = options ?? {};
-
-      return createSchema(
-        schema,
-        options
-          ? {
-              openapi: version,
-              ...(rest as CreateSchemaOptions),
-            }
-          : undefined,
-      );
+    builder: () => toOpenAPISchema(schema),
+    validator: (value) => {
+      schema["~standard"].validate(value);
     },
-    validator: schema.parse,
   };
 }
 
 /**
  * Create a validator middleware
  * @param target Target for validation
- * @param schema Zod schema
+ * @param schema Standard Schema
  * @param hook Hook for validation
  * @returns Middleware handler
  */
 export function validator<
-  T extends ZodSchema,
+  Schema extends StandardSchemaV1,
   Target extends keyof ValidationTargets,
   E extends Env,
   P extends string,
-  In = z.input<T>,
-  Out = z.output<T>,
+  In = StandardSchemaV1.InferInput<Schema>,
+  Out = StandardSchemaV1.InferOutput<Schema>,
   I extends Input = {
     in: HasUndefined<In> extends true
       ? {
@@ -65,17 +55,16 @@ export function validator<
   V extends I = I,
 >(
   target: Target,
-  schema: T,
-  hook?: Hook<z.infer<T>, E, P, Target>,
+  schema: Schema,
+  hook?: Hook<StandardSchemaV1.InferOutput<Schema>, E, P, Target>,
 ): MiddlewareHandler<E, P, V> {
-  const middleware = zValidator(target, schema, hook);
+  const middleware = sValidator(target, schema, hook);
 
   // @ts-expect-error not typed well
   return Object.assign(middleware, {
     [uniqueSymbol]: {
       resolver: async (config: OpenAPIRouteHandlerConfig) =>
         generateValidatorDocs(target, await resolver(schema).builder(config)),
-      metadata: { schemaType: "input" },
     },
   });
 }

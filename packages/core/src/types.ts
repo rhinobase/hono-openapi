@@ -5,6 +5,7 @@ import type {
   ServerErrorStatusCode,
 } from "hono/utils/http-status";
 import type { OpenAPIV3 } from "openapi-types";
+import type { SchemaResult } from "zod-openapi";
 import type { ALLOWED_METHODS } from "./helper.js";
 
 export type HasUndefined<T> = undefined extends T ? true : false;
@@ -16,10 +17,7 @@ export type OpenAPIRouteHandlerConfig = {
 } & { [key: string]: unknown };
 
 export type ResolverResult = {
-  builder: (options?: OpenAPIRouteHandlerConfig) => PromiseOr<{
-    schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
-    components?: OpenAPIV3.ComponentsObject["schemas"];
-  }>;
+  builder: (options?: OpenAPIRouteHandlerConfig) => PromiseOr<SchemaResult>;
   validator: (values: unknown) => PromiseOr<void>;
 };
 
@@ -53,6 +51,7 @@ export type DescribeRouteOptions = Omit<
 
   /**
    * Validate response of the route
+   * @deprecated This will be
    */
   validateResponse?:
     | boolean

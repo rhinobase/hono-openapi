@@ -141,51 +141,24 @@ importers:
 
   packages/core:
     dependencies:
-      '@hono/arktype-validator':
-        specifier: ^2.0.0
-        version: 2.0.0(arktype@2.0.0-rc.33)(hono@4.6.14)
-      '@hono/effect-validator':
-        specifier: ^1.2.0
-        version: 1.2.0(effect@3.12.0)(hono@4.6.14)
+      '@hono/standard-validator':
+        specifier: ^0.1.2
+        version: 0.1.2(@standard-schema/spec@1.0.0)(hono@4.6.14)
       '@hono/typebox-validator':
         specifier: ^0.2.0 || ^0.3.0
         version: 0.2.6(@sinclair/typebox@0.34.13)(hono@4.6.14)
-      '@hono/valibot-validator':
-        specifier: ^0.5.1
-        version: 0.5.1(hono@4.6.14)(valibot@1.0.0-beta.9)
-      '@hono/zod-validator':
-        specifier: ^0.4.1
-        version: 0.4.2(hono@4.6.14)(zod@3.24.1)
       '@sinclair/typebox':
         specifier: ^0.34.9
         version: 0.34.13
-      '@valibot/to-json-schema':
-        specifier: ^1.0.0-beta.3
-        version: 1.0.0-beta.3(valibot@1.0.0-beta.9)
-      arktype:
-        specifier: ^2.0.0-rc.25
-        version: 2.0.0-rc.33
-      effect:
-        specifier: ^3.11.3
-        version: 3.12.0
+      '@standard-community/standard-openapi':
+        specifier: ^0.1.0
+        version: 0.1.0(json-schema-walker@2.0.0)(zod-openapi@4.2.3)
       hono:
         specifier: ^4.6.13
         version: 4.6.14
       json-schema-walker:
         specifier: ^2.0.0
         version: 2.0.0
-      openapi-types:
-        specifier: ^12.1.3
-        version: 12.1.3
-      valibot:
-        specifier: ^1.0.0-beta.9
-        version: 1.0.0-beta.9(typescript@5.7.3)
-      zod:
-        specifier: ^3.23.8
-        version: 3.24.1
-      zod-openapi:
-        specifier: ^4.0.0
-        version: 4.2.2(zod@3.24.1)
     devDependencies:
       '@apidevtools/json-schema-ref-parser':
         specifier: ^11.7.3
@@ -193,9 +166,18 @@ importers:
       '@rollup/plugin-terser':
         specifier: ^0.4.4
         version: 0.4.4(rollup@4.29.1)
+      '@standard-schema/spec':
+        specifier: ^1.0.0
+        version: 1.0.0
       '@types/json-schema':
         specifier: ^7.0.15
         version: 7.0.15
+      openapi-types:
+        specifier: ^12.1.3
+        version: 12.1.3
+      zod-openapi:
+        specifier: ^4.2.3
+        version: 4.2.3(zod@3.24.1)
 
 packages:
 
@@ -2168,17 +2150,6 @@ packages:
     dev: false
     optional: true
 
-  /@hono/arktype-validator@2.0.0(arktype@2.0.0-rc.33)(hono@4.6.14):
-    resolution: {integrity: sha512-ICNZrK6Qcw6gyPfW53ONXI4JomRcks0fQhqzn9EWsfr6nlL6BNXQ96vIgVDU8qimcbJ2m3GJFAqgzOvWbZk3jw==}
-    requiresBuild: true
-    peerDependencies:
-      arktype: ^2.0.0-dev.14
-      hono: '*'
-    dependencies:
-      arktype: 2.0.0-rc.33
-      hono: 4.6.14
-    dev: false
-
   /@hono/effect-validator@1.2.0(effect@3.12.0)(hono@4.6.14):
     resolution: {integrity: sha512-PJTTVsF3bN/ld7w3g3rcWRzhbgn2wG4CcAtZpgGAz90DF3TLD5ByVkkRI3SK0HnbtPQKT2Ndng+bJvLwV1lZZQ==}
     requiresBuild: true
@@ -2189,6 +2160,7 @@ packages:
       effect: 3.12.0
       hono: 4.6.14
     dev: false
+    optional: true
 
   /@hono/node-server@1.13.7(hono@4.6.14):
     resolution: {integrity: sha512-kTfUMsoloVKtRA2fLiGSd9qBddmru9KadNyhJCwgKBxTiNkaAJEwkVN9KV/rS4HtmmNRtUh6P+YpmjRMl0d9vQ==}
@@ -2196,6 +2168,16 @@ packages:
     peerDependencies:
       hono: ^4
     dependencies:
+      hono: 4.6.14
+    dev: false
+
+  /@hono/standard-validator@0.1.2(@standard-schema/spec@1.0.0)(hono@4.6.14):
+    resolution: {integrity: sha512-mVyv2fpx/o0MNAEhjXhvuVbW3BWTGnf8F4w8ZifztE+TWXjUAKr7KAOZfcDhVrurgVhKw7RbTnEog2beZM6QtQ==}
+    peerDependencies:
+      '@standard-schema/spec': 1.0.0
+      hono: '>=3.9.0'
+    dependencies:
+      '@standard-schema/spec': 1.0.0
       hono: 4.6.14
     dev: false
 
@@ -2220,6 +2202,7 @@ packages:
       hono: 4.6.14
       valibot: 1.0.0-beta.9(typescript@5.7.3)
     dev: false
+    optional: true
 
   /@hono/zod-validator@0.4.2(hono@4.6.14)(zod@3.24.1):
     resolution: {integrity: sha512-1rrlBg+EpDPhzOV4hT9pxr5+xDVmKuz6YJl+la7VCwK6ass5ldyKm5fD+umJdV2zhHD6jROoCCv8NbTwyfhT0g==}
@@ -3189,6 +3172,27 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
+  /@standard-community/standard-openapi@0.1.0(json-schema-walker@2.0.0)(zod-openapi@4.2.3):
+    resolution: {integrity: sha512-W2rczXgzZI3hAD6pY3zn5/MSVtYYEQqDPiQzt/qzzE3+BUEd8xXJD0nJdv3seqnMhK9Oi5SNw9RcyLKwRxb6eA==}
+    peerDependencies:
+      '@standard-community/standard-json': ^0.1.0
+      json-schema-walker: ^2.0.0
+      zod-openapi: ^4.0.0
+    peerDependenciesMeta:
+      '@standard-community/standard-json':
+        optional: true
+      json-schema-walker:
+        optional: true
+      zod-openapi:
+        optional: true
+    dependencies:
+      json-schema-walker: 2.0.0
+      zod-openapi: 4.2.3(zod@3.24.1)
+    dev: false
+
+  /@standard-schema/spec@1.0.0:
+    resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
+
   /@swc-node/core@1.13.3(@swc/core@1.10.7)(@swc/types@0.1.17):
     resolution: {integrity: sha512-OGsvXIid2Go21kiNqeTIn79jcaX4l0G93X2rAnas4LFoDyA9wAwVK7xZdm+QsKoMn5Mus2yFLCc4OtX2dD/PWA==}
     engines: {node: '>= 10'}
@@ -3516,6 +3520,7 @@ packages:
     dependencies:
       valibot: 1.0.0-beta.9(typescript@5.7.3)
     dev: false
+    optional: true
 
   /@verdaccio/auth@8.0.0-next-8.1:
     resolution: {integrity: sha512-sPmHdnYuRSMgABCsTJEfz8tb/smONsWVg0g4KK2QycyYZ/A+RwZLV1JLiQb4wzu9zvS0HSloqWqkWlyNHW3mtw==}
@@ -5993,7 +5998,7 @@ packages:
       openapi-types: 12.1.3
       valibot: 1.0.0-beta.9(typescript@5.7.3)
       zod: 3.24.1
-      zod-openapi: 4.2.2(zod@3.24.1)
+      zod-openapi: 4.2.3(zod@3.24.1)
     transitivePeerDependencies:
       - typescript
     dev: false
@@ -7101,7 +7106,6 @@ packages:
   /openapi-types@12.1.3:
     resolution: {integrity: sha512-N4YtSYJqghVu4iek2ZUvcN/0aqH1kRDuNqzcycDxhOUpg7GdvLa2F3DgS6yBNhInhv2r/6I0Flkn7CqL8+nIcw==}
     requiresBuild: true
-    dev: false
 
   /opener@1.5.2:
     resolution: {integrity: sha512-ur5UIdyw5Y7yEj9wLzhqXiy6GZ3Mwx0yGI+5sMn2r0N0v3cKJvUmFH5yPP+WXh9e0xfyzyJX95D8l088DNFj7A==}
@@ -9440,6 +9444,13 @@ packages:
       zod: 3.24.1
     dev: false
 
+  /zod-openapi@4.2.3(zod@3.24.1):
+    resolution: {integrity: sha512-i0SqpcdXfsvVWTIY1Jl3Tk421s9fBIkpXvaA86zDas+8FjfZjm+GX6ot6SPB2SyuHwUNTN02gE5uIVlYXlyrDQ==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.21.4
+    dependencies:
+      zod: 3.24.1
+
   /zod@3.24.1:
     resolution: {integrity: sha512-muH7gBL9sI1nciMZV67X5fTKKBLtwpZ5VBp1vsOQzj1MhrBZ4wlVCm3gedKZWLp0Oyel8sIGfeiz54Su+OVT+A==}
-    dev: false
