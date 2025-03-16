@@ -17,7 +17,8 @@ export function resolver<T extends StandardSchemaV1>(
   schema: T,
 ): ResolverResult {
   return {
-    builder: () => toOpenAPISchema(schema),
+    builder: () =>
+      toOpenAPISchema(schema) as ReturnType<ResolverResult["builder"]>,
     validator: (value) => {
       schema["~standard"].validate(value);
     },

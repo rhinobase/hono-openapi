@@ -19,14 +19,6 @@ const config = withNx(
     ],
   },
   {
-    input: {
-      index: "./src/index.ts",
-      zod: "./src/zod.ts",
-      valibot: "./src/valibot.ts",
-      typebox: "./src/typebox.ts",
-      arktype: "./src/arktype.ts",
-      effect: "./src/effect.ts",
-    },
     plugins: [
       copy({
         hook: "writeBundle",
