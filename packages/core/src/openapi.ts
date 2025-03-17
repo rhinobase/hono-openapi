@@ -15,6 +15,23 @@ import type {
 } from "./types.js";
 import { uniqueSymbol } from "./utils.js";
 
+const defaults: {
+  options: OpenApiSpecsOptions;
+  config: OpenAPIRouteHandlerConfig;
+} = {
+  options: {
+    documentation: {},
+    excludeStaticFile: true,
+    exclude: [],
+    excludeMethods: ["OPTIONS"],
+    excludeTags: [],
+  },
+  config: {
+    version: "3.1.0",
+    components: {},
+  },
+};
+
 /**
  * Route handler for OpenAPI specs
  * @param hono Instance of Hono
@@ -61,31 +78,19 @@ export async function generateSpecs<
   S extends Schema = BlankSchema,
 >(
   hono: Hono<E, S, P>,
-  {
-    documentation = {},
-    includeEmptyPaths = false,
-    excludeStaticFile = true,
-    exclude = [],
-    excludeMethods = ["OPTIONS"],
-    excludeTags = [],
-    defaultOptions,
-  }: OpenApiSpecsOptions = {
-    documentation: {},
-    excludeStaticFile: true,
-    exclude: [],
-    excludeMethods: ["OPTIONS"],
-    excludeTags: [],
-  },
-  { version = "3.1.0", components = {} }: OpenAPIRouteHandlerConfig = {
-    version: "3.1.0",
-    components: {},
-  },
+  options: OpenApiSpecsOptions = defaults.options,
+  config: OpenAPIRouteHandlerConfig = defaults.config,
   c?: Context<E, P, I>,
 ) {
-  const config: OpenAPIRouteHandlerConfig = {
-    version,
-    components,
-  };
+  const {
+    documentation = {},
+    includeEmptyPaths,
+    excludeStaticFile,
+    exclude,
+    excludeMethods,
+    excludeTags,
+    defaultOptions,
+  } = options;
 
   const schema: OpenAPIV3.PathsObject = {};
 
