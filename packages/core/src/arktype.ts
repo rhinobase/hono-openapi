@@ -17,7 +17,7 @@ import { generateValidatorDocs, uniqueSymbol } from "./utils.js";
 export function resolver<T extends Type>(schema: T): ResolverResult {
   return {
     builder: async () => ({
-      schema: await convert(schema.toJsonSchema()),
+      schema: await convert(schema.in.toJsonSchema()),
     }),
     validator: (value) => {
       schema.assert(value);
