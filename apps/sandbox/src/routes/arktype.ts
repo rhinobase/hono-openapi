@@ -53,7 +53,7 @@ router.post(
   aValidator(
     "json",
     type({
-      id: "number",
+      id: "number | string.numeric.parse",
     }),
   ),
   (c) => {

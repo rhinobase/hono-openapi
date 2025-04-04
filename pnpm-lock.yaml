@@ -111,8 +111,8 @@ importers:
         specifier: ^0.34.13
         version: 0.34.13
       arktype:
-        specifier: ^2.0.0-rc.30
-        version: 2.0.0-rc.33
+        specifier: ^2.0.0
+        version: 2.1.16
       effect:
         specifier: ^3.12.0
         version: 3.12.0
@@ -223,12 +223,6 @@ packages:
     dev: false
     optional: true
 
-  /@ark/schema@0.33.0:
-    resolution: {integrity: sha512-GPjzbiydOL5gd9UFZMUQr5JBqT9YTX2dPT+u18aNswlGOgQE01y9B6kiwK/JyoaSwEJSDyxAPABsVRL7gG9KSQ==}
-    dependencies:
-      '@ark/util': 0.33.0
-    dev: false
-
   /@ark/schema@0.45.6:
     resolution: {integrity: sha512-uI/z6kAabOKeFxbJK2w26dD0FZLutL0LTw0o3EZsX+UC4exc34YUVkm7/wuUMvc5Z27IVDjoaZp9o7X4jOFAbg==}
     dependencies:
@@ -239,10 +233,6 @@ packages:
     requiresBuild: true
     dev: false
     optional: true
-
-  /@ark/util@0.33.0:
-    resolution: {integrity: sha512-zzYQiRHLPwK15T5CM6SgQXTycKNpAvA2qwdlMbK5vFbLzy3P87VNKA8NiezBIXm+jsov3lEtMKE6kLtbZQDUbg==}
-    dev: false
 
   /@ark/util@0.45.6:
     resolution: {integrity: sha512-eI8Y1X0+271Q1p8qU39tkyrzIVMZIuymzixzVD0UL7k+HJaPhbbrjuKW/1CZzQ64tc+ugl7z2kP01YlAMA5h7A==}
@@ -4130,13 +4120,6 @@ packages:
       '@ark/util': 0.25.0
     dev: false
     optional: true
-
-  /arktype@2.0.0-rc.33:
-    resolution: {integrity: sha512-ndtDXtunbff0o1urOOXq/eHGuUqIlp5MZ99lWON3MS0LZzF7/WFf+SwOCSomoPj9BptMLMyLS9cIYVNndD5QVQ==}
-    dependencies:
-      '@ark/schema': 0.33.0
-      '@ark/util': 0.33.0
-    dev: false
 
   /arktype@2.1.16:
     resolution: {integrity: sha512-KEuoEtpmbNVAIZqyLE+ox4Ga/6ED7Oe3Ra90sxGe4ZnufLz8AH49Xqis0i6oNEq23KmpduRLZRfS+iTAkjnfDw==}

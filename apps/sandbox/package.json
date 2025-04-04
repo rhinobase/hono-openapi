@@ -9,7 +9,7 @@
     "@hono/zod-validator": "^0.4.2",
     "@scalar/hono-api-reference": "^0.5.165",
     "@sinclair/typebox": "^0.34.13",
-    "arktype": "^2.0.0-rc.30",
+    "arktype": "^2.0.0",
     "effect": "^3.12.0",
     "hono": "^4.6.14",
     "hono-openapi": "0.3.0",
