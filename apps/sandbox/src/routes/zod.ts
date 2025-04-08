@@ -60,6 +60,12 @@ router.post(
       id: z.number().openapi({ example: 123 }),
     }),
   ),
+  zValidator(
+    "form",
+    z.object({
+      file: z.instanceof(File),
+    }),
+  ),
   (c) => {
     const query = c.req.valid("query");
     const body = c.req.valid("json");

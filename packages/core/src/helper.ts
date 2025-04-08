@@ -94,6 +94,7 @@ function mergeRouteData(...data: (OpenAPIRoute["data"] | undefined)[]) {
         ...getProperty(route, "responses", {}),
       },
       parameters: mergeParameters(acc.parameters, route.parameters),
+      requestBody: mergeRequestBody(acc.requestBody, route.requestBody),
     };
   }, {});
 }
@@ -164,6 +165,48 @@ function mergeParameters(...params: (Parameter[] | undefined)[]): Parameter[] {
   }, new Map<string, Parameter>());
 
   return Array.from(merged.values());
+}
+
+function mergeRequestBody(
+  ...requestBodies: (
+    | OpenAPIV3.ReferenceObject
+    | OpenAPIV3.RequestBodyObject
+    | undefined
+  )[]
+): OpenAPIV3.RequestBodyObject | undefined {
+  const _definedInput = requestBodies.flatMap((x) => x ?? []);
+
+  if (_definedInput.length === 0) {
+    return undefined;
+  }
+
+  const _requestBodies = _definedInput.filter(
+    (b) => !("$ref" in b),
+  ) as OpenAPIV3.RequestBodyObject[];
+
+  let required: boolean | undefined = false;
+  let description: string | undefined;
+  const mergedContent = _requestBodies.reduce((acc, b) => {
+    for (const contentType of Object.keys(b.content)) {
+      acc.set(contentType, b.content[contentType]);
+    }
+
+    if (typeof b.required === "boolean") {
+      required = b.required || required;
+    }
+
+    if (typeof b.description === "string") {
+      description = b.description || description;
+    }
+
+    return acc;
+  }, new Map<string, OpenAPIV3.MediaTypeObject>());
+
+  return {
+    required,
+    description,
+    content: Object.fromEntries(mergedContent),
+  };
 }
 
 export function filterPaths(
