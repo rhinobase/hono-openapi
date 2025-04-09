@@ -48,9 +48,6 @@
     },
     "@standard-schema/spec": {
       "optional": true
-    },
-    "openapi-types": {
-      "optional": true
     }
   },
   "exports": {
