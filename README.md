@@ -151,11 +151,9 @@ Now, you can access the OpenAPI specification by visiting `http://localhost:3000
 ```ts
 app.get(
   "/docs",
-  apiReference({
+  Scalar({
     theme: "saturn",
-    spec: {
-      url: "/openapi",
-    },
+    url: "/openapi",
   })
 );
 ```
