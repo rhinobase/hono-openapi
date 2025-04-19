@@ -81,8 +81,11 @@ export function validator<
   return Object.assign(middleware, {
     [uniqueSymbol]: {
       resolver: async (config: OpenAPIRouteHandlerConfig) =>
-        // @ts-expect-error Need to fix the type
-        generateValidatorDocs(target, await resolver(schema).builder(config)),
+        generateValidatorDocs(
+          target,
+          // @ts-expect-error Need to fix the type
+          await resolver(schema, { errorMode: "ignore" }).builder(config),
+        ),
     },
   });
 }
