@@ -1,5 +1,4 @@
 {
-  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
@@ -9,10 +8,5 @@
     "types": ["node"],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx"
-  },
-  "references": [
-    {
-      "path": "../../packages/core"
-    }
-  ]
+  }
 }

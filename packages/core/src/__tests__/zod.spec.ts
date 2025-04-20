@@ -1,5 +1,6 @@
+import { describe, expect, it } from "vitest";
 import z from "zod";
-import { resolver } from "../zod";
+import { resolver } from "../index";
 
 describe("zod test", () => {
   it("should resolve schema", async () => {

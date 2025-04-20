@@ -1,6 +1,5 @@
 import { Hono } from "hono";
-import { describeRoute } from "hono-openapi";
-import { resolver, validator as vValidator } from "hono-openapi/valibot";
+import { describeRoute, resolver, validator as vValidator } from "hono-openapi";
 import * as v from "valibot";
 
 const router = new Hono();

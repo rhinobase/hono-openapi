@@ -22,9 +22,15 @@ export const toOpenAPIPath = (path: string) =>
     .map((x) => {
       let tmp = x;
       if (tmp.startsWith(":")) {
-        tmp = tmp.slice(1, tmp.length);
-        if (tmp.endsWith("?")) tmp = tmp.slice(0, -1);
-        tmp = `{${tmp}}`;
+        const match = tmp.match(/^:([^{?]+)(?:{(.+)})?(\?)?$/);
+        if (match) {
+          const paramName = match[1];
+          tmp = `{${paramName}}`;
+        } else {
+          tmp = tmp.slice(1, tmp.length);
+          if (tmp.endsWith("?")) tmp = tmp.slice(0, -1);
+          tmp = `{${tmp}}`;
+        }
       }
 
       return tmp;
@@ -68,12 +74,11 @@ function getProperty<T>(
   key: keyof DescribeRouteOptions,
   defaultValue: T,
 ): T {
-  // @ts-expect-error
   return obj && key in obj ? (obj[key] ?? defaultValue) : defaultValue;
 }
 
-function mergeRouteData(...data: (OpenAPIRoute["data"] | undefined)[]) {
-  return data.reduce<OpenAPIRoute["data"]>((acc, route) => {
+function mergeRouteData(...data: OpenAPIRoute["data"][]) {
+  return data.reduce<NonNullable<OpenAPIRoute["data"]>>((acc, route) => {
     if (!route) return acc;
 
     let tags: DescribeRouteOptions["tags"] = undefined;
@@ -124,7 +129,7 @@ export function registerSchemaPath({
   path = toOpenAPIPath(path);
   const method = _method.toLowerCase() as Lowercase<OpenAPIRoute["method"]>;
 
-  if (method === "all") {
+  if (method === "all" && data) {
     if (schemaPathContext.has(path)) {
       const prev = schemaPathContext.get(path) ?? {};
 
@@ -178,17 +183,16 @@ export function filterPaths(
 
   for (const [key, value] of Object.entries(paths)) {
     if (
+      value &&
       !_exclude.some((x) => {
         if (typeof x === "string") return key === x;
 
         return x.test(key);
       }) &&
-      !key.includes("*") &&
-      (excludeStaticFile ? !key.includes(".") : true)
+      !(key.includes("*") && !key.includes("{")) &&
+      (excludeStaticFile ? !key.includes(".") || key.includes("{") : true)
     ) {
-      // @ts-expect-error
       for (const method of Object.keys(value)) {
-        // @ts-expect-error
         const schema = value[method];
 
         if (key.includes("{")) {

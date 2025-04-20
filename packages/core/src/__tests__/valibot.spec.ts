@@ -1,5 +1,6 @@
 import * as v from "valibot";
-import { resolver } from "../valibot";
+import { describe, expect, it } from "vitest";
+import { resolver } from "../index";
 
 describe("valibot test", () => {
   it("should resolve schema", async () => {

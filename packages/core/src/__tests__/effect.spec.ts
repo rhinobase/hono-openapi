@@ -1,5 +1,6 @@
 import { Schema } from "effect";
-import { resolver } from "../effect";
+import { describe, expect, it } from "vitest";
+import { resolver } from "../index";
 
 describe("effect test", () => {
   it("should resolve schema", async () => {
