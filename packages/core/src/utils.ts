@@ -18,13 +18,21 @@ export async function generateValidatorDocs<
     {};
 
   if (target === "form" || target === "json") {
-    docs.requestBody = {
-      content: {
-        [target === "json" ? "application/json" : "multipart/form-data"]: {
-          schema: result.schema,
+    let media = target === "json" ? "application/json" : "multipart/form-data"
+    if (!docs.requestBody || !docs.requestBody.content){
+      docs.requestBody = {
+        content: {
+          [media]: {
+            schema: result.schema,
+          },
         },
-      },
-    };
+      };
+    } else {
+      docs.requestBody.content[media] = {
+        schema: result.schema,
+      };
+    }
+    
   } else {
     const parameters: (
       | OpenAPIV3.ReferenceObject
