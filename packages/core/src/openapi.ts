@@ -14,6 +14,7 @@ import type {
   OpenApiSpecsOptions,
 } from "./types.js";
 import { uniqueSymbol } from "./utils.js";
+import yaml from "yaml";
 
 /**
  * Route handler for OpenAPI specs
@@ -28,7 +29,7 @@ export function openAPISpecs<
   S extends Schema = BlankSchema,
 >(
   hono: Hono<E, S, P>,
-  options?: OpenApiSpecsOptions,
+  options?: OpenApiSpecsOptions & { format?: "json" | "yaml" },
 ): MiddlewareHandler<E, P, I> {
   const config: OpenAPIRouteHandlerConfig = {
     version: "3.1.0",
@@ -38,9 +39,22 @@ export function openAPISpecs<
   let specs: OpenAPIV3.Document | null = null;
 
   return async (c) => {
-    if (specs) return c.json(specs);
+    if (specs) {
+      if (options?.format === "yaml") {
+        return c.text(yaml.stringify(specs), 200, {
+          "Content-Type": "application/x-yaml",
+        });
+      }
+      return c.json(specs);
+    }
 
     specs = await generateSpecs(hono, options, config, c);
+
+    if (options?.format === "yaml") {
+      return c.text(yaml.stringify(specs), 200, {
+        "Content-Type": "application/x-yaml",
+      });
+    }
 
     return c.json(specs);
   };

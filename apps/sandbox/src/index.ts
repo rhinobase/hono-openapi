@@ -5,6 +5,7 @@ import { openAPISpecs } from "hono-openapi";
 import { resolver } from "hono-openapi/zod";
 import { z } from "zod";
 import routes from "./routes";
+import yaml from "yaml"; // P1bee
 
 const app = new Hono();
 
@@ -48,6 +49,15 @@ app.get(
       },
     },
   }),
+);
+
+app.get(
+  "/openapi.yaml", // P89fa
+  async (c) => { // P89fa
+    const specs = await openAPISpecs(app); // P89fa
+    const yamlSpecs = yaml.stringify(specs); // P89fa
+    return c.text(yamlSpecs, 200, { "Content-Type": "application/x-yaml" }); // P89fa
+  } // P89fa
 );
 
 app.get(
