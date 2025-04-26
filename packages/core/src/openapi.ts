@@ -78,10 +78,13 @@ export async function generateSpecs<
   S extends Schema = BlankSchema,
 >(
   hono: Hono<E, S, P>,
-  options: OpenApiSpecsOptions = defaults.options,
-  config: OpenAPIRouteHandlerConfig = defaults.config,
+  _options: OpenApiSpecsOptions = defaults.options,
+  _config: OpenAPIRouteHandlerConfig = defaults.config,
   c?: Context<E, P, I>,
 ) {
+  const options = { ...defaults.options, ..._options };
+  const config = { ...defaults.config, ..._config };
+
   const documentation = options.documentation ?? {};
   const schema = await registerSchemas(hono, options, config);
 
