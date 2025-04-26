@@ -63,6 +63,7 @@ export async function generateSpecs<
   hono: Hono<E, S, P>,
   {
     documentation = {},
+    includeEmptyPaths = false,
     excludeStaticFile = true,
     exclude = [],
     excludeMethods = ["OPTIONS"],
@@ -90,7 +91,18 @@ export async function generateSpecs<
 
   for (const route of hono.routes) {
     // Finding routes with uniqueSymbol
-    if (!(uniqueSymbol in route.handler)) continue;
+    if (!(uniqueSymbol in route.handler)) {
+      // Include empty paths, if enabled
+      if (includeEmptyPaths) {
+        registerSchemaPath({
+          method: route.method as OpenAPIRoute["method"],
+          path: route.path,
+          schema,
+        });
+      }
+
+      continue;
+    }
 
     // Exclude methods
     if ((excludeMethods as ReadonlyArray<string>).includes(route.method))
