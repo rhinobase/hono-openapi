@@ -84,10 +84,12 @@ function mergeRouteData(...data: OpenAPIRoute["data"][]) {
 
     let tags: DescribeRouteOptions["tags"] = undefined;
     if (("tags" in acc && acc.tags) || ("tags" in route && route.tags)) {
-      tags = [
-        ...getProperty(acc, "tags", []),
-        ...getProperty(route, "tags", []),
-      ];
+      tags = Array.from(
+        new Set([
+          ...getProperty(acc, "tags", []),
+          ...getProperty(route, "tags", []),
+        ]),
+      );
     }
 
     return {
