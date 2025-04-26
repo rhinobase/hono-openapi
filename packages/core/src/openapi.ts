@@ -35,7 +35,7 @@ export function openAPISpecs<
     components: {},
   };
 
-  let specs: OpenAPIV3.Document | null = null;
+  let specs: OpenAPIV3.Document;
 
   return async (c) => {
     if (specs) return c.json(specs);
