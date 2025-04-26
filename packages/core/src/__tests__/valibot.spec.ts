@@ -21,4 +21,26 @@ describe("valibot test", () => {
       },
     });
   });
+
+  it("should resolve schema with pipe and transform", async () => {
+    const result = await resolver(
+      v.object({
+        id: v.pipe(
+          v.string(),
+          v.transform((value) => Number.parseInt(value, 10)),
+        ),
+      }),
+      { errorMode: "ignore" },
+    ).builder();
+    expect(result).toEqual({
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          id: { type: "string" },
+        },
+        required: ["id"],
+      },
+    });
+  });
 });
