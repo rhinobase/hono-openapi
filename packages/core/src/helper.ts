@@ -22,9 +22,15 @@ export const toOpenAPIPath = (path: string) =>
     .map((x) => {
       let tmp = x;
       if (tmp.startsWith(":")) {
-        tmp = tmp.slice(1, tmp.length);
-        if (tmp.endsWith("?")) tmp = tmp.slice(0, -1);
-        tmp = `{${tmp}}`;
+        const match = tmp.match(/^:([^{?]+)(?:{(.+)})?(\?)?$/);
+        if (match) {
+          const paramName = match[1];
+          tmp = `{${paramName}}`;
+        } else {
+          tmp = tmp.slice(1, tmp.length);
+          if (tmp.endsWith("?")) tmp = tmp.slice(0, -1);
+          tmp = `{${tmp}}`;
+        }
       }
 
       return tmp;
@@ -185,8 +191,8 @@ export function filterPaths(
 
         return x.test(key);
       }) &&
-      !key.includes("*") &&
-      (excludeStaticFile ? !key.includes(".") : true)
+      !(key.includes("*") && !key.includes("{")) &&
+      (excludeStaticFile ? !key.includes(".") || key.includes("{") : true)
     ) {
       // @ts-expect-error
       for (const method of Object.keys(value)) {
