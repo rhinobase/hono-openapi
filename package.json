@@ -23,7 +23,7 @@
     "@types/node": "18.16.9",
     "@vitest/coverage-v8": "^1.6.0",
     "@vitest/ui": "^1.6.0",
-    "arktype": "^2.0.0-rc.30",
+    "arktype": "^2.0.0",
     "czg": "^1.11.0",
     "husky": "^9.1.7",
     "is-ci": "^4.1.0",
