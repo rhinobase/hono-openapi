@@ -77,9 +77,6 @@
     "hono": {
       "optional": true
     },
-    "openapi-types": {
-      "optional": true
-    },
     "valibot": {
       "optional": true
     },
