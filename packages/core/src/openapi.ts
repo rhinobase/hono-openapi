@@ -78,41 +78,51 @@ export async function generateSpecs<
   S extends Schema = BlankSchema,
 >(
   hono: Hono<E, S, P>,
-  _options: OpenApiSpecsOptions = defaults.options,
-  _config: OpenAPIRouteHandlerConfig = defaults.config,
+  options: OpenApiSpecsOptions = defaults.options,
+  config: OpenAPIRouteHandlerConfig = defaults.config,
   c?: Context<E, P, I>,
 ) {
-  const options = { ...defaults.options, ..._options };
-  const config = { ...defaults.config, ..._config };
+  const _options = { ...defaults.options, ...options };
+  const _config = { ...defaults.config, ...config };
 
-  const documentation = options.documentation ?? {};
-  const schema = await registerSchemas(hono, options, config);
+  const documentation = _options.documentation ?? {};
+  const schema = await registerSchemas(hono, _options, _config);
 
   // Hide routes
   for (const path in schema) {
     for (const method in schema[path]) {
       // @ts-expect-error
       const valueOrFunc = schema[path][method]?.hide;
-      if (
-        valueOrFunc &&
-        (typeof valueOrFunc === "boolean"
-          ? valueOrFunc
-          : c
-            ? valueOrFunc(c)
-            : false)
-      ) {
-        // @ts-expect-error
-        delete schema[path][method];
+
+      if (valueOrFunc) {
+        let isHidden = false;
+
+        if (typeof valueOrFunc === "boolean") {
+          isHidden = valueOrFunc;
+        } else if (typeof valueOrFunc === "function") {
+          if (c) {
+            isHidden = valueOrFunc(c);
+          } else {
+            console.warn(
+              `'c' is not defined, cannot evaluate hide function for ${method} ${path}`,
+            );
+          }
+        }
+
+        if (isHidden) {
+          // @ts-expect-error
+          delete schema[path][method];
+        }
       }
     }
   }
 
   return {
-    openapi: config.version,
+    openapi: _config.version,
     ...{
       ...documentation,
       tags: documentation.tags?.filter(
-        (tag) => !options.excludeTags?.includes(tag?.name),
+        (tag) => !_options.excludeTags?.includes(tag?.name),
       ),
       info: {
         title: "Hono Documentation",
@@ -121,13 +131,13 @@ export async function generateSpecs<
         ...documentation.info,
       },
       paths: {
-        ...filterPaths(schema, options),
+        ...filterPaths(schema, _options),
         ...documentation.paths,
       },
       components: {
         ...documentation.components,
         schemas: {
-          ...config.components,
+          ..._config.components,
           ...documentation.components?.schemas,
         },
       },
@@ -135,7 +145,6 @@ export async function generateSpecs<
   } satisfies OpenAPIV3.Document;
 }
 
-// TODO: do not fully agree with the placement of this function in this file
 async function registerSchemas<
   E extends Env = BlankEnv,
   P extends string = string,
