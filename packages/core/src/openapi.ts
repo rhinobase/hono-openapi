@@ -15,6 +15,23 @@ import type {
 } from "./types.js";
 import { uniqueSymbol } from "./utils.js";
 
+const defaults: {
+  options: OpenApiSpecsOptions;
+  config: OpenAPIRouteHandlerConfig;
+} = {
+  options: {
+    documentation: {},
+    excludeStaticFile: true,
+    exclude: [],
+    excludeMethods: ["OPTIONS"],
+    excludeTags: [],
+  },
+  config: {
+    version: "3.1.0",
+    components: {},
+  },
+};
+
 /**
  * Route handler for OpenAPI specs
  * @param hono Instance of Hono
@@ -61,85 +78,15 @@ export async function generateSpecs<
   S extends Schema = BlankSchema,
 >(
   hono: Hono<E, S, P>,
-  {
-    documentation = {},
-    includeEmptyPaths = false,
-    excludeStaticFile = true,
-    exclude = [],
-    excludeMethods = ["OPTIONS"],
-    excludeTags = [],
-    defaultOptions,
-  }: OpenApiSpecsOptions = {
-    documentation: {},
-    excludeStaticFile: true,
-    exclude: [],
-    excludeMethods: ["OPTIONS"],
-    excludeTags: [],
-  },
-  { version = "3.1.0", components = {} }: OpenAPIRouteHandlerConfig = {
-    version: "3.1.0",
-    components: {},
-  },
+  _options: OpenApiSpecsOptions = defaults.options,
+  _config: OpenAPIRouteHandlerConfig = defaults.config,
   c?: Context<E, P, I>,
 ) {
-  const config: OpenAPIRouteHandlerConfig = {
-    version,
-    components,
-  };
+  const options = { ...defaults.options, ..._options };
+  const config = { ...defaults.config, ..._config };
 
-  const schema: OpenAPIV3.PathsObject = {};
-
-  for (const route of hono.routes) {
-    // Finding routes with uniqueSymbol
-    if (!(uniqueSymbol in route.handler)) {
-      // Include empty paths, if enabled
-      if (includeEmptyPaths) {
-        registerSchemaPath({
-          method: route.method as OpenAPIRoute["method"],
-          path: route.path,
-          schema,
-        });
-      }
-
-      continue;
-    }
-
-    // Exclude methods
-    if ((excludeMethods as ReadonlyArray<string>).includes(route.method))
-      continue;
-
-    // Include only allowed methods
-    if (
-      (ALLOWED_METHODS as ReadonlyArray<string>).includes(route.method) ===
-        false &&
-      route.method !== "ALL"
-    )
-      continue;
-
-    const { resolver, metadata = {} } = route.handler[
-      uniqueSymbol
-    ] as HandlerResponse;
-
-    const defaultOptionsForThisMethod =
-      defaultOptions?.[route.method as OpenAPIRoute["method"]];
-
-    const { docs, components } = await resolver(
-      { ...config, ...metadata },
-      defaultOptionsForThisMethod,
-    );
-
-    config.components = {
-      ...config.components,
-      ...(components ?? {}),
-    };
-
-    registerSchemaPath({
-      method: route.method as OpenAPIRoute["method"],
-      path: route.path,
-      data: docs,
-      schema,
-    });
-  }
+  const documentation = options.documentation ?? {};
+  const schema = await registerSchemas(hono, options, config);
 
   // Hide routes
   for (const path in schema) {
@@ -165,7 +112,7 @@ export async function generateSpecs<
     ...{
       ...documentation,
       tags: documentation.tags?.filter(
-        (tag) => !excludeTags?.includes(tag?.name),
+        (tag) => !options.excludeTags?.includes(tag?.name),
       ),
       info: {
         title: "Hono Documentation",
@@ -174,10 +121,7 @@ export async function generateSpecs<
         ...documentation.info,
       },
       paths: {
-        ...filterPaths(schema, {
-          excludeStaticFile,
-          exclude,
-        }),
+        ...filterPaths(schema, options),
         ...documentation.paths,
       },
       components: {
@@ -189,4 +133,73 @@ export async function generateSpecs<
       },
     },
   } satisfies OpenAPIV3.Document;
+}
+
+// TODO: do not fully agree with the placement of this function in this file
+async function registerSchemas<
+  E extends Env = BlankEnv,
+  P extends string = string,
+  S extends Schema = BlankSchema,
+>(
+  hono: Hono<E, S, P>,
+  options: OpenApiSpecsOptions,
+  config: OpenAPIRouteHandlerConfig,
+): Promise<OpenAPIV3.PathsObject> {
+  const schema: OpenAPIV3.PathsObject = {};
+
+  for (const route of hono.routes) {
+    // Finding routes with uniqueSymbol
+    if (!(uniqueSymbol in route.handler)) {
+      // Include empty paths, if enabled
+      if (options.includeEmptyPaths) {
+        registerSchemaPath({
+          method: route.method as OpenAPIRoute["method"],
+          path: route.path,
+          schema,
+        });
+      }
+
+      continue;
+    }
+
+    // Exclude methods
+    if (
+      (options.excludeMethods as ReadonlyArray<string>).includes(route.method)
+    )
+      continue;
+
+    // Include only allowed methods
+    if (
+      (ALLOWED_METHODS as ReadonlyArray<string>).includes(route.method) ===
+        false &&
+      route.method !== "ALL"
+    )
+      continue;
+
+    const { resolver, metadata = {} } = route.handler[
+      uniqueSymbol
+    ] as HandlerResponse;
+
+    const defaultOptionsForThisMethod =
+      options.defaultOptions?.[route.method as OpenAPIRoute["method"]];
+
+    const { docs, components } = await resolver(
+      { ...config, ...metadata },
+      defaultOptionsForThisMethod,
+    );
+
+    config.components = {
+      ...config.components,
+      ...(components ?? {}),
+    };
+
+    registerSchemaPath({
+      method: route.method as OpenAPIRoute["method"],
+      path: route.path,
+      data: docs,
+      schema,
+    });
+  }
+
+  return schema;
 }
