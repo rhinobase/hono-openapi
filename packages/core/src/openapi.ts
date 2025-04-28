@@ -15,6 +15,23 @@ import type {
 } from "./types.js";
 import { uniqueSymbol } from "./utils.js";
 
+const defaults: {
+  options: OpenApiSpecsOptions;
+  config: OpenAPIRouteHandlerConfig;
+} = {
+  options: {
+    documentation: {},
+    excludeStaticFile: true,
+    exclude: [],
+    excludeMethods: ["OPTIONS"],
+    excludeTags: [],
+  },
+  config: {
+    version: "3.1.0",
+    components: {},
+  },
+};
+
 /**
  * Route handler for OpenAPI specs
  * @param hono Instance of Hono
@@ -35,7 +52,7 @@ export function openAPISpecs<
     components: {},
   };
 
-  let specs: OpenAPIV3.Document | null = null;
+  let specs: OpenAPIV3.Document;
 
   return async (c) => {
     if (specs) return c.json(specs);
@@ -61,39 +78,103 @@ export async function generateSpecs<
   S extends Schema = BlankSchema,
 >(
   hono: Hono<E, S, P>,
-  {
-    documentation = {},
-    excludeStaticFile = true,
-    exclude = [],
-    excludeMethods = ["OPTIONS"],
-    excludeTags = [],
-    defaultOptions,
-  }: OpenApiSpecsOptions = {
-    documentation: {},
-    excludeStaticFile: true,
-    exclude: [],
-    excludeMethods: ["OPTIONS"],
-    excludeTags: [],
-  },
-  { version = "3.1.0", components = {} }: OpenAPIRouteHandlerConfig = {
-    version: "3.1.0",
-    components: {},
-  },
+  options: OpenApiSpecsOptions = defaults.options,
+  config: OpenAPIRouteHandlerConfig = defaults.config,
   c?: Context<E, P, I>,
 ) {
-  const config: OpenAPIRouteHandlerConfig = {
-    version,
-    components,
-  };
+  const _options = { ...defaults.options, ...options };
+  const _config = { ...defaults.config, ...config };
 
+  const documentation = _options.documentation ?? {};
+  const schema = await registerSchemas(hono, _options, _config);
+
+  // Hide routes
+  for (const path in schema) {
+    for (const method in schema[path]) {
+      // @ts-expect-error
+      const valueOrFunc = schema[path][method]?.hide;
+
+      if (valueOrFunc) {
+        let isHidden = false;
+
+        if (typeof valueOrFunc === "boolean") {
+          isHidden = valueOrFunc;
+        } else if (typeof valueOrFunc === "function") {
+          if (c) {
+            isHidden = valueOrFunc(c);
+          } else {
+            console.warn(
+              `'c' is not defined, cannot evaluate hide function for ${method} ${path}`,
+            );
+          }
+        }
+
+        if (isHidden) {
+          // @ts-expect-error
+          delete schema[path][method];
+        }
+      }
+    }
+  }
+
+  return {
+    openapi: _config.version,
+    ...{
+      ...documentation,
+      tags: documentation.tags?.filter(
+        (tag) => !_options.excludeTags?.includes(tag?.name),
+      ),
+      info: {
+        title: "Hono Documentation",
+        description: "Development documentation",
+        version: "0.0.0",
+        ...documentation.info,
+      },
+      paths: {
+        ...filterPaths(schema, _options),
+        ...documentation.paths,
+      },
+      components: {
+        ...documentation.components,
+        schemas: {
+          ..._config.components,
+          ...documentation.components?.schemas,
+        },
+      },
+    },
+  } satisfies OpenAPIV3.Document;
+}
+
+async function registerSchemas<
+  E extends Env = BlankEnv,
+  P extends string = string,
+  S extends Schema = BlankSchema,
+>(
+  hono: Hono<E, S, P>,
+  options: OpenApiSpecsOptions,
+  config: OpenAPIRouteHandlerConfig,
+): Promise<OpenAPIV3.PathsObject> {
   const schema: OpenAPIV3.PathsObject = {};
 
   for (const route of hono.routes) {
     // Finding routes with uniqueSymbol
-    if (!(uniqueSymbol in route.handler)) continue;
+    if (!(uniqueSymbol in route.handler)) {
+      // Include empty paths, if enabled
+      if (options.includeEmptyPaths) {
+        registerSchemaPath({
+          method: route.method as OpenAPIRoute["method"],
+          path: route.path,
+          schema,
+        });
+      }
+
+      continue;
+    }
 
     // Exclude methods
-    if ((excludeMethods as ReadonlyArray<string>).includes(route.method))
+    if (
+      (options.excludeMethods as ReadonlyArray<string>).includes(route.method)
+    )
       continue;
 
     // Include only allowed methods
@@ -109,7 +190,7 @@ export async function generateSpecs<
     ] as HandlerResponse;
 
     const defaultOptionsForThisMethod =
-      defaultOptions?.[route.method as OpenAPIRoute["method"]];
+      options.defaultOptions?.[route.method as OpenAPIRoute["method"]];
 
     const { docs, components } = await resolver(
       { ...config, ...metadata },
@@ -129,52 +210,5 @@ export async function generateSpecs<
     });
   }
 
-  // Hide routes
-  for (const path in schema) {
-    for (const method in schema[path]) {
-      // @ts-expect-error
-      const valueOrFunc = schema[path][method]?.hide;
-      if (
-        valueOrFunc &&
-        (typeof valueOrFunc === "boolean"
-          ? valueOrFunc
-          : c
-            ? valueOrFunc(c)
-            : false)
-      ) {
-        // @ts-expect-error
-        delete schema[path][method];
-      }
-    }
-  }
-
-  return {
-    openapi: config.version,
-    ...{
-      ...documentation,
-      tags: documentation.tags?.filter(
-        (tag) => !excludeTags?.includes(tag?.name),
-      ),
-      info: {
-        title: "Hono Documentation",
-        description: "Development documentation",
-        version: "0.0.0",
-        ...documentation.info,
-      },
-      paths: {
-        ...filterPaths(schema, {
-          excludeStaticFile,
-          exclude,
-        }),
-        ...documentation.paths,
-      },
-      components: {
-        ...documentation.components,
-        schemas: {
-          ...config.components,
-          ...documentation.components?.schemas,
-        },
-      },
-    },
-  } satisfies OpenAPIV3.Document;
+  return schema;
 }

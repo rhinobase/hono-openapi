@@ -22,9 +22,15 @@ export const toOpenAPIPath = (path: string) =>
     .map((x) => {
       let tmp = x;
       if (tmp.startsWith(":")) {
-        tmp = tmp.slice(1, tmp.length);
-        if (tmp.endsWith("?")) tmp = tmp.slice(0, -1);
-        tmp = `{${tmp}}`;
+        const match = tmp.match(/^:([^{?]+)(?:{(.+)})?(\?)?$/);
+        if (match) {
+          const paramName = match[1];
+          tmp = `{${paramName}}`;
+        } else {
+          tmp = tmp.slice(1, tmp.length);
+          if (tmp.endsWith("?")) tmp = tmp.slice(0, -1);
+          tmp = `{${tmp}}`;
+        }
       }
 
       return tmp;
@@ -72,16 +78,18 @@ function getProperty<T>(
   return obj && key in obj ? (obj[key] ?? defaultValue) : defaultValue;
 }
 
-function mergeRouteData(...data: (OpenAPIRoute["data"] | undefined)[]) {
-  return data.reduce<OpenAPIRoute["data"]>((acc, route) => {
+function mergeRouteData(...data: OpenAPIRoute["data"][]) {
+  return data.reduce<NonNullable<OpenAPIRoute["data"]>>((acc, route) => {
     if (!route) return acc;
 
     let tags: DescribeRouteOptions["tags"] = undefined;
     if (("tags" in acc && acc.tags) || ("tags" in route && route.tags)) {
-      tags = [
-        ...getProperty(acc, "tags", []),
-        ...getProperty(route, "tags", []),
-      ];
+      tags = Array.from(
+        new Set([
+          ...getProperty(acc, "tags", []),
+          ...getProperty(route, "tags", []),
+        ]),
+      );
     }
 
     return {
@@ -125,6 +133,8 @@ export function registerSchemaPath({
   const method = _method.toLowerCase() as Lowercase<OpenAPIRoute["method"]>;
 
   if (method === "all") {
+    if (!data) return;
+
     if (schemaPathContext.has(path)) {
       const prev = schemaPathContext.get(path) ?? {};
 
@@ -183,8 +193,8 @@ export function filterPaths(
 
         return x.test(key);
       }) &&
-      !key.includes("*") &&
-      (excludeStaticFile ? !key.includes(".") : true)
+      !(key.includes("*") && !key.includes("{")) &&
+      (excludeStaticFile ? !key.includes(".") || key.includes("{") : true)
     ) {
       // @ts-expect-error
       for (const method of Object.keys(value)) {

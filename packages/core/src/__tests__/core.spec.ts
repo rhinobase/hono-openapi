@@ -208,4 +208,86 @@ describe("describeRoute with .use", () => {
       },
     });
   });
+
+  it("should generate unique tags", async () => {
+    const app = new Hono()
+      .use(
+        describeRoute({
+          tags: ["test"],
+          responses: {
+            "400": {
+              description: "Bad Request",
+              content: {
+                "text/plain": {
+                  schema: resolver(z.string()),
+                },
+              },
+            },
+          },
+        }),
+      )
+      .get(
+        "/",
+        describeRoute({
+          tags: ["test"],
+          responses: {
+            "200": {
+              description: "OK",
+              content: {
+                "text/plain": {
+                  schema: resolver(z.string()),
+                },
+              },
+            },
+          },
+        }),
+        validator("param", z.object({ id: z.string() })),
+        (c) => {
+          return c.text("Hello");
+        },
+      );
+
+    const result = await generateSpecs(app);
+
+    const path = result.paths["/"];
+
+    expect(path).toEqual({
+      get: {
+        operationId: "getIndex",
+        tags: ["test"],
+        parameters: [
+          {
+            name: "id",
+            in: "param",
+            required: true,
+            schema: {
+              type: "string",
+            },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "OK",
+            content: {
+              "text/plain": {
+                schema: {
+                  type: "string",
+                },
+              },
+            },
+          },
+          "400": {
+            description: "Bad Request",
+            content: {
+              "text/plain": {
+                schema: {
+                  type: "string",
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  });
 });
