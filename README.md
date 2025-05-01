@@ -260,6 +260,136 @@ generateSpecs(app, options)
   })
 ```
 
+#### `hono/combine` compatibility
+This middleware relies on a uniqueSymbol property to store OpenAPI specification information internally.
+
+When this middleware is wrapped by `hono/combine` or others,
+the internally stored specification data associated with the uniqueSymbol can be lost or overwritten,
+leading to unexpected behavior in OpenAPI documentation generation.
+
+A common use case where this issue arises is when combining `zodValidator` from `hono-openapi/zod` with `describeRoute`, as shown in the following example:
+```ts
+import { describeRoute, DescribeRouteOptions } from "hono-openapi";
+import { z, ZodSchema } from "zod";
+import { validator } from "hono-openapi/zod";
+import {every} from 'hono/combine'
+
+type Z = ZodSchema<any, z.ZodTypeDef, any>
+type ZodValidator = { [k in keyof ValidationTargets]?: Z }
+type Spec = DescribeRouteOptions & { request?: ZodValidator }
+
+export const describeRouteWrapper = (spec: Spec) => {
+  const {request, ...rest} = spec
+  const validators: ReturnType<typeof validator>[] = []
+  if(request) {
+    for (const item of Object.keys(request)) {
+      const schema = request[item as keyof ValidationTargets]
+      if(schema) {
+        validators.push(validator(item as keyof ValidationTargets, schema))
+      }
+    }
+  }
+
+  // this middleware has no uniqueSymbol property
+  return every(
+    describeRoute(rest),
+    ...validators,
+  )
+}
+```
+
+In this scenario, the OpenAPI specification details provided to `describeRoute` will not be accessible by the `generateSpecs` because the uniqueSymbol property is not preserved through the every combinator.
+
+To correctly combine these middlewares and preserve the OpenAPI specification, you need to explicitly handle the uniqueSymbol property by transferring the necessary information to the combined middleware.
+
+This involves accessing the internal resolver function attached to the uniqueSymbol of each individual middleware and manually merging their specification data.
+
+Here is an example of a corrected implementation that preserves the OpenAPI specification when combining `describeRoute` and `zodValidator`:
+
+```ts
+import { describeRoute as describeOpenAPI, DescribeRouteOptions, HandlerResponse, OpenAPIRouteHandlerConfig, uniqueSymbol } from "hono-openapi";
+import { z, ZodSchema} from "zod";
+import {validator as zValidator} from "hono-openapi/zod";
+import {every} from 'hono/combine'
+import {Env, Input, MiddlewareHandler, ValidationTargets} from "hono";
+
+type Z = ZodSchema<any, z.ZodTypeDef, any>
+type ZodValidator = { [k in keyof ValidationTargets]?: Z }
+type Spec = DescribeRouteOptions & { request?: ZodValidator }
+
+export const describeRoute = <
+  E extends Env,
+  P extends string,
+  T extends Spec,
+  RV extends ZodValidator = NotUndefined<T['request']>,
+  I extends Input = {
+    in: InferInputSchema<RV>,
+    out: InferOutputSchema<RV>;
+  },
+  V extends I = I
+>(spec: T) => {
+  const {request, ...rest} = spec
+  const validators: ReturnType<typeof zValidator>[] = []
+  if(request) {
+    for (const item of Object.keys(request)) {
+      const schema = request[item as keyof ValidationTargets]
+      if(schema) {
+        validators.push(zValidator(item as keyof ValidationTargets, schema))
+      }
+    }
+  }
+  
+  const openapiMiddleware = describeOpenAPI(rest)
+  const resolver = async (
+    config: OpenAPIRouteHandlerConfig,
+    defaultOptions?: DescribeRouteOptions,
+  ) => {
+    // @ts-expect-error uniqueSymbol
+    const routeSpecs = await (openapiMiddleware[uniqueSymbol].resolver(config, defaultOptions) as ReturnType<HandlerResponse['resolver']>)
+    let oapidocs = routeSpecs.docs
+    let components = routeSpecs.components ?? {}
+    oapidocs.parameters = oapidocs.parameters ?? []
+    for (const validator of validators) {
+      // @ts-expect-error uniqueSymbol
+      const { docs: validatorDoc, components: validatorComponents } = await validator[uniqueSymbol].resolver(config)
+      if(validatorComponents) components = Object.assign(components,validatorComponents)
+      const { parameters = [], ...restDoc } = validatorDoc
+      oapidocs = Object.assign(oapidocs,restDoc)
+      oapidocs.parameters = oapidocs.parameters!.concat(parameters)
+    }
+    return { docs: oapidocs, components: components }
+  }
+
+  // Combine the middlewares using `every`, and then attach the custom resolver to the uniqueSymbol
+  return Object.assign(
+    every(openapiMiddleware, ...validators),
+    { [uniqueSymbol]: { resolver, metadata: {} } }
+  ) as MiddlewareHandler<E, P, V>
+}
+// type helper
+type NotUndefined<T> = T extends undefined ? never : T
+type IsUndefined<T> = undefined extends T ? true : false;
+
+type InferInput<k extends keyof ValidationTargets,T extends undefined | Z> = IsUndefined<T> extends true ? {} : { [key in k]:  z.input<NotUndefined<T>> }
+type InferInputSchema<I extends ZodValidator> =
+  InferInput<'param', I['param']>
+  & InferInput<'cookie', I['cookie']>
+  & InferInput<'json', I['json']>
+  & InferInput<'form', I['form']>
+  & InferInput<'header', I['header']>
+  & InferInput<'query', I['query']>
+
+type InferOut<k extends keyof ValidationTargets,T extends undefined | Z> = IsUndefined<T> extends true ? {} : { [key in k]:  z.output<NotUndefined<T>> }
+type InferOutputSchema<I extends ZodValidator> =
+  InferOut<'param', I['param']>
+  & InferOut<'cookie', I['cookie']>
+  & InferOut<'json', I['json']>
+  & InferOut<'form', I['form']>
+  & InferOut<'header', I['header']>
+  & InferOut<'query', I['query']>
+```
+
+
 ## Contributing
 
 We would love to have more contributors involved!
