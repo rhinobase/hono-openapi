@@ -1,5 +1,6 @@
 # 📜 Hono OpenAPI
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/rhinobase/hono-openapi)
 [![npm version](https://img.shields.io/npm/v/hono-openapi.svg)](https://npmjs.org/package/hono-openapi "View this project on NPM")
 [![npm downloads](https://img.shields.io/npm/dm/hono-openapi)](https://www.npmjs.com/package/hono-openapi)
 [![license](https://img.shields.io/npm/l/hono-openapi)](LICENSE)
