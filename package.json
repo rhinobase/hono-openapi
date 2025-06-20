@@ -10,10 +10,6 @@
   "private": true,
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@nx/js": "20.0.0",
-    "@nx/rollup": "^20.0.0",
-    "@nx/vite": "20.0.0",
-    "@nx/web": "20.0.0",
     "@rollup/plugin-typescript": "^12.1.2",
     "@sinclair/typebox": "^0.34.13",
     "@swc-node/register": "~1.10.9",
@@ -28,29 +24,14 @@
     "husky": "^9.1.7",
     "is-ci": "^4.1.0",
     "nano-staged": "^0.8.0",
-    "nx": "20.0.0",
     "rollup": "^4.29.1",
     "rollup-plugin-copy": "^3.5.0",
     "swc-loader": "0.1.15",
     "tslib": "^2.8.1",
     "typescript": "~5.7.2",
     "valibot": "1.0.0-beta.9",
-    "verdaccio": "^5.33.0",
     "vite": "^6.0.6",
     "vitest": "^2.1.8"
   },
-  "nx": {
-    "includedScripts": [],
-    "targets": {
-      "local-registry": {
-        "executor": "@nx/js:verdaccio",
-        "options": {
-          "port": 4873,
-          "config": ".verdaccio/config.yml",
-          "storage": "tmp/local-registry/storage"
-        }
-      }
-    }
-  },
-  "packageManager": "pnpm@8.10.5+sha1.4370a069f21873a0ad83c785b8048ed8caf6e6e9"
+  "packageManager": "pnpm@10.0.0"
 }
