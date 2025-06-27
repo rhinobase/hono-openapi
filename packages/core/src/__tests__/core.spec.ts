@@ -70,6 +70,8 @@ describe("parameters should be merged", () => {
           {
             name: "id",
             in: "param",
+            description: "The ID of the item",
+            example: "4daec17a-9ed2-40d2-b577-22bb89b96071",
             required: true,
             schema: {
               type: "string",
@@ -88,6 +90,8 @@ describe("parameters should be merged", () => {
       {
         name: "id",
         in: "param",
+        description: "The ID of the item",
+        example: "4daec17a-9ed2-40d2-b577-22bb89b96071",
         required: true,
         schema: {
           type: "string",

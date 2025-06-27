@@ -82,7 +82,7 @@ function mergeRouteData(...data: OpenAPIRoute["data"][]) {
   return data.reduce<NonNullable<OpenAPIRoute["data"]>>((acc, route) => {
     if (!route) return acc;
 
-    let tags: DescribeRouteOptions["tags"] = undefined;
+    let tags: DescribeRouteOptions["tags"];
     if (("tags" in acc && acc.tags) || ("tags" in route && route.tags)) {
       tags = Array.from(
         new Set([
@@ -169,7 +169,17 @@ function mergeParameters(...params: (Parameter[] | undefined)[]): Parameter[] {
   const _params = params.flatMap((x) => x ?? []);
 
   const merged = _params.reduce((acc, param) => {
-    acc.set(paramKey(param), param);
+    const key = paramKey(param);
+    const existing = acc.get(key);
+    if (!existing) {
+      acc.set(paramKey(param), param);
+    } else {
+      // shallow merge
+      acc.set(key, {
+        ...existing,
+        ...param,
+      });
+    }
     return acc;
   }, new Map<string, Parameter>());
 
