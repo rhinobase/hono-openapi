@@ -1,8 +1,8 @@
-import type { Context, Env, Input } from "hono";
-import type { BlankInput, RouterRoute, ValidationTargets } from "hono/types";
+import type { Context } from "hono";
+import type { RouterRoute, ValidationTargets } from "hono/types";
 import type { OpenAPIV3_1 } from "openapi-types";
-import type { ALLOWED_METHODS } from "./utils.js";
 import type { resolver } from "./middlewares.js";
+import type { ALLOWED_METHODS } from "./utils.js";
 
 export type PromiseOr<T> = T | Promise<T>;
 

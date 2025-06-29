@@ -67,9 +67,12 @@
   },
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^12.0.1",
+    "@biomejs/biome": "^2.0.6",
     "@standard-schema/spec": "^1.0.0",
     "@types/json-schema": "^7.0.15",
-    "typescript": "^5.8.3"
+    "pkgroll": "^2.13.1",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   },
   "exports": {
     "import": {
@@ -85,10 +88,5 @@
   "dependencies": {
     "@standard-community/standard-json": "^0.3.0-rc.1",
     "@standard-community/standard-openapi": "^0.2.0-rc.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "@standard-community/standard-json": "link:../standard-schema/standard-json"
-    }
   }
 }

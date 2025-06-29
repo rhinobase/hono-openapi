@@ -12,12 +12,7 @@ import {
   registerSchemaPath,
   uniqueSymbol,
 } from "./utils.js";
-import type {
-  HandlerResponse,
-  OpenAPIRoute,
-  OpenAPIRouteHandlerConfig,
-  OpenApiSpecsOptions,
-} from "./types.js";
+import type { HandlerResponse, OpenApiSpecsOptions } from "./types.js";
 
 /**
  * Route handler for OpenAPI specs
@@ -80,28 +75,16 @@ export async function generateSpecs<
   // Hide routes
   for (const path in schema) {
     for (const method in schema[path]) {
-      // @ts-expect-error
-      const valueOrFunc = schema[path][method]?.hide;
+      const isHidden = getHiddenValue({
+        valueOrFunc: schema[path][method]?.hide,
+        method,
+        path,
+        c,
+      });
 
-      if (valueOrFunc) {
-        let isHidden = false;
-
-        if (typeof valueOrFunc === "boolean") {
-          isHidden = valueOrFunc;
-        } else if (typeof valueOrFunc === "function") {
-          if (c) {
-            isHidden = valueOrFunc(c);
-          } else {
-            console.warn(
-              `'c' is not defined, cannot evaluate hide function for ${method} ${path}`,
-            );
-          }
-        }
-
-        if (isHidden) {
-          // @ts-expect-error
-          delete schema[path][method];
-        }
+      if (isHidden) {
+        // @ts-expect-error
+        delete schema[path][method];
       }
     }
   }
@@ -146,7 +129,7 @@ async function registerSchemas<
   const schema: OpenAPIV3.PathsObject = {};
 
   for (const route of hono.routes) {
-    const routeMethod = route.method as OpenAPIRoute["method"];
+    const routeMethod = route.method as typeof ALLOWED_METHODS[number];
 
     // Finding routes with uniqueSymbol
     if (!(uniqueSymbol in route.handler)) {
@@ -176,7 +159,7 @@ async function registerSchemas<
       continue;
     }
 
-    const middlewareConfig = route.handler[
+    const middlewareHandler = route.handler[
       uniqueSymbol
     ] as HandlerResponse;
 
@@ -201,4 +184,29 @@ async function registerSchemas<
   }
 
   return schema;
+}
+
+function getHiddenValue(options: {
+  valueOrFunc: boolean | ((c: Context) => boolean);
+  c?: Context;
+  method: string;
+  path: string;
+}) {
+  const { valueOrFunc, c, method, path } = options;
+
+  if (valueOrFunc) {
+    if (typeof valueOrFunc === "boolean") {
+      return valueOrFunc;
+    } else if (typeof valueOrFunc === "function") {
+      if (c) {
+        return valueOrFunc(c);
+      } else {
+        console.warn(
+          `'c' is not defined, cannot evaluate hide function for ${method} ${path}`,
+        );
+      }
+    }
+  }
+
+  return false;
 }
