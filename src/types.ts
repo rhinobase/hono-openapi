@@ -10,32 +10,26 @@ export type ResolverReturnType = ReturnType<typeof resolver>;
 
 export type HandlerResponse =
   | (ResolverReturnType & {
-    target: keyof ValidationTargets;
-    options?: Record<string, unknown>;
-  })
+      target: keyof ValidationTargets;
+      options?: Record<string, unknown>;
+    })
   | { specs: DescribeRouteOptions };
 
-export type DescribeRouteOptions =
-  & Omit<
-    OpenAPIV3_1.OperationObject,
-    "responses" | "parameters"
-  >
-  & {
-    /**
-     * Pass `true` to hide route from OpenAPI/swagger document
-     */
-    hide?:
-      | boolean
-      | ((
-        c: Context,
-      ) => boolean);
+export type DescribeRouteOptions = Omit<
+  OpenAPIV3_1.OperationObject,
+  "responses" | "parameters"
+> & {
+  /**
+   * Pass `true` to hide route from OpenAPI/swagger document
+   */
+  hide?: boolean | ((c: Context) => boolean);
 
-    /**
-     * Responses of the request
-     */
-    responses?: {
-      [key: string]:
-        | (OpenAPIV3_1.ResponseObject & {
+  /**
+   * Responses of the request
+   */
+  responses?: {
+    [key: string]:
+      | (OpenAPIV3_1.ResponseObject & {
           content?: {
             [key: string]: Omit<OpenAPIV3_1.MediaTypeObject, "schema"> & {
               schema?:
@@ -45,19 +39,19 @@ export type DescribeRouteOptions =
             };
           };
         })
-        | OpenAPIV3_1.ReferenceObject;
-    };
+      | OpenAPIV3_1.ReferenceObject;
+  };
 
-    /**
-     * Parameters of the request
-     */
-    parameters?: (
-      | OpenAPIV3_1.ParameterObject
-      | (OpenAPIV3_1.ParameterObject & {
+  /**
+   * Parameters of the request
+   */
+  parameters?: (
+    | OpenAPIV3_1.ParameterObject
+    | (OpenAPIV3_1.ParameterObject & {
         schema: ResolverReturnType;
       })
-    )[];
-  };
+  )[];
+};
 
 export interface OpenAPIRoute {
   route: RouterRoute;

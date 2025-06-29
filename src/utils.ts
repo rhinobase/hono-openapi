@@ -23,9 +23,8 @@ export async function generateValidatorDocs<
     {};
 
   if (target === "form" || target === "json") {
-    const media = target === "json"
-      ? "application/json"
-      : "multipart/form-data";
+    const media =
+      target === "json" ? "application/json" : "multipart/form-data";
     if (
       !docs.requestBody ||
       !("content" in docs.requestBody) ||
@@ -56,11 +55,9 @@ export async function generateValidatorDocs<
         schema: result.schema,
       });
     } else {
-      for (
-        const [key, value] of Object.entries(
-          result.schema.properties ?? {},
-        )
-      ) {
+      for (const [key, value] of Object.entries(
+        result.schema.properties ?? {},
+      )) {
         parameters.push({
           in: target,
           name: key,
@@ -153,7 +150,7 @@ function mergeRouteData(...data: OpenAPIRoute["data"][]) {
   return data.reduce<NonNullable<OpenAPIRoute["data"]>>((acc, route) => {
     if (!route) return acc;
 
-    let tags: DescribeRouteOptions["tags"] = undefined;
+    let tags: DescribeRouteOptions["tags"];
     if (("tags" in acc && acc.tags) || ("tags" in route && route.tags)) {
       tags = Array.from(
         new Set([
@@ -201,9 +198,7 @@ export function registerSchemaPath({
 }) {
   const path = toOpenAPIPath(route.path);
   const method = route.method.toLowerCase() as
-    | Lowercase<
-      typeof ALLOWED_METHODS[number]
-    >
+    | Lowercase<(typeof ALLOWED_METHODS)[number]>
     | "all";
 
   if (method === "all") {

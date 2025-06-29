@@ -1,10 +1,10 @@
 import { type Hook, sValidator } from "@hono/standard-validator";
-import type { Env, Input, MiddlewareHandler, ValidationTargets } from "hono";
-import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { toJsonSchema } from "@standard-community/standard-json";
 import { toOpenAPISchema } from "@standard-community/standard-openapi";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
+import type { Env, Input, MiddlewareHandler, ValidationTargets } from "hono";
+import type { DescribeRouteOptions } from "./types";
 import { uniqueSymbol } from "./utils";
-import { DescribeRouteOptions } from "./types";
 
 /**
  * Generate a resolver for a validation schema
@@ -39,14 +39,17 @@ export function validator<
   In = StandardSchemaV1.InferInput<Schema>,
   Out = StandardSchemaV1.InferOutput<Schema>,
   I extends Input = {
-    in: HasUndefined<In> extends true ? {
-        [K in Target]?: In extends ValidationTargets[K] ? In
-          : { [K2 in keyof In]?: ValidationTargets[K][K2] };
-      }
+    in: HasUndefined<In> extends true
+      ? {
+          [K in Target]?: In extends ValidationTargets[K]
+            ? In
+            : { [K2 in keyof In]?: ValidationTargets[K][K2] };
+        }
       : {
-        [K in Target]: In extends ValidationTargets[K] ? In
-          : { [K2 in keyof In]: ValidationTargets[K][K2] };
-      };
+          [K in Target]: In extends ValidationTargets[K]
+            ? In
+            : { [K2 in keyof In]: ValidationTargets[K][K2] };
+        };
     out: { [K in Target]: Out };
   },
   V extends I = I,

@@ -6,13 +6,13 @@ import type {
   MiddlewareHandler,
 } from "hono/types";
 import type { OpenAPIV3 } from "openapi-types";
+import type { HandlerResponse, OpenApiSpecsOptions } from "./types.js";
 import {
   ALLOWED_METHODS,
   filterPaths,
   registerSchemaPath,
   uniqueSymbol,
 } from "./utils.js";
-import type { HandlerResponse, OpenApiSpecsOptions } from "./types.js";
 
 /**
  * Route handler for OpenAPI specs
@@ -52,11 +52,7 @@ export async function generateSpecs<
   P extends string = string,
   I extends Input = BlankInput,
   S extends Schema = BlankSchema,
->(
-  hono: Hono<E, S, P>,
-  options?: OpenApiSpecsOptions,
-  c?: Context<E, P, I>,
-) {
+>(hono: Hono<E, S, P>, options?: OpenApiSpecsOptions, c?: Context<E, P, I>) {
   const _options: OpenApiSpecsOptions = {
     documentation: {},
     excludeStaticFile: true,
@@ -129,7 +125,7 @@ async function registerSchemas<
   const schema: OpenAPIV3.PathsObject = {};
 
   for (const route of hono.routes) {
-    const routeMethod = route.method as typeof ALLOWED_METHODS[number];
+    const routeMethod = route.method as (typeof ALLOWED_METHODS)[number];
 
     // Finding routes with uniqueSymbol
     if (!(uniqueSymbol in route.handler)) {
@@ -145,26 +141,18 @@ async function registerSchemas<
     }
 
     // Exclude methods
-    if (
-      options.excludeMethods && options.excludeMethods.includes(routeMethod)
-    ) {
+    if (options.excludeMethods?.includes(routeMethod)) {
       continue;
     }
 
     // Include only allowed methods
-    if (
-      !ALLOWED_METHODS.includes(routeMethod) &&
-      routeMethod !== "ALL"
-    ) {
+    if (!ALLOWED_METHODS.includes(routeMethod) && routeMethod !== "ALL") {
       continue;
     }
 
-    const middlewareHandler = route.handler[
-      uniqueSymbol
-    ] as HandlerResponse;
+    const middlewareHandler = route.handler[uniqueSymbol] as HandlerResponse;
 
-    const defaultOptionsForThisMethod = options.defaultOptions
-      ?.[routeMethod];
+    const defaultOptionsForThisMethod = options.defaultOptions?.[routeMethod];
 
     const { docs, components } = await resolver(
       { ...config, ...metadata },
