@@ -17,7 +17,7 @@ export function resolver<Schema extends StandardSchemaV1>(schema: Schema) {
     validate: schema["~standard"].validate,
     toJSONSchema: (options?: Record<string, unknown>) =>
       toJsonSchema(schema, options),
-    toOpenAPI: (options?: Record<string, unknown>) =>
+    toOpenAPISchema: (options?: Record<string, unknown>) =>
       toOpenAPISchema(schema, options),
   };
 }

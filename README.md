@@ -3,61 +3,30 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/rhinobase/hono-openapi)
 [![npm version](https://img.shields.io/npm/v/hono-openapi.svg)](https://npmjs.org/package/hono-openapi "View this project on NPM")
 [![npm downloads](https://img.shields.io/npm/dm/hono-openapi)](https://www.npmjs.com/package/hono-openapi)
-[![license](https://img.shields.io/npm/l/hono-openapi)](LICENSE)
 
 This can automatically generate the OpenAPI specification for the Hono API using your validation schema, which can be used to generate client libraries, documentation, and more.
 
-Supported Validation Libraries:
-
-- [x] [Zod](https://zod.dev/)
-- [x] [Valibot](https://valibot.dev/)
-- [x] [ArkType](https://arktype.io/)
-- [x] [TypeBox](https://github.com/sinclairzx81/typebox)
-- [x] [Effect](https://effect.website/docs/schema/introduction/)
+This lib supports all the validation libs which are [Standard Schema](https://standardschema.dev/) compliant.
 
 > [!Note]
 > This package is still in development and your feedback is highly appreciated. If you have any suggestions or issues, please let us know by creating an issue on GitHub.
 
 ## Usage
 
-### Installation
+## Installation
 
-You can install the package using favorite package manager.
+Install the main package -
 
-#### For Zod
-
-```bash
-pnpm add hono-openapi @hono/zod-validator zod zod-openapi
+```sh
+pnpm add hono-openapi
 ```
 
-#### For Valibot
+For some specific vendor, install the respective package also -
 
-```bash
-pnpm add hono-openapi @hono/valibot-validator valibot @valibot/to-json-schema
-```
-
-#### For ArkType
-
-```bash
-pnpm add hono-openapi @hono/arktype-validator arktype
-```
-
-#### For TypeBox
-
-```bash
-pnpm add hono-openapi @hono/typebox-validator @sinclair/typebox
-```
-
-#### For Effect
-
-```bash
-pnpm add hono-openapi @hono/effect-validator effect
-```
-
-> [!IMPORTANT]
->
-> Requires `effect@^3.10.0`.
-> Also, use the `Schema` class from the `effect` package, as `@effect/schema` is not supported.
+| Vendor  | Package |
+| ------- | ------- |
+| Zod v3  | `zod-openapi` |
+| Valibot | `@valibot/to-json-schema` |
 
 ### Basic Usage
 
@@ -89,8 +58,7 @@ Next, create your route -
 
 ```ts
 import { Hono } from "hono";
-import { describeRoute } from "hono-openapi";
-import { resolver, validator as zValidator } from "hono-openapi/zod";
+import { describeRoute, resolver, validator as zValidator } from "hono-openapi";
 
 const app = new Hono();
 

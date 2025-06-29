@@ -4,7 +4,7 @@ import type {
   DescribeRouteOptions,
   OpenAPIRoute,
   OpenApiSpecsOptions,
-  ResolverResult,
+  ResolverReturnType,
 } from "./types.js";
 
 /**
@@ -17,7 +17,7 @@ export const uniqueSymbol = Symbol("openapi");
  */
 export async function generateValidatorDocs<
   Target extends keyof ValidationTargets,
->(target: Target, _result: ReturnType<ResolverResult["builder"]>) {
+>(target: Target, _result: ReturnType<ResolverReturnType["builder"]>) {
   const result = await _result;
   const docs: Pick<OpenAPIV3.OperationObject, "parameters" | "requestBody"> =
     {};
@@ -193,15 +193,18 @@ function getPathContext(path: string) {
 }
 
 export function registerSchemaPath({
-  path,
-  method: _method,
+  route,
   data,
   schema,
 }: OpenAPIRoute & {
   schema: Partial<OpenAPIV3.PathsObject>;
 }) {
-  path = toOpenAPIPath(path);
-  const method = _method.toLowerCase() as Lowercase<OpenAPIRoute["method"]>;
+  const path = toOpenAPIPath(route.path);
+  const method = route.method.toLowerCase() as
+    | Lowercase<
+      typeof ALLOWED_METHODS[number]
+    >
+    | "all";
 
   if (method === "all") {
     if (!data) return;

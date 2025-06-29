@@ -1,22 +1,23 @@
 import type { Context, Env, Input } from "hono";
-import type { BlankInput, ValidationTargets } from "hono/types";
-import type {
-  ClientErrorStatusCode,
-  ServerErrorStatusCode,
-} from "hono/utils/http-status";
-import type { OpenAPIV3 } from "openapi-types";
-import type { ALLOWED_METHODS } from "./helper.js";
+import type { BlankInput, RouterRoute, ValidationTargets } from "hono/types";
+import type { OpenAPIV3_1 } from "openapi-types";
+import type { ALLOWED_METHODS } from "./utils.js";
+import type { resolver } from "./middlewares.js";
 
 export type PromiseOr<T> = T | Promise<T>;
 
-export type HandlerResponse = {
-  target: keyof ValidationTargets;
-  options?: Record<string, unknown>;
-};
+export type ResolverReturnType = ReturnType<typeof resolver>;
+
+export type HandlerResponse =
+  | (ResolverReturnType & {
+    target: keyof ValidationTargets;
+    options?: Record<string, unknown>;
+  })
+  | { specs: DescribeRouteOptions };
 
 export type DescribeRouteOptions =
   & Omit<
-    OpenAPIV3.OperationObject,
+    OpenAPIV3_1.OperationObject,
     "responses" | "parameters"
   >
   & {
@@ -25,12 +26,8 @@ export type DescribeRouteOptions =
      */
     hide?:
       | boolean
-      | (<
-        E extends Env = Env,
-        P extends string = string,
-        I extends Input = BlankInput,
-      >(
-        c: Context<E, P, I>,
+      | ((
+        c: Context,
       ) => boolean);
 
     /**
@@ -38,36 +35,35 @@ export type DescribeRouteOptions =
      */
     responses?: {
       [key: string]:
-        | (OpenAPIV3.ResponseObject & {
+        | (OpenAPIV3_1.ResponseObject & {
           content?: {
-            [key: string]: Omit<OpenAPIV3.MediaTypeObject, "schema"> & {
+            [key: string]: Omit<OpenAPIV3_1.MediaTypeObject, "schema"> & {
               schema?:
-                | OpenAPIV3.ReferenceObject
-                | OpenAPIV3.SchemaObject
-                | ResolverResult;
+                | OpenAPIV3_1.ReferenceObject
+                | OpenAPIV3_1.SchemaObject
+                | ResolverReturnType;
             };
           };
         })
-        | OpenAPIV3.ReferenceObject;
+        | OpenAPIV3_1.ReferenceObject;
     };
 
     /**
      * Parameters of the request
      */
     parameters?: (
-      | OpenAPIV3.ParameterObject
-      | (OpenAPIV3.ParameterObject & {
-        schema: ResolverResult;
+      | OpenAPIV3_1.ParameterObject
+      | (OpenAPIV3_1.ParameterObject & {
+        schema: ResolverReturnType;
       })
     )[];
   };
 
 export interface OpenAPIRoute {
-  path: string;
-  method: (typeof ALLOWED_METHODS)[number] | "ALL";
+  route: RouterRoute;
   data?:
     | DescribeRouteOptions
-    | Pick<OpenAPIV3.OperationObject, "parameters" | "requestBody">;
+    | Pick<OpenAPIV3_1.OperationObject, "parameters" | "requestBody">;
 }
 
 export type OpenApiSpecsOptions = {
@@ -77,7 +73,7 @@ export type OpenApiSpecsOptions = {
    * @see https://swagger.io/specification/v2/
    */
   documentation?: Omit<
-    Partial<OpenAPIV3.Document>,
+    Partial<OpenAPIV3_1.Document>,
     | "x-express-openapi-additional-middleware"
     | "x-express-openapi-validation-strict"
   >;
