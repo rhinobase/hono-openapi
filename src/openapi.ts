@@ -6,14 +6,18 @@ import type {
   MiddlewareHandler,
 } from "hono/types";
 import type { OpenAPIV3 } from "openapi-types";
-import { ALLOWED_METHODS, filterPaths, registerSchemaPath } from "./helper.js";
+import {
+  ALLOWED_METHODS,
+  filterPaths,
+  registerSchemaPath,
+  uniqueSymbol,
+} from "./utils.js";
 import type {
   HandlerResponse,
   OpenAPIRoute,
   OpenAPIRouteHandlerConfig,
   OpenApiSpecsOptions,
 } from "./types.js";
-import { uniqueSymbol } from "./utils.js";
 
 const defaults: {
   options: OpenApiSpecsOptions;
@@ -174,23 +178,25 @@ async function registerSchemas<
     // Exclude methods
     if (
       (options.excludeMethods as ReadonlyArray<string>).includes(route.method)
-    )
+    ) {
       continue;
+    }
 
     // Include only allowed methods
     if (
       (ALLOWED_METHODS as ReadonlyArray<string>).includes(route.method) ===
         false &&
       route.method !== "ALL"
-    )
+    ) {
       continue;
+    }
 
     const { resolver, metadata = {} } = route.handler[
       uniqueSymbol
     ] as HandlerResponse;
 
-    const defaultOptionsForThisMethod =
-      options.defaultOptions?.[route.method as OpenAPIRoute["method"]];
+    const defaultOptionsForThisMethod = options.defaultOptions
+      ?.[route.method as OpenAPIRoute["method"]];
 
     const { docs, components } = await resolver(
       { ...config, ...metadata },

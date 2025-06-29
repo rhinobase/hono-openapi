@@ -1,5 +1,5 @@
 import type { Context, Env, Input } from "hono";
-import type { BlankInput } from "hono/types";
+import type { BlankInput, ValidationTargets } from "hono/types";
 import type {
   ClientErrorStatusCode,
   ServerErrorStatusCode,
@@ -7,43 +7,25 @@ import type {
 import type { OpenAPIV3 } from "openapi-types";
 import type { ALLOWED_METHODS } from "./helper.js";
 
-export type HasUndefined<T> = undefined extends T ? true : false;
 export type PromiseOr<T> = T | Promise<T>;
 
-export type OpenAPIRouteHandlerConfig = {
-  version: "3.0.0" | "3.0.1" | "3.0.2" | "3.0.3" | "3.1.0";
-  components: OpenAPIV3.ComponentsObject["schemas"];
-} & { [key: string]: unknown };
-
-export type ResolverResult = {
-  builder: (options?: OpenAPIRouteHandlerConfig) => PromiseOr<{
-    schema: OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject;
-    components?: OpenAPIV3.ComponentsObject["schemas"];
-  }>;
-  validator: (values: unknown) => PromiseOr<void>;
-};
-
 export type HandlerResponse = {
-  resolver: (
-    config: OpenAPIRouteHandlerConfig,
-    defaultOptions?: DescribeRouteOptions,
-  ) => PromiseOr<{
-    docs: OpenAPIV3.OperationObject;
-    components?: OpenAPIV3.ComponentsObject["schemas"];
-  }>;
-  metadata?: Record<string, unknown>;
+  target: keyof ValidationTargets;
+  options?: Record<string, unknown>;
 };
 
-export type DescribeRouteOptions = Omit<
-  OpenAPIV3.OperationObject,
-  "responses" | "parameters"
-> & {
-  /**
-   * Pass `true` to hide route from OpenAPI/swagger document
-   */
-  hide?:
-    | boolean
-    | (<
+export type DescribeRouteOptions =
+  & Omit<
+    OpenAPIV3.OperationObject,
+    "responses" | "parameters"
+  >
+  & {
+    /**
+     * Pass `true` to hide route from OpenAPI/swagger document
+     */
+    hide?:
+      | boolean
+      | (<
         E extends Env = Env,
         P extends string = string,
         I extends Input = BlankInput,
@@ -51,22 +33,12 @@ export type DescribeRouteOptions = Omit<
         c: Context<E, P, I>,
       ) => boolean);
 
-  /**
-   * Validate response of the route
-   */
-  validateResponse?:
-    | boolean
-    | {
-        status: ClientErrorStatusCode | ServerErrorStatusCode;
-        message?: string;
-      };
-
-  /**
-   * Responses of the request
-   */
-  responses?: {
-    [key: string]:
-      | (OpenAPIV3.ResponseObject & {
+    /**
+     * Responses of the request
+     */
+    responses?: {
+      [key: string]:
+        | (OpenAPIV3.ResponseObject & {
           content?: {
             [key: string]: Omit<OpenAPIV3.MediaTypeObject, "schema"> & {
               schema?:
@@ -76,19 +48,19 @@ export type DescribeRouteOptions = Omit<
             };
           };
         })
-      | OpenAPIV3.ReferenceObject;
-  };
+        | OpenAPIV3.ReferenceObject;
+    };
 
-  /**
-   * Parameters of the request
-   */
-  parameters?: (
-    | OpenAPIV3.ParameterObject
-    | (OpenAPIV3.ParameterObject & {
+    /**
+     * Parameters of the request
+     */
+    parameters?: (
+      | OpenAPIV3.ParameterObject
+      | (OpenAPIV3.ParameterObject & {
         schema: ResolverResult;
       })
-  )[];
-};
+    )[];
+  };
 
 export interface OpenAPIRoute {
   path: string;
