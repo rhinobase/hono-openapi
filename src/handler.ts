@@ -105,7 +105,7 @@ export async function generateSpecs<
       components: {
         ...documentation.components,
         schemas: {
-          ..._config.components,
+          ...context.components,
           ...documentation.components?.schemas,
         },
       },
@@ -120,7 +120,7 @@ async function registerSchemas<
 >(
   hono: Hono<E, S, P>,
   options: OpenApiSpecsOptions,
-  config: OpenAPIRouteHandlerConfig,
+  config: { components: OpenAPIV3.ComponentsObject },
 ): Promise<OpenAPIV3.PathsObject> {
   const schema: OpenAPIV3.PathsObject = {};
 
@@ -154,7 +154,7 @@ async function registerSchemas<
 
     const defaultOptionsForThisMethod = options.defaultOptions?.[routeMethod];
 
-    const { docs, components } = await resolver(
+    const { docs, components } = await middlewareHandler.(
       { ...config, ...metadata },
       defaultOptionsForThisMethod,
     );

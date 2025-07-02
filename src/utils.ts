@@ -17,14 +17,15 @@ export const uniqueSymbol = Symbol("openapi");
  */
 export async function generateValidatorDocs<
   Target extends keyof ValidationTargets,
->(target: Target, _result: ReturnType<ResolverReturnType["builder"]>) {
+>(target: Target, _result: ResolverReturnType) {
   const result = await _result;
   const docs: Pick<OpenAPIV3.OperationObject, "parameters" | "requestBody"> =
     {};
 
   if (target === "form" || target === "json") {
-    const media =
-      target === "json" ? "application/json" : "multipart/form-data";
+    const media = target === "json"
+      ? "application/json"
+      : "multipart/form-data";
     if (
       !docs.requestBody ||
       !("content" in docs.requestBody) ||
@@ -55,9 +56,11 @@ export async function generateValidatorDocs<
         schema: result.schema,
       });
     } else {
-      for (const [key, value] of Object.entries(
-        result.schema.properties ?? {},
-      )) {
+      for (
+        const [key, value] of Object.entries(
+          result.schema.properties ?? {},
+        )
+      ) {
         parameters.push({
           in: target,
           name: key,
