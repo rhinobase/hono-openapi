@@ -82,27 +82,25 @@ export async function generateSpecs<
 
   return {
     openapi: "3.1.0",
-    ...{
-      ..._documentation,
-      tags: _documentation.tags?.filter(
-        (tag) => !ctx.options.excludeTags?.includes(tag?.name),
-      ),
-      info: {
-        title: "Hono Documentation",
-        description: "Development documentation",
-        version: "0.0.0",
-        ..._documentation.info,
-      },
-      paths: {
-        ...removeExcludedPaths(schema, ctx),
-        ..._documentation.paths,
-      },
-      components: {
-        ..._documentation.components,
-        schemas: {
-          ...ctx.components,
-          ..._documentation.components?.schemas,
-        },
+    ..._documentation,
+    tags: _documentation.tags?.filter(
+      (tag) => !ctx.options.excludeTags?.includes(tag?.name),
+    ),
+    info: {
+      title: "Hono Documentation",
+      description: "Development documentation",
+      version: "0.0.0",
+      ..._documentation.info,
+    },
+    paths: {
+      ...removeExcludedPaths(schema, ctx),
+      ..._documentation.paths,
+    },
+    components: {
+      ..._documentation.components,
+      schemas: {
+        ...ctx.components,
+        ..._documentation.components?.schemas,
       },
     },
   } satisfies OpenAPIV3_1.Document;
@@ -147,16 +145,21 @@ async function generatePaths<
       }
     }
 
-    const middlewareHandler = route.handler[uniqueSymbol] as ResolverReturnType;
+    const middlewareHandler = route.handler[uniqueSymbol] as
+      | ResolverReturnType
+      | { schema: DescribeRouteOptions; components: undefined };
 
     const defaultOptionsForThisMethod = ctx.options.defaultOptions
       ?.[routeMethod];
 
-    const { schema: routeSpecs, components = {} } = await middlewareHandler
-      .toOpenAPISchema({
-        ...defaultOptionsForThisMethod,
-        components: ctx.components,
-      });
+    const { schema: routeSpecs, components = {} } =
+      "schema" in middlewareHandler
+        ? middlewareHandler
+        : await middlewareHandler
+          .toOpenAPISchema({
+            ...defaultOptionsForThisMethod,
+            components: ctx.components,
+          });
 
     ctx.components = {
       ...ctx.components,

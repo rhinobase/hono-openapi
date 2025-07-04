@@ -133,7 +133,7 @@ function mergeSpecs(
   ...specs: (RegisterSchemaPathOptions["specs"] | undefined)[]
 ) {
   return specs.reduce((prev, spec) => {
-    if (!spec || Object.keys(spec).length > 0) return prev;
+    if (!spec) return prev;
 
     return {
       ...prev,
@@ -141,7 +141,7 @@ function mergeSpecs(
       tags: Array.from(
         new Set([
           ...(getProperty<string[]>(prev, "tags") ?? []),
-          ...(getProperty(spec, "tags", []) ?? []),
+          ...(getProperty<string[]>(spec, "tags") ?? []),
         ]),
       ),
       parameters: mergeParameters(
@@ -186,7 +186,6 @@ export function registerSchemaPath({
     paths[path] = {
       ...(paths[path] ? paths[path] : {}),
       [method]: {
-        responses: {},
         operationId: generateOperationId(route),
         ...mergeSpecs(
           ...pathContext,
