@@ -66,7 +66,6 @@
     }
   },
   "devDependencies": {
-    "@apidevtools/json-schema-ref-parser": "^12.0.1",
     "@biomejs/biome": "^2.0.6",
     "@standard-schema/spec": "^1.0.0",
     "@types/json-schema": "^7.0.15",

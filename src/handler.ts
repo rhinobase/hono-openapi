@@ -1,49 +1,44 @@
-import type { Context, Env, Hono, Input, Schema } from "hono";
+import type { Context, Env, Hono } from "hono";
 import type {
   BlankEnv,
   BlankInput,
   BlankSchema,
-  MiddlewareHandler,
+  Input,
+  Schema,
 } from "hono/types";
-import type { OpenAPIV3 } from "openapi-types";
-import type { HandlerResponse, OpenApiSpecsOptions } from "./types.js";
+import type { OpenAPIV3_1 } from "openapi-types";
+import type {
+  DescribeRouteOptions,
+  GenerateSpecOptions,
+  ResolverReturnType,
+  SanitizedGenerateSpecOptions,
+} from "./types";
 import {
   ALLOWED_METHODS,
-  filterPaths,
+  type AllowedMethods,
   registerSchemaPath,
+  removeExcludedPaths,
   uniqueSymbol,
-} from "./utils.js";
+} from "./utils";
+
+const DEFAULT_OPTIONS: Partial<GenerateSpecOptions> = {
+  documentation: {},
+  excludeStaticFile: true,
+  exclude: [],
+  excludeMethods: ["OPTIONS"],
+  excludeTags: [],
+};
+
+type SpecContext = {
+  components: Record<string, OpenAPIV3_1.SchemaObject>;
+  options: SanitizedGenerateSpecOptions;
+};
 
 /**
- * Route handler for OpenAPI specs
+ * Generate OpenAPI specs for the given Hono instance
  * @param hono Instance of Hono
  * @param options Options for generating OpenAPI specs
- * @returns Middleware handler for OpenAPI specs
- */
-export function openAPISpecs<
-  E extends Env = BlankEnv,
-  P extends string = string,
-  I extends Input = BlankInput,
-  S extends Schema = BlankSchema,
->(
-  hono: Hono<E, S, P>,
-  options?: OpenApiSpecsOptions,
-): MiddlewareHandler<E, P, I> {
-  let specs: OpenAPIV3.Document;
-
-  return async (c) => {
-    if (specs) return c.json(specs);
-
-    specs = await generateSpecs(hono, options, c);
-
-    return c.json(specs);
-  };
-}
-
-/**
- * Generate OpenAPI specs for the provided Hono instance
- * @param hono Instance of Hono
- * @param options Options for generating OpenAPI specs
+ * @param config Configuration for OpenAPI route handler
  * @param Context Route context for hiding routes
  * @returns OpenAPI specs
  */
@@ -52,21 +47,22 @@ export async function generateSpecs<
   P extends string = string,
   I extends Input = BlankInput,
   S extends Schema = BlankSchema,
->(hono: Hono<E, S, P>, options?: OpenApiSpecsOptions, c?: Context<E, P, I>) {
-  const _options: OpenApiSpecsOptions = {
-    documentation: {},
-    excludeStaticFile: true,
-    exclude: [],
-    excludeMethods: ["OPTIONS"],
-    excludeTags: [],
-    ...options,
-  };
-  const context = {
+>(
+  hono: Hono<E, S, P>,
+  options = DEFAULT_OPTIONS,
+  c?: Context<E, P, I>,
+) {
+  const ctx: SpecContext = {
     components: {},
+    // @ts-expect-error
+    options: {
+      ...DEFAULT_OPTIONS,
+      ...options,
+    },
   };
 
-  const documentation = _options.documentation ?? {};
-  const schema = await registerSchemas(hono, _options, context);
+  const _documentation = ctx.options.documentation ?? {};
+  const schema = await generatePaths(hono, ctx);
 
   // Hide routes
   for (const path in schema) {
@@ -79,7 +75,6 @@ export async function generateSpecs<
       });
 
       if (isHidden) {
-        // @ts-expect-error
         delete schema[path][method];
       }
     }
@@ -88,101 +83,105 @@ export async function generateSpecs<
   return {
     openapi: "3.1.0",
     ...{
-      ...documentation,
-      tags: documentation.tags?.filter(
-        (tag) => !_options.excludeTags?.includes(tag?.name),
+      ..._documentation,
+      tags: _documentation.tags?.filter(
+        (tag) => !ctx.options.excludeTags?.includes(tag?.name),
       ),
       info: {
         title: "Hono Documentation",
         description: "Development documentation",
         version: "0.0.0",
-        ...documentation.info,
+        ..._documentation.info,
       },
       paths: {
-        ...filterPaths(schema, _options),
-        ...documentation.paths,
+        ...removeExcludedPaths(schema, ctx),
+        ..._documentation.paths,
       },
       components: {
-        ...documentation.components,
+        ..._documentation.components,
         schemas: {
-          ...context.components,
-          ...documentation.components?.schemas,
+          ...ctx.components,
+          ..._documentation.components?.schemas,
         },
       },
     },
-  } satisfies OpenAPIV3.Document;
+  } satisfies OpenAPIV3_1.Document;
 }
 
-async function registerSchemas<
+async function generatePaths<
   E extends Env = BlankEnv,
   P extends string = string,
   S extends Schema = BlankSchema,
 >(
   hono: Hono<E, S, P>,
-  options: OpenApiSpecsOptions,
-  config: { components: OpenAPIV3.ComponentsObject },
-): Promise<OpenAPIV3.PathsObject> {
-  const schema: OpenAPIV3.PathsObject = {};
+  ctx: SpecContext,
+): Promise<OpenAPIV3_1.PathsObject> {
+  const paths: OpenAPIV3_1.PathsObject = {};
 
   for (const route of hono.routes) {
-    const routeMethod = route.method as (typeof ALLOWED_METHODS)[number];
-
     // Finding routes with uniqueSymbol
     if (!(uniqueSymbol in route.handler)) {
       // Include empty paths, if enabled
-      if (options.includeEmptyPaths) {
+      if (ctx.options.includeEmptyPaths) {
         registerSchemaPath({
           route,
-          schema,
+          paths,
         });
       }
 
       continue;
     }
 
-    // Exclude methods
-    if (options.excludeMethods?.includes(routeMethod)) {
-      continue;
+    const routeMethod = route.method as AllowedMethods | "ALL";
+
+    // All method acts like a middleware, so we can skip it
+    if (routeMethod !== "ALL") {
+      // Exclude methods
+      if (ctx.options.excludeMethods?.includes(routeMethod)) {
+        continue;
+      }
+
+      // Include only allowed methods
+      if (!ALLOWED_METHODS.includes(routeMethod)) {
+        continue;
+      }
     }
 
-    // Include only allowed methods
-    if (!ALLOWED_METHODS.includes(routeMethod) && routeMethod !== "ALL") {
-      continue;
-    }
+    const middlewareHandler = route.handler[uniqueSymbol] as ResolverReturnType;
 
-    const middlewareHandler = route.handler[uniqueSymbol] as HandlerResponse;
+    const defaultOptionsForThisMethod = ctx.options.defaultOptions
+      ?.[routeMethod];
 
-    const defaultOptionsForThisMethod = options.defaultOptions?.[routeMethod];
+    const { schema: routeSpecs, components = {} } = await middlewareHandler
+      .toOpenAPISchema({
+        ...defaultOptionsForThisMethod,
+        components: ctx.components,
+      });
 
-    const { docs, components } = await middlewareHandler.(
-      { ...config, ...metadata },
-      defaultOptionsForThisMethod,
-    );
-
-    config.components = {
-      ...config.components,
-      ...(components ?? {}),
+    ctx.components = {
+      ...ctx.components,
+      ...components,
     };
 
     registerSchemaPath({
       route,
-      data: docs,
-      schema,
+      specs: routeSpecs,
+      paths,
     });
   }
 
-  return schema;
+  return paths;
 }
 
 function getHiddenValue(options: {
-  valueOrFunc: boolean | ((c: Context) => boolean);
+  valueOrFunc: DescribeRouteOptions["hide"];
   c?: Context;
   method: string;
   path: string;
 }) {
   const { valueOrFunc, c, method, path } = options;
 
-  if (valueOrFunc) {
+  if (valueOrFunc != null) {
     if (typeof valueOrFunc === "boolean") {
       return valueOrFunc;
     } else if (typeof valueOrFunc === "function") {

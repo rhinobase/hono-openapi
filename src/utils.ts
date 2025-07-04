@@ -1,80 +1,14 @@
-import type { ValidationTargets } from "hono";
-import type { OpenAPIV3 } from "openapi-types";
+import type { RouterRoute } from "hono/types";
+import type { OpenAPIV3_1 } from "openapi-types";
 import type {
-  DescribeRouteOptions,
-  OpenAPIRoute,
-  OpenApiSpecsOptions,
-  ResolverReturnType,
-} from "./types.js";
+  RegisterSchemaPathOptions,
+  SanitizedGenerateSpecOptions,
+} from "./types";
 
 /**
  * The unique symbol for the middlewares, which makes it easier to identify them. Not meant to be used directly, unless you're creating a custom middleware.
  */
 export const uniqueSymbol = Symbol("openapi");
-
-/**
- * Generate OpenAPI docs for a validator middleware. Not meant to be used directly, unless you're creating a custom middleware.
- */
-export async function generateValidatorDocs<
-  Target extends keyof ValidationTargets,
->(target: Target, _result: ResolverReturnType) {
-  const result = await _result;
-  const docs: Pick<OpenAPIV3.OperationObject, "parameters" | "requestBody"> =
-    {};
-
-  if (target === "form" || target === "json") {
-    const media = target === "json"
-      ? "application/json"
-      : "multipart/form-data";
-    if (
-      !docs.requestBody ||
-      !("content" in docs.requestBody) ||
-      !docs.requestBody.content
-    ) {
-      docs.requestBody = {
-        content: {
-          [media]: {
-            schema: result.schema,
-          },
-        },
-      };
-    } else {
-      docs.requestBody.content[media] = {
-        schema: result.schema,
-      };
-    }
-  } else {
-    const parameters: (
-      | OpenAPIV3.ReferenceObject
-      | OpenAPIV3.ParameterObject
-    )[] = [];
-
-    if ("$ref" in result.schema) {
-      parameters.push({
-        in: target,
-        name: result.schema.$ref,
-        schema: result.schema,
-      });
-    } else {
-      for (
-        const [key, value] of Object.entries(
-          result.schema.properties ?? {},
-        )
-      ) {
-        parameters.push({
-          in: target,
-          name: key,
-          schema: value,
-          required: result.schema.required?.includes(key),
-        });
-      }
-    }
-
-    docs.parameters = parameters;
-  }
-
-  return { docs, components: result.components };
-}
 
 export const ALLOWED_METHODS = [
   "GET",
@@ -87,19 +21,28 @@ export const ALLOWED_METHODS = [
   "TRACE",
 ] as const;
 
-export const toOpenAPIPath = (path: string) =>
+export type AllowedMethods = (typeof ALLOWED_METHODS)[number];
+
+const toOpenAPIPath = (path: string) =>
   path
     .split("/")
     .map((x) => {
       let tmp = x;
+
+      // Example - ":id"
       if (tmp.startsWith(":")) {
         const match = tmp.match(/^:([^{?]+)(?:{(.+)})?(\?)?$/);
         if (match) {
           const paramName = match[1];
           tmp = `{${paramName}}`;
         } else {
+          // Remove the leading colon ":"
           tmp = tmp.slice(1, tmp.length);
+
+          // If it ends with "?", remove it
+          // This is for optional parameters
           if (tmp.endsWith("?")) tmp = tmp.slice(0, -1);
+
           tmp = `{${tmp}}`;
         }
       }
@@ -108,131 +51,35 @@ export const toOpenAPIPath = (path: string) =>
     })
     .join("/");
 
-export const capitalize = (word: string) =>
+const capitalize = (word: string) =>
   word.charAt(0).toUpperCase() + word.slice(1);
 
 const generateOperationIdCache = new Map<string, string>();
+const generateOperationId = (route: RouterRoute) => {
+  const operationIdKey = `${route.method}:${route.path}`;
 
-export const generateOperationId = (method: string, paths: string) => {
-  const key = `${method}:${paths}`;
-
-  if (generateOperationIdCache.has(key)) {
-    return generateOperationIdCache.get(key) as string;
+  if (generateOperationIdCache.has(operationIdKey)) {
+    return generateOperationIdCache.get(operationIdKey) as string;
   }
 
-  let operationId = method;
+  let operationId = route.method;
 
-  if (paths === "/") return `${operationId}Index`;
+  if (route.path === "/") return `${operationId}Index`;
 
-  for (const path of paths.split("/")) {
-    if (path.charCodeAt(0) === 123) {
-      operationId += `By${capitalize(path.slice(1, -1))}`;
+  for (const segment of route.path.split("/")) {
+    if (segment.charCodeAt(0) === 123) {
+      operationId += `By${capitalize(segment.slice(1, -1))}`;
     } else {
-      operationId += capitalize(path);
+      operationId += capitalize(segment);
     }
   }
 
-  generateOperationIdCache.set(key, operationId);
+  generateOperationIdCache.set(operationIdKey, operationId);
 
   return operationId;
 };
 
-const schemaPathContext = new Map<string, OpenAPIRoute["data"]>();
-
-// TODO: Improve the types
-function getProperty<T>(
-  obj: OpenAPIRoute["data"],
-  key: keyof DescribeRouteOptions,
-  defaultValue: T,
-): T {
-  // @ts-expect-error
-  return obj && key in obj ? (obj[key] ?? defaultValue) : defaultValue;
-}
-
-function mergeRouteData(...data: OpenAPIRoute["data"][]) {
-  return data.reduce<NonNullable<OpenAPIRoute["data"]>>((acc, route) => {
-    if (!route) return acc;
-
-    let tags: DescribeRouteOptions["tags"];
-    if (("tags" in acc && acc.tags) || ("tags" in route && route.tags)) {
-      tags = Array.from(
-        new Set([
-          ...getProperty(acc, "tags", []),
-          ...getProperty(route, "tags", []),
-        ]),
-      );
-    }
-
-    return {
-      // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
-      ...acc,
-      ...route,
-      tags,
-      responses: {
-        ...getProperty(acc, "responses", {}),
-        ...getProperty(route, "responses", {}),
-      },
-      parameters: mergeParameters(acc.parameters, route.parameters),
-    };
-  }, {});
-}
-
-function getPathContext(path: string) {
-  const keys = Array.from(schemaPathContext.keys());
-
-  let context: OpenAPIRoute["data"] = {};
-
-  for (const key of keys) {
-    if (path.match(key)) {
-      const data = schemaPathContext.get(key) ?? {};
-      context = mergeRouteData(context, data);
-    }
-  }
-
-  return context;
-}
-
-export function registerSchemaPath({
-  route,
-  data,
-  schema,
-}: OpenAPIRoute & {
-  schema: Partial<OpenAPIV3.PathsObject>;
-}) {
-  const path = toOpenAPIPath(route.path);
-  const method = route.method.toLowerCase() as
-    | Lowercase<(typeof ALLOWED_METHODS)[number]>
-    | "all";
-
-  if (method === "all") {
-    if (!data) return;
-
-    if (schemaPathContext.has(path)) {
-      const prev = schemaPathContext.get(path) ?? {};
-
-      schemaPathContext.set(path, {
-        ...prev,
-        ...data,
-        parameters: mergeParameters(prev.parameters, data.parameters),
-      });
-    } else {
-      schemaPathContext.set(path, data);
-    }
-  } else {
-    const dataFromContext = getPathContext(path);
-
-    schema[path] = {
-      ...(schema[path] ? schema[path] : {}),
-      [method]: {
-        responses: {},
-        operationId: generateOperationId(method, path),
-        ...mergeRouteData(dataFromContext, schema[path]?.[method], data),
-      } satisfies OpenAPIV3.OperationObject,
-    };
-  }
-}
-
-type Parameter = OpenAPIV3.ReferenceObject | OpenAPIV3.ParameterObject;
+type Parameter = OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.ParameterObject;
 
 const paramKey = (param: Parameter) =>
   "$ref" in param ? param.$ref : `${param.in} ${param.name}`;
@@ -248,29 +95,137 @@ function mergeParameters(...params: (Parameter[] | undefined)[]): Parameter[] {
   return Array.from(merged.values());
 }
 
-export function filterPaths(
-  paths: OpenAPIV3.PathsObject,
-  {
-    excludeStaticFile = true,
-    exclude = [],
-  }: Pick<OpenApiSpecsOptions, "excludeStaticFile" | "exclude">,
+function getProperty<T = unknown>(
+  obj: Record<string, unknown> | undefined,
+  key: string,
+  defaultValue?: T,
+): T | undefined {
+  if (obj != null && key in obj) {
+    return obj[key] as T;
+  }
+  return defaultValue;
+}
+
+const specsByPathContext = new Map<
+  string,
+  RegisterSchemaPathOptions["specs"]
+>();
+
+function getPathContext(path: string) {
+  const keys = Array.from(specsByPathContext.keys());
+
+  const context: RegisterSchemaPathOptions["specs"][] = [];
+
+  for (const key of keys) {
+    if (path.match(key)) {
+      const data = specsByPathContext.get(key);
+
+      if (!data) continue;
+
+      context.push(data);
+    }
+  }
+
+  return context;
+}
+
+function mergeSpecs(
+  ...specs: (RegisterSchemaPathOptions["specs"] | undefined)[]
 ) {
-  const newPaths: OpenAPIV3.PathsObject = {};
+  return specs.reduce((prev, spec) => {
+    if (!spec || Object.keys(spec).length > 0) return prev;
+
+    return {
+      ...prev,
+      ...spec,
+      tags: Array.from(
+        new Set([
+          ...(getProperty<string[]>(prev, "tags") ?? []),
+          ...(getProperty(spec, "tags", []) ?? []),
+        ]),
+      ),
+      parameters: mergeParameters(
+        getProperty(prev, "parameters"),
+        getProperty(spec, "parameters"),
+      ),
+      responses: {
+        ...getProperty(prev, "responses", {}),
+        ...getProperty(spec, "responses", {}),
+      },
+    };
+  }, {} as NonNullable<RegisterSchemaPathOptions["specs"]>);
+}
+
+export function registerSchemaPath({
+  route,
+  specs,
+  paths,
+}: RegisterSchemaPathOptions & {
+  paths: Partial<OpenAPIV3_1.PathsObject>;
+}) {
+  const path = toOpenAPIPath(route.path);
+  const method = route.method.toLowerCase() as
+    | Lowercase<AllowedMethods>
+    | "all";
+
+  if (method === "all") {
+    if (!specs) return;
+
+    // Merging specs with existing ones in the context
+    if (specsByPathContext.has(path)) {
+      const prev = specsByPathContext.get(path) ?? {};
+
+      specsByPathContext.set(path, mergeSpecs(prev, specs));
+    } else {
+      // If the specs are not present, we can just set it
+      specsByPathContext.set(path, specs);
+    }
+  } else {
+    const pathContext = getPathContext(path);
+
+    paths[path] = {
+      ...(paths[path] ? paths[path] : {}),
+      [method]: {
+        responses: {},
+        operationId: generateOperationId(route),
+        ...mergeSpecs(
+          ...pathContext,
+          paths[path]?.[method],
+          specs,
+        ),
+      } satisfies OpenAPIV3_1.OperationObject,
+    };
+  }
+}
+
+// TODO: Cross check the need for this function
+export function removeExcludedPaths(
+  paths: OpenAPIV3_1.PathsObject,
+  ctx: { options: SanitizedGenerateSpecOptions },
+) {
+  const { exclude, excludeStaticFile } = ctx.options;
+  const newPaths: OpenAPIV3_1.PathsObject = {};
   const _exclude = Array.isArray(exclude) ? exclude : [exclude];
 
   for (const [key, value] of Object.entries(paths)) {
-    if (
-      !_exclude.some((x) => {
-        if (typeof x === "string") return key === x;
+    const isPathExcluded = !_exclude.some((x) => {
+      if (typeof x === "string") return key === x;
 
-        return x.test(key);
-      }) &&
+      return x.test(key);
+    });
+
+    // If excludeStaticFile is true, we want to exclude static files
+    const isStaticFileExcluded = excludeStaticFile
+      ? !key.includes(".") || key.includes("{")
+      : true;
+
+    if (
+      isPathExcluded &&
       !(key.includes("*") && !key.includes("{")) &&
-      (excludeStaticFile ? !key.includes(".") || key.includes("{") : true)
+      isStaticFileExcluded &&
+      value != null
     ) {
-      // @ts-expect-error
       for (const method of Object.keys(value)) {
-        // @ts-expect-error
         const schema = value[method];
 
         if (key.includes("{")) {
@@ -292,7 +247,7 @@ export function filterPaths(
             const paramName = param.slice(1, param.length - 1);
 
             const index = schema.parameters.findIndex(
-              (x: OpenAPIV3.ParameterObject) =>
+              (x: OpenAPIV3_1.ParameterObject) =>
                 x.in === "param" && x.name === paramName,
             );
 
