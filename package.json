@@ -2,10 +2,13 @@
   "name": "hono-openapi",
   "description": "OpenAPI schema generator for Hono",
   "version": "0.5.0",
+  "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
-  "type": "module",
+  "files": [
+    "dist"
+  ],
   "license": "MIT",
   "scripts": {
     "build": "pkgroll --clean-dist",
@@ -33,9 +36,21 @@
   "bugs": {
     "url": "https://github.com/rhinobase/hono-openapi/issues"
   },
+  "exports": {
+    "import": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "require": {
+      "types": "./dist/index.d.cts",
+      "default": "./dist/index.cjs"
+    }
+  },
   "peerDependencies": {
     "@hono/standard-validator": "^0.1.2",
     "@sinclair/typebox": "^0.34.9",
+    "@standard-community/standard-json": "^0.3.0-rc.1",
+    "@standard-community/standard-openapi": "^0.2.0-rc.0",
     "arktype": "^2.0.0",
     "effect": "^3.16.12",
     "hono": "^4.8.3",
@@ -75,19 +90,5 @@
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   },
-  "exports": {
-    "import": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "require": {
-      "types": "./dist/index.d.cts",
-      "default": "./dist/index.cjs"
-    }
-  },
-  "packageManager": "pnpm@10.0.0",
-  "dependencies": {
-    "@standard-community/standard-json": "^0.3.0-rc.1",
-    "@standard-community/standard-openapi": "^0.2.0-rc.0"
-  }
+  "packageManager": "pnpm@10.0.0"
 }
