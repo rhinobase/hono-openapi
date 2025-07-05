@@ -4,6 +4,7 @@ import type {
   BlankInput,
   BlankSchema,
   Input,
+  MiddlewareHandler,
   Schema,
 } from "hono/types";
 import type { OpenAPIV3_1 } from "openapi-types";
@@ -28,6 +29,32 @@ const DEFAULT_OPTIONS: Partial<GenerateSpecOptions> = {
   excludeMethods: ["OPTIONS"],
   excludeTags: [],
 };
+
+/**
+ * Route handler for OpenAPI specs
+ * @param hono Instance of Hono
+ * @param options Options for generating OpenAPI specs
+ * @returns Middleware handler for OpenAPI specs
+ */
+export function openAPIRouteHandler<
+  E extends Env = BlankEnv,
+  P extends string = string,
+  I extends Input = BlankInput,
+  S extends Schema = BlankSchema,
+>(
+  hono: Hono<E, S, P>,
+  options?: GenerateSpecOptions,
+): MiddlewareHandler<E, P, I> {
+  let specs: OpenAPIV3_1.Document;
+
+  return async (c) => {
+    if (specs) return c.json(specs);
+
+    specs = await generateSpecs(hono, options, c);
+
+    return c.json(specs);
+  };
+}
 
 type SpecContext = {
   components: Record<string, OpenAPIV3_1.SchemaObject>;

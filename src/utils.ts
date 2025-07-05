@@ -195,7 +195,6 @@ export function registerSchemaPath({
   }
 }
 
-// TODO: Cross check the need for this function
 export function removeExcludedPaths(
   paths: OpenAPIV3_1.PathsObject,
   ctx: { options: SanitizedGenerateSpecOptions },
