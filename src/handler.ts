@@ -10,7 +10,7 @@ import type { OpenAPIV3_1 } from "openapi-types";
 import type {
   DescribeRouteOptions,
   GenerateSpecOptions,
-  ResolverReturnType,
+  HandlerUniqueProperty,
   SanitizedGenerateSpecOptions,
 } from "./types";
 import {
@@ -145,21 +145,16 @@ async function generatePaths<
       }
     }
 
-    const middlewareHandler = route.handler[uniqueSymbol] as
-      | ResolverReturnType
-      | { schema: DescribeRouteOptions; components: undefined };
+    const middlewareHandler = route
+      .handler[uniqueSymbol] as HandlerUniqueProperty;
 
     const defaultOptionsForThisMethod = ctx.options.defaultOptions
       ?.[routeMethod];
 
-    const { schema: routeSpecs, components = {} } =
-      "schema" in middlewareHandler
-        ? middlewareHandler
-        : await middlewareHandler
-          .toOpenAPISchema({
-            ...defaultOptionsForThisMethod,
-            components: ctx.components,
-          });
+    const { schema: routeSpecs, components = {} } = await getSpec(
+      middlewareHandler,
+      defaultOptionsForThisMethod,
+    );
 
     ctx.components = {
       ...ctx.components,
@@ -199,4 +194,108 @@ function getHiddenValue(options: {
   }
 
   return false;
+}
+
+async function getSpec(
+  middlewareHandler: HandlerUniqueProperty,
+  defaultOptions?: Partial<DescribeRouteOptions>,
+) {
+  // If the middleware handler has a spec, that is decribeRoute middleware
+  if ("spec" in middlewareHandler) {
+    let components = {};
+    const tmp = {
+      ...defaultOptions,
+      ...middlewareHandler.spec,
+      responses: {
+        ...defaultOptions?.responses,
+        ...middlewareHandler.spec.responses,
+      },
+    };
+
+    if (tmp.responses) {
+      for (const key of Object.keys(tmp.responses)) {
+        const response = tmp.responses[key];
+
+        if (!response || !("content" in response)) continue;
+
+        for (const contentKey of Object.keys(response.content ?? {})) {
+          const raw = response.content?.[contentKey];
+
+          if (!raw) continue;
+
+          if (raw.schema && "toOpenAPISchema" in raw.schema) {
+            const result = await raw.schema.toOpenAPISchema(defaultOptions);
+            raw.schema = result.schema;
+            if (result.components) {
+              components = {
+                ...components,
+                ...result.components,
+              };
+            }
+          }
+        }
+      }
+    }
+
+    return { schema: tmp, components };
+  }
+
+  const result = await middlewareHandler.toOpenAPISchema();
+  const docs: Pick<OpenAPIV3_1.OperationObject, "parameters" | "requestBody"> =
+    {};
+
+  if (
+    middlewareHandler.target === "form" || middlewareHandler.target === "json"
+  ) {
+    const media = middlewareHandler.target === "json"
+      ? "application/json"
+      : "multipart/form-data";
+    if (
+      !docs.requestBody ||
+      !("content" in docs.requestBody) ||
+      !docs.requestBody.content
+    ) {
+      docs.requestBody = {
+        content: {
+          [media]: {
+            schema: result.schema,
+          },
+        },
+      };
+    } else {
+      docs.requestBody.content[media] = {
+        schema: result.schema,
+      };
+    }
+  } else {
+    const parameters: OpenAPIV3_1.ParameterObject[] = [];
+
+    if ("$ref" in result.schema) {
+      parameters.push({
+        in: middlewareHandler.target,
+        // @ts-expect-error
+        name: result.schema.$ref,
+        // @ts-expect-error
+        schema: result.schema,
+      });
+    } else {
+      for (
+        const [key, value] of Object.entries(
+          result.schema.properties ?? {},
+        )
+      ) {
+        parameters.push({
+          in: middlewareHandler.target,
+          name: key,
+          // @ts-expect-error
+          schema: value,
+          required: result.schema.required?.includes(key),
+        });
+      }
+    }
+
+    docs.parameters = parameters;
+  }
+
+  return { schema: docs, components: result.components };
 }

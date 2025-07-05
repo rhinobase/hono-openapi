@@ -1,10 +1,10 @@
+import { Schema } from "effect";
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
-import z from "zod";
 import { generateSpecs } from "../handler.js";
 import { describeRoute, resolver, validator } from "../middlewares.js";
 
-describe("zod", () => {
+describe("effect", () => {
   it("basic", async () => {
     const app = new Hono().get(
       "/",
@@ -18,16 +18,21 @@ describe("zod", () => {
             content: {
               "application/json": {
                 schema: resolver(
-                  z.object({
-                    message: z.string(),
-                  }),
+                  Schema.standardSchemaV1(Schema.Struct({
+                    message: Schema.String,
+                  })),
                 ),
               },
             },
           },
         },
       }),
-      validator("json", z.object({ message: z.string() })),
+      validator(
+        "json",
+        Schema.standardSchemaV1(Schema.Struct({
+          message: Schema.String,
+        })),
+      ),
       async (c) => {
         return c.json({ message: "Hello, world!" });
       },

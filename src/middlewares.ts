@@ -70,17 +70,17 @@ export function validator<
 
 /**
  * Describe a route with OpenAPI specs.
- * @param specs Options for describing a route
+ * @param spec Options for describing a route
  * @returns Middleware handler
  */
-export function describeRoute(specs: DescribeRouteOptions): MiddlewareHandler {
+export function describeRoute(spec: DescribeRouteOptions): MiddlewareHandler {
   const middleware: MiddlewareHandler = async (_c, next) => {
     await next();
   };
 
   return Object.assign(middleware, {
     [uniqueSymbol]: {
-      schema: specs,
+      spec,
     },
   });
 }

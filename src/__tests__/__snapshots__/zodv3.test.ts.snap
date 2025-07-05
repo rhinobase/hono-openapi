@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`zod > basic 1`] = `
+exports[`zod v3 > basic 1`] = `
 {
   "components": {
     "schemas": {},
@@ -17,23 +17,37 @@ exports[`zod > basic 1`] = `
         "description": "This is a test route",
         "operationId": "GETIndex",
         "parameters": [],
-        "properties": {
-          "message": {
-            "type": "string",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "message": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "message",
+                ],
+                "type": "object",
+              },
+            },
           },
         },
-        "required": [
-          "message",
-        ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "toJSONSchema": [Function],
-                  "toOpenAPISchema": [Function],
-                  "validate": [Function],
-                  "vendor": "zod",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "message",
+                  ],
+                  "type": "object",
                 },
               },
             },
@@ -44,7 +58,6 @@ exports[`zod > basic 1`] = `
         "tags": [
           "test",
         ],
-        "type": "object",
       },
     },
   },

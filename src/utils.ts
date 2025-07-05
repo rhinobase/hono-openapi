@@ -160,9 +160,7 @@ export function registerSchemaPath({
   route,
   specs,
   paths,
-}: RegisterSchemaPathOptions & {
-  paths: Partial<OpenAPIV3_1.PathsObject>;
-}) {
+}: RegisterSchemaPathOptions) {
   const path = toOpenAPIPath(route.path);
   const method = route.method.toLowerCase() as
     | Lowercase<AllowedMethods>

@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import type { RouterRoute } from "hono/types";
+import type { RouterRoute, ValidationTargets } from "hono/types";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type { resolver } from "./middlewares.js";
 import type { AllowedMethods } from "./utils.js";
@@ -7,6 +7,15 @@ import type { AllowedMethods } from "./utils.js";
 export type PromiseOr<T> = T | Promise<T>;
 
 export type ResolverReturnType = ReturnType<typeof resolver>;
+
+export type HandlerUniqueProperty =
+  | (ResolverReturnType & {
+    target: keyof ValidationTargets;
+    options?: Record<string, unknown>;
+  })
+  | {
+    spec: DescribeRouteOptions;
+  };
 
 export type GenerateSpecOptions = {
   /**
@@ -107,4 +116,5 @@ export type RegisterSchemaPathOptions = {
   specs?:
     | DescribeRouteOptions
     | Pick<OpenAPIV3_1.OperationObject, "parameters" | "requestBody">;
+  paths: Partial<OpenAPIV3_1.PathsObject>;
 };

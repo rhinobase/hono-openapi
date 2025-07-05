@@ -16,16 +16,16 @@ importers:
         version: 0.34.35
       '@standard-community/standard-json':
         specifier: ^0.3.0-rc.1
-        version: 0.3.0-rc.1(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(arktype@2.1.20)(effect@3.16.8)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)
+        version: 0.3.0-rc.1(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)
       '@standard-community/standard-openapi':
         specifier: ^0.2.0-rc.0
-        version: 0.2.0-rc.0(@standard-community/standard-json@0.3.0-rc.1(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(arktype@2.1.20)(effect@3.16.8)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67))(@standard-schema/spec@1.0.0)(arktype@2.1.20)(openapi-types@12.1.3)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)
+        version: 0.2.0-rc.0(@standard-community/standard-json@0.3.0-rc.1(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67))(@standard-schema/spec@1.0.0)(arktype@2.1.20)(openapi-types@12.1.3)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)
       arktype:
         specifier: ^2.0.0
         version: 2.1.20
       effect:
-        specifier: ^3.11.3
-        version: 3.16.8
+        specifier: ^3.16.12
+        version: 3.16.12
       hono:
         specifier: ^4.8.3
         version: 4.8.3
@@ -39,9 +39,6 @@ importers:
         specifier: ^3.23.8
         version: 3.25.67
     devDependencies:
-      '@apidevtools/json-schema-ref-parser':
-        specifier: ^12.0.1
-        version: 12.0.2
       '@biomejs/biome':
         specifier: ^2.0.6
         version: 2.0.6
@@ -51,6 +48,9 @@ importers:
       '@types/json-schema':
         specifier: ^7.0.15
         version: 7.0.15
+      '@valibot/to-json-schema':
+        specifier: ^1.3.0
+        version: 1.3.0(valibot@1.1.0(typescript@5.8.3))
       pkgroll:
         specifier: ^2.13.1
         version: 2.13.1(typescript@5.8.3)
@@ -62,10 +62,6 @@ importers:
         version: 3.2.4
 
 packages:
-
-  '@apidevtools/json-schema-ref-parser@12.0.2':
-    resolution: {integrity: sha512-SoZWqQz4YMKdw4kEMfG5w6QAy+rntjsoAT1FtvZAnVEnCR4uy9YSuDBNoVAFHgzSz0dJbISLLCSrGR2Zd7bcvA==}
-    engines: {node: '>= 16'}
 
   '@ark/schema@0.46.0':
     resolution: {integrity: sha512-c2UQdKgP2eqqDArfBqQIJppxJHvNNXuQPeuSPlDML4rjw+f1cu0qAlzOG4b8ujgm9ctIDWwhpyw6gjG5ledIVQ==}
@@ -284,9 +280,6 @@ packages:
 
   '@jridgewell/sourcemap-codec@1.5.0':
     resolution: {integrity: sha512-gv3ZRaISU3fjPAgNsriBRqGWQL6quFx04YMPW/zD8XMLsU32mhCCbfbO6KZFLjvYpCZ8zyDEgqsgf+PwPaM7GQ==}
-
-  '@jsdevtools/ono@7.1.3':
-    resolution: {integrity: sha512-4JQNk+3mVzK3xh2rqd6RB4J46qUR19azEHBneZyTZM+c456qOrbbM/5xcR8huNCCcbVt7+UmizG6GuUvPvKUYg==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -526,6 +519,11 @@ packages:
   '@types/resolve@1.20.2':
     resolution: {integrity: sha512-60BCwRFOZCQhDncwQdxxeOEEkbc5dIMccYLwbxsS4TUNeVECQ/pBJ0j09mrHOl/JJvpRPGwO9SvE4nR2Nb/a4Q==}
 
+  '@valibot/to-json-schema@1.3.0':
+    resolution: {integrity: sha512-82Vv6x7sOYhv5YmTRgSppSqj1nn2pMCk5BqCMGWYp0V/fq+qirrbGncqZAtZ09/lrO40ne/7z8ejwE728aVreg==}
+    peerDependencies:
+      valibot: ^1.1.0
+
   '@vitest/expect@3.2.4':
     resolution: {integrity: sha512-Io0yyORnB6sikFlt8QW5K7slY4OjqNX9jmJQ02QDda8lyM6B5oNgVWoSoKPac8/kgnCUzuHQKrSLtu/uOqqrig==}
 
@@ -554,9 +552,6 @@ packages:
 
   '@vitest/utils@3.2.4':
     resolution: {integrity: sha512-fB2V0JFrQSMsCo9HiSq3Ezpdv4iYaXRG1Sx8edX3MwxfyNn83mKiGzOcH+Fkxt4MHxr3y42fQi1oeAInqgX2QA==}
-
-  argparse@2.0.1:
-    resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
 
   arktype@2.1.20:
     resolution: {integrity: sha512-IZCEEXaJ8g+Ijd59WtSYwtjnqXiwM8sWQ5EjGamcto7+HVN9eK0C4p0zDlCuAwWhpqr6fIBkxPuYDl4/Mcj/+Q==}
@@ -605,8 +600,8 @@ packages:
     resolution: {integrity: sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==}
     engines: {node: '>=0.10.0'}
 
-  effect@3.16.8:
-    resolution: {integrity: sha512-E4U0MZFBun99myxOogy9ZZ1c3IYR47L/A5GqCP9Lp+6ORag0YLmGHOrYxQ3agN1FOMTrElgtJmciicwnHdE+Ug==}
+  effect@3.16.12:
+    resolution: {integrity: sha512-N39iBk0K71F9nb442TLbTkjl24FLUzuvx2i1I2RsEAQsdAdUTuUoW0vlfUXgkMTUOnYqKnWcFfqw4hK4Pw27hg==}
 
   es-module-lexer@1.7.0:
     resolution: {integrity: sha512-jEQoCwk8hyb2AZziIOLhDqpm5+2ww5uIE6lkO/6jcOCusfk6LhMHpXXfBLXTZ7Ydyt0j4VoUQv6uGNYbdW+kBA==}
@@ -696,10 +691,6 @@ packages:
 
   js-tokens@9.0.1:
     resolution: {integrity: sha512-mxa9E9ITFOt0ban3j6L5MpjwegGz6lBQmM1IJkWeBZGcMxto50+eWdjC/52xDbS2vy0k7vIMK0Fe2wfL9OQSpQ==}
-
-  js-yaml@4.1.0:
-    resolution: {integrity: sha512-wpxZs9NoxZaJESJGIZTyDEaYpl0FKSA+FB9aJiyemKhMwkxQg63h4T1KJgUGHpTqPDNRcmmYLugrRjJlBtWvRA==}
-    hasBin: true
 
   loupe@3.1.4:
     resolution: {integrity: sha512-wJzkKwJrheKtknCOKNEtDK4iqg/MxmZheEMtSTYvnzRdEYaZzmgH976nenp8WdJRdx5Vc1X/9MO0Oszl6ezeXg==}
@@ -935,12 +926,6 @@ packages:
 
 snapshots:
 
-  '@apidevtools/json-schema-ref-parser@12.0.2':
-    dependencies:
-      '@jsdevtools/ono': 7.1.3
-      '@types/json-schema': 7.0.15
-      js-yaml: 4.1.0
-
   '@ark/schema@0.46.0':
     dependencies:
       '@ark/util': 0.46.0
@@ -1063,8 +1048,6 @@ snapshots:
       hono: 4.8.3
 
   '@jridgewell/sourcemap-codec@1.5.0': {}
-
-  '@jsdevtools/ono@7.1.3': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -1198,19 +1181,20 @@ snapshots:
 
   '@sinclair/typebox@0.34.35': {}
 
-  '@standard-community/standard-json@0.3.0-rc.1(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(arktype@2.1.20)(effect@3.16.8)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)':
+  '@standard-community/standard-json@0.3.0-rc.1(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)':
     dependencies:
       '@standard-schema/spec': 1.0.0
       '@types/json-schema': 7.0.15
     optionalDependencies:
+      '@valibot/to-json-schema': 1.3.0(valibot@1.1.0(typescript@5.8.3))
       arktype: 2.1.20
-      effect: 3.16.8
+      effect: 3.16.12
       valibot: 1.1.0(typescript@5.8.3)
       zod: 3.25.67
 
-  '@standard-community/standard-openapi@0.2.0-rc.0(@standard-community/standard-json@0.3.0-rc.1(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(arktype@2.1.20)(effect@3.16.8)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67))(@standard-schema/spec@1.0.0)(arktype@2.1.20)(openapi-types@12.1.3)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)':
+  '@standard-community/standard-openapi@0.2.0-rc.0(@standard-community/standard-json@0.3.0-rc.1(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67))(@standard-schema/spec@1.0.0)(arktype@2.1.20)(openapi-types@12.1.3)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)':
     dependencies:
-      '@standard-community/standard-json': 0.3.0-rc.1(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(arktype@2.1.20)(effect@3.16.8)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)
+      '@standard-community/standard-json': 0.3.0-rc.1(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)
       '@standard-schema/spec': 1.0.0
       openapi-types: 12.1.3
       zod-openapi: 4.2.4(zod@3.25.67)
@@ -1232,6 +1216,10 @@ snapshots:
   '@types/json-schema@7.0.15': {}
 
   '@types/resolve@1.20.2': {}
+
+  '@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3))':
+    dependencies:
+      valibot: 1.1.0(typescript@5.8.3)
 
   '@vitest/expect@3.2.4':
     dependencies:
@@ -1275,8 +1263,6 @@ snapshots:
       loupe: 3.1.4
       tinyrainbow: 2.0.0
 
-  argparse@2.0.1: {}
-
   arktype@2.1.20:
     dependencies:
       '@ark/schema': 0.46.0
@@ -1312,7 +1298,7 @@ snapshots:
 
   deepmerge@4.3.1: {}
 
-  effect@3.16.8:
+  effect@3.16.12:
     dependencies:
       '@standard-schema/spec': 1.0.0
       fast-check: 3.23.2
@@ -1415,10 +1401,6 @@ snapshots:
       '@types/estree': 1.0.8
 
   js-tokens@9.0.1: {}
-
-  js-yaml@4.1.0:
-    dependencies:
-      argparse: 2.0.1
 
   loupe@3.1.4: {}
 

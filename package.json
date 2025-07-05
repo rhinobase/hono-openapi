@@ -36,7 +36,7 @@
     "@hono/standard-validator": "^0.1.2",
     "@sinclair/typebox": "^0.34.9",
     "arktype": "^2.0.0",
-    "effect": "^3.11.3",
+    "effect": "^3.16.12",
     "hono": "^4.8.3",
     "openapi-types": "^12.1.3",
     "valibot": "^1.0.0-beta.9",
@@ -69,6 +69,7 @@
     "@biomejs/biome": "^2.0.6",
     "@standard-schema/spec": "^1.0.0",
     "@types/json-schema": "^7.0.15",
+    "@valibot/to-json-schema": "^1.3.0",
     "pkgroll": "^2.13.1",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
