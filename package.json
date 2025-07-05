@@ -2,8 +2,9 @@
   "name": "hono-openapi",
   "description": "OpenAPI schema generator for Hono",
   "version": "0.5.0",
-  "types": "./index.d.ts",
-  "main": "./index.js",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -76,12 +77,12 @@
   },
   "exports": {
     "import": {
-      "types": "./index.d.ts",
-      "default": "./index.js"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "require": {
-      "types": "./index.d.cts",
-      "default": "./index.cjs"
+      "types": "./dist/index.d.cts",
+      "default": "./dist/index.cjs"
     }
   },
   "packageManager": "pnpm@10.0.0",

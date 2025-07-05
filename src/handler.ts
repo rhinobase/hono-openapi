@@ -74,11 +74,7 @@ export async function generateSpecs<
   P extends string = string,
   I extends Input = BlankInput,
   S extends Schema = BlankSchema,
->(
-  hono: Hono<E, S, P>,
-  options = DEFAULT_OPTIONS,
-  c?: Context<E, P, I>,
-) {
+>(hono: Hono<E, S, P>, options = DEFAULT_OPTIONS, c?: Context<E, P, I>) {
   const ctx: SpecContext = {
     components: {},
     // @ts-expect-error
@@ -137,10 +133,7 @@ async function generatePaths<
   E extends Env = BlankEnv,
   P extends string = string,
   S extends Schema = BlankSchema,
->(
-  hono: Hono<E, S, P>,
-  ctx: SpecContext,
-): Promise<OpenAPIV3_1.PathsObject> {
+>(hono: Hono<E, S, P>, ctx: SpecContext): Promise<OpenAPIV3_1.PathsObject> {
   const paths: OpenAPIV3_1.PathsObject = {};
 
   for (const route of hono.routes) {
@@ -172,11 +165,12 @@ async function generatePaths<
       }
     }
 
-    const middlewareHandler = route
-      .handler[uniqueSymbol] as HandlerUniqueProperty;
+    const middlewareHandler = route.handler[
+      uniqueSymbol
+    ] as HandlerUniqueProperty;
 
-    const defaultOptionsForThisMethod = ctx.options.defaultOptions
-      ?.[routeMethod];
+    const defaultOptionsForThisMethod =
+      ctx.options.defaultOptions?.[routeMethod];
 
     const { schema: routeSpecs, components = {} } = await getSpec(
       middlewareHandler,
@@ -272,11 +266,13 @@ async function getSpec(
     {};
 
   if (
-    middlewareHandler.target === "form" || middlewareHandler.target === "json"
+    middlewareHandler.target === "form" ||
+    middlewareHandler.target === "json"
   ) {
-    const media = middlewareHandler.target === "json"
-      ? "application/json"
-      : "multipart/form-data";
+    const media =
+      middlewareHandler.target === "json"
+        ? "application/json"
+        : "multipart/form-data";
     if (
       !docs.requestBody ||
       !("content" in docs.requestBody) ||
@@ -306,11 +302,9 @@ async function getSpec(
         schema: result.schema,
       });
     } else {
-      for (
-        const [key, value] of Object.entries(
-          result.schema.properties ?? {},
-        )
-      ) {
+      for (const [key, value] of Object.entries(
+        result.schema.properties ?? {},
+      )) {
         parameters.push({
           in: middlewareHandler.target,
           name: key,

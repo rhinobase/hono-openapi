@@ -10,12 +10,12 @@ export type ResolverReturnType = ReturnType<typeof resolver>;
 
 export type HandlerUniqueProperty =
   | (ResolverReturnType & {
-    target: keyof ValidationTargets;
-    options?: Record<string, unknown>;
-  })
+      target: keyof ValidationTargets;
+      options?: Record<string, unknown>;
+    })
   | {
-    spec: DescribeRouteOptions;
-  };
+      spec: DescribeRouteOptions;
+    };
 
 export type GenerateSpecOptions = {
   /**
@@ -63,9 +63,7 @@ export type GenerateSpecOptions = {
   /**
    * Default options for `describeRoute` method
    */
-  defaultOptions: Partial<
-    Record<AllowedMethods | "ALL", DescribeRouteOptions>
-  >;
+  defaultOptions: Partial<Record<AllowedMethods | "ALL", DescribeRouteOptions>>;
 };
 
 type HaveDefaultValues =
@@ -75,29 +73,26 @@ type HaveDefaultValues =
   | "excludeMethods"
   | "excludeTags";
 
-export type SanitizedGenerateSpecOptions =
-  & Pick<
-    GenerateSpecOptions,
-    HaveDefaultValues
-  >
-  & Omit<Partial<GenerateSpecOptions>, HaveDefaultValues>;
+export type SanitizedGenerateSpecOptions = Pick<
+  GenerateSpecOptions,
+  HaveDefaultValues
+> &
+  Omit<Partial<GenerateSpecOptions>, HaveDefaultValues>;
 
-export type DescribeRouteOptions =
-  & Omit<
-    OpenAPIV3_1.OperationObject,
-    "responses" | "parameters"
-  >
-  & {
-    /**
-     * Pass `true` to hide route from OpenAPI/swagger document
-     */
-    hide?: boolean | ((c: Context) => boolean);
-    /**
-     * Responses of the request
-     */
-    responses?: {
-      [key: string]:
-        | (OpenAPIV3_1.ResponseObject & {
+export type DescribeRouteOptions = Omit<
+  OpenAPIV3_1.OperationObject,
+  "responses" | "parameters"
+> & {
+  /**
+   * Pass `true` to hide route from OpenAPI/swagger document
+   */
+  hide?: boolean | ((c: Context) => boolean);
+  /**
+   * Responses of the request
+   */
+  responses?: {
+    [key: string]:
+      | (OpenAPIV3_1.ResponseObject & {
           content?: {
             [key: string]: Omit<OpenAPIV3_1.MediaTypeObject, "schema"> & {
               schema?:
@@ -107,9 +102,9 @@ export type DescribeRouteOptions =
             };
           };
         })
-        | OpenAPIV3_1.ReferenceObject;
-    };
+      | OpenAPIV3_1.ReferenceObject;
   };
+};
 
 export type RegisterSchemaPathOptions = {
   route: RouterRoute;

@@ -132,28 +132,31 @@ function getPathContext(path: string) {
 function mergeSpecs(
   ...specs: (RegisterSchemaPathOptions["specs"] | undefined)[]
 ) {
-  return specs.reduce((prev, spec) => {
-    if (!spec) return prev;
+  return specs.reduce(
+    (prev, spec) => {
+      if (!spec) return prev;
 
-    return {
-      ...prev,
-      ...spec,
-      tags: Array.from(
-        new Set([
-          ...(getProperty<string[]>(prev, "tags") ?? []),
-          ...(getProperty<string[]>(spec, "tags") ?? []),
-        ]),
-      ),
-      parameters: mergeParameters(
-        getProperty(prev, "parameters"),
-        getProperty(spec, "parameters"),
-      ),
-      responses: {
-        ...getProperty(prev, "responses", {}),
-        ...getProperty(spec, "responses", {}),
-      },
-    };
-  }, {} as NonNullable<RegisterSchemaPathOptions["specs"]>);
+      return {
+        ...prev,
+        ...spec,
+        tags: Array.from(
+          new Set([
+            ...(getProperty<string[]>(prev, "tags") ?? []),
+            ...(getProperty<string[]>(spec, "tags") ?? []),
+          ]),
+        ),
+        parameters: mergeParameters(
+          getProperty(prev, "parameters"),
+          getProperty(spec, "parameters"),
+        ),
+        responses: {
+          ...getProperty(prev, "responses", {}),
+          ...getProperty(spec, "responses", {}),
+        },
+      };
+    },
+    {} as NonNullable<RegisterSchemaPathOptions["specs"]>,
+  );
 }
 
 export function registerSchemaPath({
@@ -185,11 +188,7 @@ export function registerSchemaPath({
       ...(paths[path] ? paths[path] : {}),
       [method]: {
         operationId: generateOperationId(route),
-        ...mergeSpecs(
-          ...pathContext,
-          paths[path]?.[method],
-          specs,
-        ),
+        ...mergeSpecs(...pathContext, paths[path]?.[method], specs),
       } satisfies OpenAPIV3_1.OperationObject,
     };
   }

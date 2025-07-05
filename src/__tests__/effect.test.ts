@@ -18,9 +18,11 @@ describe("effect", () => {
             content: {
               "application/json": {
                 schema: resolver(
-                  Schema.standardSchemaV1(Schema.Struct({
-                    message: Schema.String,
-                  })),
+                  Schema.standardSchemaV1(
+                    Schema.Struct({
+                      message: Schema.String,
+                    }),
+                  ),
                 ),
               },
             },
@@ -29,9 +31,11 @@ describe("effect", () => {
       }),
       validator(
         "json",
-        Schema.standardSchemaV1(Schema.Struct({
-          message: Schema.String,
-        })),
+        Schema.standardSchemaV1(
+          Schema.Struct({
+            message: Schema.String,
+          }),
+        ),
       ),
       async (c) => {
         return c.json({ message: "Hello, world!" });

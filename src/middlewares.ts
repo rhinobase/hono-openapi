@@ -39,14 +39,17 @@ export function validator<
   In = StandardSchemaV1.InferInput<Schema>,
   Out = StandardSchemaV1.InferOutput<Schema>,
   I extends Input = {
-    in: HasUndefined<In> extends true ? {
-        [K in Target]?: In extends ValidationTargets[K] ? In
-          : { [K2 in keyof In]?: ValidationTargets[K][K2] };
-      }
+    in: HasUndefined<In> extends true
+      ? {
+          [K in Target]?: In extends ValidationTargets[K]
+            ? In
+            : { [K2 in keyof In]?: ValidationTargets[K][K2] };
+        }
       : {
-        [K in Target]: In extends ValidationTargets[K] ? In
-          : { [K2 in keyof In]: ValidationTargets[K][K2] };
-      };
+          [K in Target]: In extends ValidationTargets[K]
+            ? In
+            : { [K2 in keyof In]: ValidationTargets[K][K2] };
+        };
     out: { [K in Target]: Out };
   },
   V extends I = I,
