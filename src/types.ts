@@ -81,7 +81,7 @@ export type SanitizedGenerateSpecOptions = Pick<
 
 export type DescribeRouteOptions = Omit<
   OpenAPIV3_1.OperationObject,
-  "responses" | "parameters"
+  "responses"
 > & {
   /**
    * Pass `true` to hide route from OpenAPI/swagger document

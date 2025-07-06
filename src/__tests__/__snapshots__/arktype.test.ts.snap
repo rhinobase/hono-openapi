@@ -12,11 +12,36 @@ exports[`arktype > basic 1`] = `
   },
   "openapi": "3.1.0",
   "paths": {
-    "/": {
+    "/{id}": {
       "get": {
         "description": "This is a test route",
-        "operationId": "GETIndex",
-        "parameters": [],
+        "operationId": "GET:id",
+        "parameters": [
+          {
+            "description": "The ID of the item",
+            "example": "4daec17a-9ed2-40d2-b577-22bb89b96071",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+            },
+          },
+          {
+            "description": "The category of the item",
+            "example": "one",
+            "in": "query",
+            "name": "category",
+            "required": undefined,
+            "schema": {
+              "enum": [
+                "one",
+                "three",
+                "two",
+              ],
+            },
+          },
+        ],
         "requestBody": {
           "content": {
             "application/json": {

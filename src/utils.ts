@@ -88,7 +88,17 @@ function mergeParameters(...params: (Parameter[] | undefined)[]): Parameter[] {
   const _params = params.flatMap((x) => x ?? []);
 
   const merged = _params.reduce((acc, param) => {
-    acc.set(paramKey(param), param);
+    const key = paramKey(param);
+    const existing = acc.get(key);
+    if (!existing) {
+      acc.set(paramKey(param), param);
+    } else {
+      // shallow merge
+      acc.set(key, {
+        ...existing,
+        ...param,
+      });
+    }
     return acc;
   }, new Map<string, Parameter>());
 
