@@ -1,7 +1,7 @@
 {
   "name": "hono-openapi",
   "description": "OpenAPI schema generator for Hono",
-  "version": "0.5.0",
+  "version": "0.5.0-rc.0",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
