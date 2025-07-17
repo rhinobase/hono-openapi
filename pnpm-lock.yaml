@@ -18,8 +18,8 @@ importers:
         specifier: ^0.3.0-rc.1
         version: 0.3.0-rc.1(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)
       '@standard-community/standard-openapi':
-        specifier: ^0.2.0-rc.0
-        version: 0.2.0-rc.0(@standard-community/standard-json@0.3.0-rc.1(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67))(@standard-schema/spec@1.0.0)(arktype@2.1.20)(openapi-types@12.1.3)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)
+        specifier: ^0.2.0-rc.1
+        version: 0.2.0-rc.1(@standard-community/standard-json@0.3.0-rc.1(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67))(@standard-schema/spec@1.0.0)(arktype@2.1.20)(openapi-types@12.1.3)(valibot@1.1.0(typescript@5.8.3))(zod-openapi@4.2.4(zod@3.25.67))(zod@3.25.67)
       arktype:
         specifier: ^2.0.0
         version: 2.1.20
@@ -484,21 +484,24 @@ packages:
       zod-to-json-schema:
         optional: true
 
-  '@standard-community/standard-openapi@0.2.0-rc.0':
-    resolution: {integrity: sha512-UFN2H9aB7rCbvY4z072IikQMQ6PYrCAushiBrjgpGmhHww2Q8NDa8wwY1vPc5tJTTufjGAtMUZnVe2rskdD8/w==}
+  '@standard-community/standard-openapi@0.2.0-rc.1':
+    resolution: {integrity: sha512-Gu/wshVs6Lid+fCo9yu5AT0bjcxLCBtOi6idmkGtT5wll9rLdvfOcvzklrklUQgdQX/Xj9AA3nIBllHdqLEBZg==}
     peerDependencies:
       '@standard-community/standard-json': ^0.3.0-rc.1
       '@standard-schema/spec': ^1.0.0
       arktype: ^2.1.20
       openapi-types: ^12.1.3
       valibot: ^1.1.0
-      zod: ^3.25.67
+      zod: ^3.25.0 || ^4.0.0
+      zod-openapi: ^4
     peerDependenciesMeta:
       arktype:
         optional: true
       valibot:
         optional: true
       zod:
+        optional: true
+      zod-openapi:
         optional: true
 
   '@standard-schema/spec@1.0.0':
@@ -1192,16 +1195,16 @@ snapshots:
       valibot: 1.1.0(typescript@5.8.3)
       zod: 3.25.67
 
-  '@standard-community/standard-openapi@0.2.0-rc.0(@standard-community/standard-json@0.3.0-rc.1(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67))(@standard-schema/spec@1.0.0)(arktype@2.1.20)(openapi-types@12.1.3)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)':
+  '@standard-community/standard-openapi@0.2.0-rc.1(@standard-community/standard-json@0.3.0-rc.1(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67))(@standard-schema/spec@1.0.0)(arktype@2.1.20)(openapi-types@12.1.3)(valibot@1.1.0(typescript@5.8.3))(zod-openapi@4.2.4(zod@3.25.67))(zod@3.25.67)':
     dependencies:
       '@standard-community/standard-json': 0.3.0-rc.1(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)
       '@standard-schema/spec': 1.0.0
       openapi-types: 12.1.3
-      zod-openapi: 4.2.4(zod@3.25.67)
     optionalDependencies:
       arktype: 2.1.20
       valibot: 1.1.0(typescript@5.8.3)
       zod: 3.25.67
+      zod-openapi: 4.2.4(zod@3.25.67)
 
   '@standard-schema/spec@1.0.0': {}
 
@@ -1619,5 +1622,6 @@ snapshots:
   zod-openapi@4.2.4(zod@3.25.67):
     dependencies:
       zod: 3.25.67
+    optional: true
 
   zod@3.25.67: {}

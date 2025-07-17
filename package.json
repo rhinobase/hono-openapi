@@ -50,7 +50,7 @@
     "@hono/standard-validator": "^0.1.2",
     "@sinclair/typebox": "^0.34.9",
     "@standard-community/standard-json": "^0.3.0-rc.1",
-    "@standard-community/standard-openapi": "^0.2.0-rc.0",
+    "@standard-community/standard-openapi": "^0.2.0-rc.1",
     "arktype": "^2.0.0",
     "effect": "^3.16.12",
     "hono": "^4.8.3",
