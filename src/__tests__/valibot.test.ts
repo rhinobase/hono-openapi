@@ -37,4 +37,40 @@ describe("valibot", () => {
 
     expect(specs).toMatchSnapshot();
   });
+
+  it("with metadata", async () => {
+    const app = new Hono().get(
+      "/",
+      describeRoute({
+        tags: ["test"],
+        summary: "Test route",
+        description: "This is a test route",
+        responses: {
+          200: {
+            description: "Success",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  v.pipe(
+                    v.object({
+                      message: v.string(),
+                    }),
+                    v.metadata({ ref: "SuccessResponse" }),
+                  ),
+                ),
+              },
+            },
+          },
+        },
+      }),
+      validator("json", v.object({ message: v.string() })),
+      async (c) => {
+        return c.json({ message: "Hello, world!" });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs).toMatchSnapshot();
+  });
 });

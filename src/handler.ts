@@ -57,7 +57,7 @@ export function openAPIRouteHandler<
 }
 
 type SpecContext = {
-  components: Record<string, OpenAPIV3_1.SchemaObject>;
+  components: OpenAPIV3_1.ComponentsObject;
   options: SanitizedGenerateSpecOptions;
 };
 
@@ -122,7 +122,7 @@ export async function generateSpecs<
     components: {
       ..._documentation.components,
       schemas: {
-        ...ctx.components,
+        ...ctx.components.schemas,
         ..._documentation.components?.schemas,
       },
     },
@@ -169,8 +169,8 @@ async function generatePaths<
       uniqueSymbol
     ] as HandlerUniqueProperty;
 
-    const defaultOptionsForThisMethod =
-      ctx.options.defaultOptions?.[routeMethod];
+    const defaultOptionsForThisMethod = ctx.options.defaultOptions
+      ?.[routeMethod];
 
     const { schema: routeSpecs, components = {} } = await getSpec(
       middlewareHandler,
@@ -180,6 +180,10 @@ async function generatePaths<
     ctx.components = {
       ...ctx.components,
       ...components,
+      schemas: {
+        ...ctx.components.schemas,
+        ...components.schemas,
+      },
     };
 
     registerSchemaPath({
@@ -223,7 +227,7 @@ async function getSpec(
 ) {
   // If the middleware handler has a spec, that is decribeRoute middleware
   if ("spec" in middlewareHandler) {
-    let components = {};
+    let components: OpenAPIV3_1.ComponentsObject = {};
     const tmp = {
       ...defaultOptions,
       ...middlewareHandler.spec,
@@ -269,10 +273,9 @@ async function getSpec(
     middlewareHandler.target === "form" ||
     middlewareHandler.target === "json"
   ) {
-    const media =
-      middlewareHandler.target === "json"
-        ? "application/json"
-        : "multipart/form-data";
+    const media = middlewareHandler.target === "json"
+      ? "application/json"
+      : "multipart/form-data";
     if (
       !docs.requestBody ||
       !("content" in docs.requestBody) ||
@@ -302,9 +305,11 @@ async function getSpec(
         schema: result.schema,
       });
     } else {
-      for (const [key, value] of Object.entries(
-        result.schema.properties ?? {},
-      )) {
+      for (
+        const [key, value] of Object.entries(
+          result.schema.properties ?? {},
+        )
+      ) {
         parameters.push({
           in: middlewareHandler.target,
           name: key,
