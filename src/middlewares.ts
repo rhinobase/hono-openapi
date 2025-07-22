@@ -2,8 +2,19 @@ import { type Hook, sValidator } from "@hono/standard-validator";
 import { toJsonSchema } from "@standard-community/standard-json";
 import { toOpenAPISchema } from "@standard-community/standard-openapi";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import type { Env, Input, MiddlewareHandler, ValidationTargets } from "hono";
-import type { DescribeRouteOptions } from "./types";
+import type {
+  Context,
+  Env,
+  Input,
+  MiddlewareHandler,
+  Next,
+  ValidationTargets,
+} from "hono";
+import type { BlankInput, ResponseFormat } from "hono/types";
+import type { StatusCode } from "hono/utils/http-status";
+import type { JSONValue } from "hono/utils/types";
+import type { OpenAPIV3_1 } from "openapi-types";
+import type { DescribeRouteOptions, PromiseOr } from "./types";
 import { uniqueSymbol } from "./utils";
 
 /**
@@ -84,6 +95,76 @@ export function describeRoute(spec: DescribeRouteOptions): MiddlewareHandler {
   return Object.assign(middleware, {
     [uniqueSymbol]: {
       spec,
+    },
+  });
+}
+
+type ResponseObject<T extends Partial<Record<StatusCode, StandardSchemaV1>>> = {
+  [K in keyof T]:
+    | OpenAPIV3_1.ReferenceObject
+    | (OpenAPIV3_1.ResponseObject & {
+        content?: {
+          [media: string]: OpenAPIV3_1.MediaTypeObject & {
+            vSchema?: T[K];
+          };
+        };
+      });
+};
+
+type TypedResponse<
+  T = unknown,
+  U extends StatusCode = StatusCode,
+  F extends ResponseFormat = T extends string
+    ? "text"
+    : T extends JSONValue
+      ? "json"
+      : ResponseFormat,
+> = {
+  _data: T;
+  _status: U;
+  _format: F;
+};
+
+type Num<T> = T extends `${infer N extends number}` ? N : T;
+
+type HandlerResponse<
+  T extends Partial<Record<StatusCode, StandardSchemaV1>> = Partial<
+    Record<StatusCode, StandardSchemaV1>
+  >,
+> = {
+  [K in keyof T]: T[K] extends StandardSchemaV1
+    ? PromiseOr<
+        TypedResponse<
+          StandardSchemaV1.InferOutput<T[K]>,
+          Num<K> extends StatusCode ? Num<K> : never
+        >
+      >
+    : never;
+}[keyof T];
+
+export type Handler<
+  E extends Env = any,
+  P extends string = any,
+  I extends Input = BlankInput,
+  T extends Partial<Record<StatusCode, StandardSchemaV1>> = Partial<
+    Record<StatusCode, StandardSchemaV1>
+  >,
+> = (c: Context<E, P, I>, next: Next) => HandlerResponse<T>;
+
+export function describeResponse<
+  E extends Env = any,
+  P extends string = any,
+  I extends Input = BlankInput,
+  T extends Partial<Record<StatusCode, StandardSchemaV1>> = Partial<
+    Record<StatusCode, StandardSchemaV1>
+  >,
+>(
+  handler: Handler<E, P, I, T>,
+  responses: ResponseObject<T>,
+): Handler<E, P, I, T> {
+  return Object.assign(handler, {
+    [uniqueSymbol]: {
+      spec: { responses },
     },
   });
 }
