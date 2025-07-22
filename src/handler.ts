@@ -169,8 +169,8 @@ async function generatePaths<
       uniqueSymbol
     ] as HandlerUniqueProperty;
 
-    const defaultOptionsForThisMethod = ctx.options.defaultOptions
-      ?.[routeMethod];
+    const defaultOptionsForThisMethod =
+      ctx.options.defaultOptions?.[routeMethod];
 
     const { schema: routeSpecs, components = {} } = await getSpec(
       middlewareHandler,
@@ -273,9 +273,10 @@ async function getSpec(
     middlewareHandler.target === "form" ||
     middlewareHandler.target === "json"
   ) {
-    const media = middlewareHandler.target === "json"
-      ? "application/json"
-      : "multipart/form-data";
+    const media =
+      middlewareHandler.target === "json"
+        ? "application/json"
+        : "multipart/form-data";
     if (
       !docs.requestBody ||
       !("content" in docs.requestBody) ||
@@ -305,11 +306,9 @@ async function getSpec(
         schema: result.schema,
       });
     } else {
-      for (
-        const [key, value] of Object.entries(
-          result.schema.properties ?? {},
-        )
-      ) {
+      for (const [key, value] of Object.entries(
+        result.schema.properties ?? {},
+      )) {
         parameters.push({
           in: middlewareHandler.target,
           name: key,

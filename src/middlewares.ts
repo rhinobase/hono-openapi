@@ -49,14 +49,17 @@ export function validator<
   In = StandardSchemaV1.InferInput<Schema>,
   Out = StandardSchemaV1.InferOutput<Schema>,
   I extends Input = {
-    in: HasUndefined<In> extends true ? {
-        [K in Target]?: In extends ValidationTargets[K] ? In
-          : { [K2 in keyof In]?: ValidationTargets[K][K2] };
-      }
+    in: HasUndefined<In> extends true
+      ? {
+          [K in Target]?: In extends ValidationTargets[K]
+            ? In
+            : { [K2 in keyof In]?: ValidationTargets[K][K2] };
+        }
       : {
-        [K in Target]: In extends ValidationTargets[K] ? In
-          : { [K2 in keyof In]: ValidationTargets[K][K2] };
-      };
+          [K in Target]: In extends ValidationTargets[K]
+            ? In
+            : { [K2 in keyof In]: ValidationTargets[K][K2] };
+        };
     out: { [K in Target]: Out };
   },
   V extends I = I,
@@ -99,12 +102,12 @@ type ResponseObject<T extends Partial<Record<StatusCode, StandardSchemaV1>>> = {
   [K in keyof T]:
     | OpenAPIV3_1.ReferenceObject
     | (OpenAPIV3_1.ResponseObject & {
-      content?: {
-        [media: string]: OpenAPIV3_1.MediaTypeObject & {
-          vSchema?: T[K];
+        content?: {
+          [media: string]: OpenAPIV3_1.MediaTypeObject & {
+            vSchema?: T[K];
+          };
         };
-      };
-    });
+      });
 };
 
 type Num<T> = T extends `${infer N extends number}` ? N : T;
@@ -114,12 +117,13 @@ type HandlerResponse<
     Record<StatusCode, StandardSchemaV1>
   >,
 > = {
-  [K in keyof T]: T[K] extends StandardSchemaV1 ? PromiseOr<
-      TypedResponse<
-        StandardSchemaV1.InferOutput<T[K]>,
-        Num<K> extends StatusCode ? Num<K> : never
+  [K in keyof T]: T[K] extends StandardSchemaV1
+    ? PromiseOr<
+        TypedResponse<
+          StandardSchemaV1.InferOutput<T[K]>,
+          Num<K> extends StatusCode ? Num<K> : never
+        >
       >
-    >
     : never;
 }[keyof T];
 
