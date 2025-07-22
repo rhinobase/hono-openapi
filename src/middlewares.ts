@@ -10,9 +10,8 @@ import type {
   Next,
   ValidationTargets,
 } from "hono";
-import type { BlankInput, ResponseFormat } from "hono/types";
+import type { BlankInput, TypedResponse } from "hono/types";
 import type { StatusCode } from "hono/utils/http-status";
-import type { JSONValue } from "hono/utils/types";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type { DescribeRouteOptions, PromiseOr } from "./types";
 import { uniqueSymbol } from "./utils";
@@ -50,17 +49,14 @@ export function validator<
   In = StandardSchemaV1.InferInput<Schema>,
   Out = StandardSchemaV1.InferOutput<Schema>,
   I extends Input = {
-    in: HasUndefined<In> extends true
-      ? {
-          [K in Target]?: In extends ValidationTargets[K]
-            ? In
-            : { [K2 in keyof In]?: ValidationTargets[K][K2] };
-        }
+    in: HasUndefined<In> extends true ? {
+        [K in Target]?: In extends ValidationTargets[K] ? In
+          : { [K2 in keyof In]?: ValidationTargets[K][K2] };
+      }
       : {
-          [K in Target]: In extends ValidationTargets[K]
-            ? In
-            : { [K2 in keyof In]: ValidationTargets[K][K2] };
-        };
+        [K in Target]: In extends ValidationTargets[K] ? In
+          : { [K2 in keyof In]: ValidationTargets[K][K2] };
+      };
     out: { [K in Target]: Out };
   },
   V extends I = I,
@@ -103,26 +99,12 @@ type ResponseObject<T extends Partial<Record<StatusCode, StandardSchemaV1>>> = {
   [K in keyof T]:
     | OpenAPIV3_1.ReferenceObject
     | (OpenAPIV3_1.ResponseObject & {
-        content?: {
-          [media: string]: OpenAPIV3_1.MediaTypeObject & {
-            vSchema?: T[K];
-          };
+      content?: {
+        [media: string]: OpenAPIV3_1.MediaTypeObject & {
+          vSchema?: T[K];
         };
-      });
-};
-
-type TypedResponse<
-  T = unknown,
-  U extends StatusCode = StatusCode,
-  F extends ResponseFormat = T extends string
-    ? "text"
-    : T extends JSONValue
-      ? "json"
-      : ResponseFormat,
-> = {
-  _data: T;
-  _status: U;
-  _format: F;
+      };
+    });
 };
 
 type Num<T> = T extends `${infer N extends number}` ? N : T;
@@ -132,13 +114,12 @@ type HandlerResponse<
     Record<StatusCode, StandardSchemaV1>
   >,
 > = {
-  [K in keyof T]: T[K] extends StandardSchemaV1
-    ? PromiseOr<
-        TypedResponse<
-          StandardSchemaV1.InferOutput<T[K]>,
-          Num<K> extends StatusCode ? Num<K> : never
-        >
+  [K in keyof T]: T[K] extends StandardSchemaV1 ? PromiseOr<
+      TypedResponse<
+        StandardSchemaV1.InferOutput<T[K]>,
+        Num<K> extends StatusCode ? Num<K> : never
       >
+    >
     : never;
 }[keyof T];
 
@@ -162,9 +143,36 @@ export function describeResponse<
   handler: Handler<E, P, I, T>,
   responses: ResponseObject<T>,
 ): Handler<E, P, I, T> {
+  const _responses = Object.entries(responses).reduce(
+    (acc, [statusCode, response]) => {
+      if (response.content) {
+        const content = Object.entries(response.content).reduce(
+          (contentAcc, [mediaType, media]: [string, any]) => {
+            if (media.vSchema) {
+              contentAcc[mediaType] = {
+                ...media,
+                schema: resolver(media.vSchema),
+              };
+            } else {
+              contentAcc[mediaType] = media;
+            }
+            return contentAcc;
+          },
+          {},
+        );
+        acc[statusCode] = { ...response, content };
+      } else {
+        acc[statusCode] = response;
+      }
+
+      return acc;
+    },
+    {} as NonNullable<DescribeRouteOptions["responses"]>,
+  );
+
   return Object.assign(handler, {
     [uniqueSymbol]: {
-      spec: { responses },
+      spec: { responses: _responses },
     },
   });
 }
