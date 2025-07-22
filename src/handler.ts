@@ -43,7 +43,7 @@ export function openAPIRouteHandler<
   S extends Schema = BlankSchema,
 >(
   hono: Hono<E, S, P>,
-  options?: GenerateSpecOptions,
+  options?: Partial<GenerateSpecOptions>,
 ): MiddlewareHandler<E, P, I> {
   let specs: OpenAPIV3_1.Document;
 
