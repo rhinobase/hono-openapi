@@ -137,3 +137,93 @@ exports[`zod v4 > with metadata 1`] = `
   "tags": undefined,
 }
 `;
+
+exports[`zod v4 > with response description 1`] = `
+{
+  "components": {
+    "schemas": {
+      "SuccessResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "type": "string",
+          },
+        },
+        "required": [
+          "message",
+        ],
+        "type": "object",
+      },
+    },
+  },
+  "info": {
+    "description": "Development documentation",
+    "title": "Hono Documentation",
+    "version": "0.0.0",
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/": {
+      "get": {
+        "description": "This is a test route",
+        "operationId": "GETIndex",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "message": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "message",
+                ],
+                "type": "object",
+              },
+            },
+          },
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse",
+                },
+              },
+            },
+            "description": "Success",
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "error",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "Error",
+          },
+        },
+        "summary": "Test route",
+        "tags": [
+          "test",
+        ],
+      },
+    },
+  },
+  "tags": undefined,
+}
+`;
