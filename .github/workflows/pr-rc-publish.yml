@@ -1,0 +1,152 @@
+name: Publish PR RC Version
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main, next]
+
+jobs:
+  publish-rc:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository # Only run for PRs from the same repo
+
+    permissions:
+      contents: read
+      pull-requests: write # Allow commenting on PRs
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch full history so we can access commit SHA
+          fetch-depth: 0
+
+      - name: Setup Node.js LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install PNPM
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Run build
+        run: pnpm build
+
+      - name: Generate RC version
+        id: version
+        run: |
+          # Get current version from package.json
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          BASE_VERSION=$(echo $CURRENT_VERSION | cut -d'-' -f1)
+
+          # Generate unique RC version: base-rc-pr{PR_NUMBER}.{SHORT_SHA}
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          RC_VERSION="${BASE_VERSION}-rc-pr${{ github.event.number }}.${SHORT_SHA}"
+
+          echo "rc_version=${RC_VERSION}" >> $GITHUB_OUTPUT
+          echo "Generated RC version: ${RC_VERSION}"
+
+      - name: Update package.json version
+        run: |
+          # Temporarily update version in package.json
+          npm version ${{ steps.version.outputs.rc_version }} --no-git-tag-version
+
+      - name: Publish to npm
+        run: |
+          # Publish with RC tag so it doesn't affect the main release
+          npm publish --tag rc --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.rc_version }}';
+            const prNumber = context.issue.number;
+
+            // Check if we already commented on this PR
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const botComment = comments.data.find(
+              comment => comment.user.type === 'Bot' &&
+              comment.body.includes('🚀 RC Version Published')
+            );
+
+            const body = `## 🚀 RC Version Published
+
+            This PR has been published as an RC version for testing:
+
+            **Version:** \`${version}\`
+
+            ### Install and test:
+            \`\`\`bash
+            pnpm add hono-openapi@${version}
+            # or
+            npm install hono-openapi@${version}
+            \`\`\`
+
+                         ### Alternative install with RC tag:
+             \`\`\`bash
+             pnpm add hono-openapi@rc
+             # or
+             npm install hono-openapi@rc
+             \`\`\`
+
+            > 📝 This RC version will be available until the PR is merged or closed.
+            `;
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+            }
+
+  cleanup-rc:
+    runs-on: ubuntu-latest
+    if: github.event.action == 'closed'
+
+    steps:
+      - name: Comment cleanup
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.issue.number;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `## 🧹 PR Closed
+
+              This PR has been closed. The specific RC version \`${{ steps.version.outputs.rc_version || 'for this PR' }}\` is still available on npm, but the \`@rc\` tag now points to the latest RC version.
+
+              To use the stable release instead:
+              \`\`\`bash
+              pnpm add hono-openapi@latest
+              \`\`\`
+              `
+            });
