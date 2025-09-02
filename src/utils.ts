@@ -112,16 +112,11 @@ const specsByPathContext = new Map<
 >();
 
 function getPathContext(path: string) {
-  const keys = Array.from(specsByPathContext.keys());
-
   const context: RegisterSchemaPathOptions["specs"][] = [];
 
-  for (const key of keys) {
-    if (path.match(key)) {
-      const data = specsByPathContext.get(key);
-
-      if (!data) continue;
-
+  for (const [key, data] of specsByPathContext) {
+    // TODO: Improve path matching https://github.com/rhinobase/hono-openapi/issues/143
+    if (data && path.match(key)) {
       context.push(data);
     }
   }
