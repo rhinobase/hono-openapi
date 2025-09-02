@@ -251,7 +251,7 @@ async function getSpec(
           if (!raw) continue;
 
           if (raw.schema && "toOpenAPISchema" in raw.schema) {
-            const result = await raw.schema.toOpenAPISchema(defaultOptions);
+            const result = await raw.schema.toOpenAPISchema();
             raw.schema = result.schema;
             if (result.components) {
               components = {

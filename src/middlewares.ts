@@ -21,14 +21,15 @@ import { uniqueSymbol } from "./utils";
  * @param schema Validation schema
  * @returns Resolver result
  */
-export function resolver<Schema extends StandardSchemaV1>(schema: Schema) {
+export function resolver<Schema extends StandardSchemaV1>(
+  schema: Schema,
+  options?: Record<string, unknown>,
+) {
   return {
     vendor: schema["~standard"].vendor,
     validate: schema["~standard"].validate,
-    toJSONSchema: (options?: Record<string, unknown>) =>
-      toJsonSchema(schema, options),
-    toOpenAPISchema: (options?: Record<string, unknown>) =>
-      toOpenAPISchema(schema, options),
+    toJSONSchema: () => toJsonSchema(schema, options),
+    toOpenAPISchema: () => toOpenAPISchema(schema, options),
   };
 }
 
@@ -49,14 +50,17 @@ export function validator<
   In = StandardSchemaV1.InferInput<Schema>,
   Out = StandardSchemaV1.InferOutput<Schema>,
   I extends Input = {
-    in: HasUndefined<In> extends true ? {
-        [K in Target]?: In extends ValidationTargets[K] ? In
-          : { [K2 in keyof In]?: ValidationTargets[K][K2] };
-      }
+    in: HasUndefined<In> extends true
+      ? {
+          [K in Target]?: In extends ValidationTargets[K]
+            ? In
+            : { [K2 in keyof In]?: ValidationTargets[K][K2] };
+        }
       : {
-        [K in Target]: In extends ValidationTargets[K] ? In
-          : { [K2 in keyof In]: ValidationTargets[K][K2] };
-      };
+          [K in Target]: In extends ValidationTargets[K]
+            ? In
+            : { [K2 in keyof In]: ValidationTargets[K][K2] };
+        };
     out: { [K in Target]: Out };
   },
   V extends I = I,
@@ -72,8 +76,7 @@ export function validator<
   return Object.assign(middleware, {
     [uniqueSymbol]: {
       target,
-      ...resolver(schema),
-      options,
+      ...resolver(schema, options),
     },
   });
 }
@@ -99,12 +102,12 @@ type ResponseObject<T extends Partial<Record<StatusCode, StandardSchemaV1>>> = {
   [K in keyof T]:
     | OpenAPIV3_1.ReferenceObject
     | (OpenAPIV3_1.ResponseObject & {
-      content?: {
-        [media: string]: OpenAPIV3_1.MediaTypeObject & {
-          vSchema?: T[K];
+        content?: {
+          [media: string]: OpenAPIV3_1.MediaTypeObject & {
+            vSchema?: T[K];
+          };
         };
-      };
-    });
+      });
 };
 
 type Num<T> = T extends `${infer N extends number}` ? N : T;
@@ -114,12 +117,13 @@ type HandlerResponse<
     Record<StatusCode, StandardSchemaV1>
   >,
 > = {
-  [K in keyof T]: T[K] extends StandardSchemaV1 ? PromiseOr<
-      TypedResponse<
-        StandardSchemaV1.InferOutput<T[K]>,
-        Num<K> extends StatusCode ? Num<K> : never
+  [K in keyof T]: T[K] extends StandardSchemaV1
+    ? PromiseOr<
+        TypedResponse<
+          StandardSchemaV1.InferOutput<T[K]>,
+          Num<K> extends StatusCode ? Num<K> : never
+        >
       >
-    >
     : never;
 }[keyof T];
 
@@ -142,6 +146,7 @@ export function describeResponse<
 >(
   handler: Handler<E, P, I, T>,
   responses: ResponseObject<T>,
+  options?: Record<string, unknown>,
 ): Handler<E, P, I, T> {
   const _responses = Object.entries(responses).reduce(
     (acc, [statusCode, response]) => {
@@ -152,7 +157,7 @@ export function describeResponse<
               const { vSchema, ...rest } = media;
               contentAcc[mediaType] = {
                 ...rest,
-                schema: resolver(vSchema),
+                schema: resolver(vSchema, options),
               };
             } else {
               contentAcc[mediaType] = media;

@@ -11,7 +11,6 @@ export type ResolverReturnType = ReturnType<typeof resolver>;
 export type HandlerUniqueProperty =
   | (ResolverReturnType & {
       target: keyof ValidationTargets;
-      options?: Record<string, unknown>;
     })
   | {
       spec: DescribeRouteOptions;
