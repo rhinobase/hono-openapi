@@ -85,20 +85,20 @@ export async function generateSpecs<
   };
 
   const _documentation = ctx.options.documentation ?? {};
-  const schema = await generatePaths(hono, ctx);
+  const paths = await generatePaths(hono, ctx);
 
   // Hide routes
-  for (const path in schema) {
-    for (const method in schema[path]) {
+  for (const path in paths) {
+    for (const method in paths[path]) {
       const isHidden = getHiddenValue({
-        valueOrFunc: schema[path][method]?.hide,
+        valueOrFunc: paths[path][method]?.hide,
         method,
         path,
         c,
       });
 
       if (isHidden) {
-        delete schema[path][method];
+        paths[path][method] = undefined;
       }
     }
   }
@@ -116,7 +116,7 @@ export async function generateSpecs<
       ..._documentation.info,
     },
     paths: {
-      ...removeExcludedPaths(schema, ctx),
+      ...removeExcludedPaths(paths, ctx),
       ..._documentation.paths,
     },
     components: {
@@ -137,8 +137,12 @@ async function generatePaths<
   const paths: OpenAPIV3_1.PathsObject = {};
 
   for (const route of hono.routes) {
+    const middlewareHandler = route.handler[uniqueSymbol] as
+      | HandlerUniqueProperty
+      | undefined;
+
     // Finding routes with uniqueSymbol
-    if (!(uniqueSymbol in route.handler)) {
+    if (!middlewareHandler) {
       // Include empty paths, if enabled
       if (ctx.options.includeEmptyPaths) {
         registerSchemaPath({
@@ -164,10 +168,6 @@ async function generatePaths<
         continue;
       }
     }
-
-    const middlewareHandler = route.handler[
-      uniqueSymbol
-    ] as HandlerUniqueProperty;
 
     const defaultOptionsForThisMethod =
       ctx.options.defaultOptions?.[routeMethod];
@@ -210,13 +210,7 @@ function getHiddenValue(options: {
     }
 
     if (typeof valueOrFunc === "function") {
-      if (c) {
-        return valueOrFunc(c);
-      }
-
-      console.warn(
-        `'c' is not defined, cannot evaluate hide function for ${method} ${path}`,
-      );
+      return valueOrFunc({ c, method, path });
     }
   }
 

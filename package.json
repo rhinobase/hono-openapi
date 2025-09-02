@@ -6,9 +6,7 @@
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "license": "MIT",
   "scripts": {
     "build": "pkgroll --clean-dist",
@@ -49,7 +47,7 @@
   "peerDependencies": {
     "@hono/standard-validator": "^0.1.2",
     "@sinclair/typebox": "^0.34.9",
-    "@standard-community/standard-json": "^0.3.0-rc.3",
+    "@standard-community/standard-json": "^0.3.0-rc.4",
     "@standard-community/standard-openapi": "^0.2.0-rc.1",
     "@types/json-schema": "^7.0.15",
     "arktype": "^2.0.0",

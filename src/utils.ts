@@ -54,14 +54,7 @@ const toOpenAPIPath = (path: string) =>
 const capitalize = (word: string) =>
   word.charAt(0).toUpperCase() + word.slice(1);
 
-const generateOperationIdCache = new Map<string, string>();
 const generateOperationId = (route: RouterRoute) => {
-  const operationIdKey = `${route.method}:${route.path}`;
-
-  if (generateOperationIdCache.has(operationIdKey)) {
-    return generateOperationIdCache.get(operationIdKey) as string;
-  }
-
   let operationId = route.method;
 
   if (route.path === "/") return `${operationId}Index`;
@@ -74,8 +67,6 @@ const generateOperationId = (route: RouterRoute) => {
     }
   }
 
-  generateOperationIdCache.set(operationIdKey, operationId);
-
   return operationId;
 };
 
@@ -85,25 +76,14 @@ const paramKey = (param: Parameter) =>
   "$ref" in param ? param.$ref : `${param.in} ${param.name}`;
 
 function mergeParameters(...params: (Parameter[] | undefined)[]): Parameter[] {
-  const _params = params.flatMap((x) => x ?? []);
-
-  const merged = _params.reduce((acc, param) => {
-    acc.set(paramKey(param), param);
-    return acc;
-  }, new Map<string, Parameter>());
+  const merged = params
+    .flatMap((x) => x ?? [])
+    .reduce((acc, param) => {
+      acc.set(paramKey(param), param);
+      return acc;
+    }, new Map<string, Parameter>());
 
   return Array.from(merged.values());
-}
-
-function getProperty<T = unknown>(
-  obj: Record<string, unknown> | undefined,
-  key: string,
-  defaultValue?: T,
-): T | undefined {
-  if (obj != null && key in obj) {
-    return obj[key] as T;
-  }
-  return defaultValue;
 }
 
 const specsByPathContext = new Map<
@@ -125,32 +105,52 @@ function getPathContext(path: string) {
 }
 
 function mergeSpecs(
-  ...specs: (RegisterSchemaPathOptions["specs"] | undefined)[]
+  route: RouterRoute,
+  ...specs: RegisterSchemaPathOptions["specs"][]
 ) {
-  return specs.reduce(
+  return specs.reduce<OpenAPIV3_1.OperationObject>(
     (prev, spec) => {
-      if (!spec) return prev;
+      if (!spec || !prev) return prev;
 
-      return {
-        ...prev,
-        ...spec,
-        tags: Array.from(
-          new Set([
-            ...(getProperty<string[]>(prev, "tags") ?? []),
-            ...(getProperty<string[]>(spec, "tags") ?? []),
-          ]),
-        ),
-        parameters: mergeParameters(
-          getProperty(prev, "parameters"),
-          getProperty(spec, "parameters"),
-        ),
-        responses: {
-          ...getProperty(prev, "responses", {}),
-          ...getProperty(spec, "responses", {}),
-        },
-      };
+      for (const [key, value] of Object.entries(spec)) {
+        if (value == null) continue;
+
+        if (
+          key in prev &&
+          (typeof value === "object" ||
+            (typeof value === "function" && key === "operationId"))
+        ) {
+          if (Array.isArray(value)) {
+            const values = [...(prev[key] ?? []), ...value];
+
+            if (key === "tags") {
+              prev[key] = Array.from(new Set(values));
+            } else {
+              prev[key] = values;
+            }
+          } else if (typeof value === "function") {
+            prev[key] = value(route);
+          } else {
+            if (key === "parameters") {
+              // @ts-expect-error
+              prev[key] = mergeParameters(prev[key], value);
+            } else {
+              prev[key] = {
+                ...prev[key],
+                ...value,
+              };
+            }
+          }
+        } else {
+          prev[key] = value;
+        }
+      }
+
+      return prev;
     },
-    {} as NonNullable<RegisterSchemaPathOptions["specs"]>,
+    {
+      operationId: generateOperationId(route),
+    },
   );
 }
 
@@ -171,7 +171,7 @@ export function registerSchemaPath({
     if (specsByPathContext.has(path)) {
       const prev = specsByPathContext.get(path) ?? {};
 
-      specsByPathContext.set(path, mergeSpecs(prev, specs));
+      specsByPathContext.set(path, mergeSpecs(route, prev, specs));
     } else {
       // If the specs are not present, we can just set it
       specsByPathContext.set(path, specs);
@@ -179,13 +179,18 @@ export function registerSchemaPath({
   } else {
     const pathContext = getPathContext(path);
 
-    paths[path] = {
-      ...(paths[path] ? paths[path] : {}),
-      [method]: {
-        operationId: generateOperationId(route),
-        ...mergeSpecs(...pathContext, paths[path]?.[method], specs),
-      } satisfies OpenAPIV3_1.OperationObject,
-    };
+    if (!(path in paths)) {
+      paths[path] = {};
+    }
+
+    if (paths[path]) {
+      paths[path][method] = mergeSpecs(
+        route,
+        ...pathContext,
+        paths[path]?.[method],
+        specs,
+      );
+    }
   }
 }
 

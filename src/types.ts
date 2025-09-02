@@ -85,7 +85,13 @@ export type DescribeRouteOptions = Omit<
   /**
    * Pass `true` to hide route from OpenAPI/swagger document
    */
-  hide?: boolean | ((c: Context) => boolean);
+  hide?:
+    | boolean
+    | ((props: {
+        c?: Context;
+        method: string;
+        path: string;
+      }) => boolean);
   /**
    * Responses of the request
    */
@@ -107,8 +113,8 @@ export type DescribeRouteOptions = Omit<
 
 export type RegisterSchemaPathOptions = {
   route: RouterRoute;
-  specs?:
-    | DescribeRouteOptions
-    | Pick<OpenAPIV3_1.OperationObject, "parameters" | "requestBody">;
+  specs?: DescribeRouteOptions & {
+    operationId?: string | ((route: RouterRoute) => string);
+  };
   paths: Partial<OpenAPIV3_1.PathsObject>;
 };
