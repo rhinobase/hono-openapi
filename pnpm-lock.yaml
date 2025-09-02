@@ -15,11 +15,11 @@ importers:
         specifier: ^0.34.9
         version: 0.34.35
       '@standard-community/standard-json':
-        specifier: ^0.3.0-rc.3
-        version: 0.3.0-rc.3(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)
+        specifier: ^0.3.0-rc.4
+        version: 0.3.0-rc.4(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)
       '@standard-community/standard-openapi':
         specifier: ^0.2.0-rc.1
-        version: 0.2.0-rc.1(@standard-community/standard-json@0.3.0-rc.3(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67))(@standard-schema/spec@1.0.0)(arktype@2.1.20)(openapi-types@12.1.3)(valibot@1.1.0(typescript@5.8.3))(zod-openapi@4.2.4(zod@3.25.67))(zod@3.25.67)
+        version: 0.2.0-rc.1(@standard-community/standard-json@0.3.0-rc.4(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67))(@standard-schema/spec@1.0.0)(arktype@2.1.20)(openapi-types@12.1.3)(valibot@1.1.0(typescript@5.8.3))(zod-openapi@4.2.4(zod@3.25.67))(zod@3.25.67)
       '@types/json-schema':
         specifier: ^7.0.15
         version: 7.0.15
@@ -459,8 +459,8 @@ packages:
   '@sinclair/typebox@0.34.35':
     resolution: {integrity: sha512-C6ypdODf2VZkgRT6sFM8E1F8vR+HcffniX0Kp8MsU8PIfrlXbNCBz0jzj17GjdmjTx1OtZzdH8+iALL21UjF5A==}
 
-  '@standard-community/standard-json@0.3.0-rc.3':
-    resolution: {integrity: sha512-gGI8itPr2ftFr0RvFMaT6FnERus3OrY6dIGLLtxAy1despnbYCYBx5s7NTxbM8TCbGV0yFG661H1bJk67zNB3w==}
+  '@standard-community/standard-json@0.3.0-rc.4':
+    resolution: {integrity: sha512-AcFJqiYt0nj17VoReUkEhTq1JzM2oEytCyBoR0j09yHqrrHp1g6kvXoh+IyMWIeqWYVUml9wzr5VJrfxh69/8g==}
     peerDependencies:
       '@standard-schema/spec': ^1.0.0
       '@types/json-schema': ^7.0.15
@@ -1184,7 +1184,7 @@ snapshots:
 
   '@sinclair/typebox@0.34.35': {}
 
-  '@standard-community/standard-json@0.3.0-rc.3(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)':
+  '@standard-community/standard-json@0.3.0-rc.4(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)':
     dependencies:
       '@standard-schema/spec': 1.0.0
       '@types/json-schema': 7.0.15
@@ -1195,9 +1195,9 @@ snapshots:
       valibot: 1.1.0(typescript@5.8.3)
       zod: 3.25.67
 
-  '@standard-community/standard-openapi@0.2.0-rc.1(@standard-community/standard-json@0.3.0-rc.3(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67))(@standard-schema/spec@1.0.0)(arktype@2.1.20)(openapi-types@12.1.3)(valibot@1.1.0(typescript@5.8.3))(zod-openapi@4.2.4(zod@3.25.67))(zod@3.25.67)':
+  '@standard-community/standard-openapi@0.2.0-rc.1(@standard-community/standard-json@0.3.0-rc.4(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67))(@standard-schema/spec@1.0.0)(arktype@2.1.20)(openapi-types@12.1.3)(valibot@1.1.0(typescript@5.8.3))(zod-openapi@4.2.4(zod@3.25.67))(zod@3.25.67)':
     dependencies:
-      '@standard-community/standard-json': 0.3.0-rc.3(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)
+      '@standard-community/standard-json': 0.3.0-rc.4(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.20)(effect@3.16.12)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.67)
       '@standard-schema/spec': 1.0.0
       openapi-types: 12.1.3
     optionalDependencies:
