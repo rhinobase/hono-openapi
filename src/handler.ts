@@ -207,14 +207,16 @@ function getHiddenValue(options: {
   if (valueOrFunc != null) {
     if (typeof valueOrFunc === "boolean") {
       return valueOrFunc;
-    } else if (typeof valueOrFunc === "function") {
+    }
+
+    if (typeof valueOrFunc === "function") {
       if (c) {
         return valueOrFunc(c);
-      } else {
-        console.warn(
-          `'c' is not defined, cannot evaluate hide function for ${method} ${path}`,
-        );
       }
+
+      console.warn(
+        `'c' is not defined, cannot evaluate hide function for ${method} ${path}`,
+      );
     }
   }
 
@@ -309,13 +311,24 @@ async function getSpec(
       for (const [key, value] of Object.entries(
         result.schema.properties ?? {},
       )) {
-        parameters.push({
+        const def: (typeof parameters)[number] = {
           in: middlewareHandler.target,
           name: key,
           // @ts-expect-error
           schema: value,
           required: result.schema.required?.includes(key),
-        });
+        };
+
+        if (
+          def.schema &&
+          "description" in def.schema &&
+          def.schema.description
+        ) {
+          def.description = def.schema.description;
+          def.schema.description = undefined;
+        }
+
+        parameters.push(def);
       }
     }
 
