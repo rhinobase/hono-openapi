@@ -6,7 +6,14 @@ import type { AllowedMethods } from "./utils.js";
 
 export type PromiseOr<T> = T | Promise<T>;
 
-export type ResolverReturnType = ReturnType<typeof resolver>;
+export type ResolverReturnType = ReturnType<typeof resolver> & {
+  options?: {
+    /**
+     * Override the media type of the request body, if not specified, it will be `application/json` for `json` target and `multipart/form-data` for `form` target.
+     */
+    media?: string;
+  } & { [key: string]: unknown };
+};
 
 export type HandlerUniqueProperty =
   | (ResolverReturnType & {

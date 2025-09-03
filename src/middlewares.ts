@@ -13,7 +13,11 @@ import type {
 import type { BlankInput, TypedResponse } from "hono/types";
 import type { StatusCode } from "hono/utils/http-status";
 import type { OpenAPIV3_1 } from "openapi-types";
-import type { DescribeRouteOptions, PromiseOr } from "./types";
+import type {
+  DescribeRouteOptions,
+  PromiseOr,
+  ResolverReturnType,
+} from "./types";
 import { uniqueSymbol } from "./utils";
 
 /**
@@ -68,7 +72,7 @@ export function validator<
   target: Target,
   schema: Schema,
   hook?: Hook<StandardSchemaV1.InferOutput<Schema>, E, P, Target>,
-  options?: Record<string, unknown>,
+  options?: ResolverReturnType["options"],
 ): MiddlewareHandler<E, P, V> {
   const middleware = sValidator(target, schema, hook);
 
@@ -77,6 +81,7 @@ export function validator<
     [uniqueSymbol]: {
       target,
       ...resolver(schema, options),
+      options,
     },
   });
 }

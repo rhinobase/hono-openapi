@@ -257,7 +257,7 @@ async function getSpec(
     middlewareHandler.target === "json"
   ) {
     const media =
-      middlewareHandler.target === "json"
+      (middlewareHandler.options?.media ?? middlewareHandler.target === "json")
         ? "application/json"
         : "multipart/form-data";
     if (
