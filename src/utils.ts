@@ -181,6 +181,7 @@ export function registerSchemaPath({
     }
 
     if (paths[path]) {
+      // @ts-expect-error
       paths[path][method] = mergeSpecs(
         route,
         ...pathContext,
