@@ -60,6 +60,9 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.4
+      zod-openapi:
+        specifier: '4'
+        version: 4.2.4(zod@3.25.67)
 
 packages:
 
@@ -1622,6 +1625,5 @@ snapshots:
   zod-openapi@4.2.4(zod@3.25.67):
     dependencies:
       zod: 3.25.67
-    optional: true
 
   zod@3.25.67: {}

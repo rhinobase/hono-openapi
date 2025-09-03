@@ -2,9 +2,7 @@
 
 exports[`zod v4 > basic 1`] = `
 {
-  "components": {
-    "schemas": {},
-  },
+  "components": {},
   "info": {
     "description": "Development documentation",
     "title": "Hono Documentation",

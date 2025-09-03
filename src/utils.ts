@@ -1,9 +1,6 @@
 import type { RouterRoute } from "hono/types";
 import type { OpenAPIV3_1 } from "openapi-types";
-import type {
-  RegisterSchemaPathOptions,
-  SanitizedGenerateSpecOptions,
-} from "./types";
+import type { RegisterSchemaPathOptions, SpecContext } from "./types";
 
 /**
  * The unique symbol for the middlewares, which makes it easier to identify them. Not meant to be used directly, unless you're creating a custom middleware.
@@ -196,7 +193,7 @@ export function registerSchemaPath({
 
 export function removeExcludedPaths(
   paths: OpenAPIV3_1.PathsObject,
-  ctx: { options: SanitizedGenerateSpecOptions },
+  ctx: SpecContext,
 ) {
   const { exclude, excludeStaticFile } = ctx.options;
   const newPaths: OpenAPIV3_1.PathsObject = {};
@@ -242,12 +239,28 @@ export function removeExcludedPaths(
             const paramName = param.slice(1, param.length - 1);
 
             const index = schema.parameters.findIndex(
-              (x: OpenAPIV3_1.ParameterObject) =>
-                x.in === "param" && x.name === paramName,
+              (
+                x: OpenAPIV3_1.ParameterObject | OpenAPIV3_1.ReferenceObject,
+              ) => {
+                if ("$ref" in x) {
+                  const pos = x.$ref.split("/").pop();
+                  if (pos) {
+                    const param = ctx.components.parameters?.[pos];
+
+                    // TODO: Need to figure out a way to handle this better
+                    if (param && !("$ref" in param)) {
+                      return param.in === "path" && param.name === paramName;
+                    }
+                  }
+
+                  return false;
+                }
+
+                return x.in === "path" && x.name === paramName;
+              },
             );
 
-            if (index !== -1) schema.parameters[index].in = "path";
-            else {
+            if (index === -1) {
               schema.parameters.push({
                 schema: { type: "string" },
                 in: "path",

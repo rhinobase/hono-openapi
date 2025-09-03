@@ -12,7 +12,7 @@ import type {
   DescribeRouteOptions,
   GenerateSpecOptions,
   HandlerUniqueProperty,
-  SanitizedGenerateSpecOptions,
+  SpecContext,
 } from "./types";
 import {
   ALLOWED_METHODS,
@@ -56,11 +56,6 @@ export function openAPIRouteHandler<
   };
 }
 
-type SpecContext = {
-  components: OpenAPIV3_1.ComponentsObject;
-  options: SanitizedGenerateSpecOptions;
-};
-
 /**
  * Generate OpenAPI specs for the given Hono instance
  * @param hono Instance of Hono
@@ -103,6 +98,11 @@ export async function generateSpecs<
     }
   }
 
+  const components = mergeComponentsObjects(
+    _documentation.components,
+    ctx.components,
+  );
+
   return {
     openapi: "3.1.0",
     ..._documentation,
@@ -119,13 +119,7 @@ export async function generateSpecs<
       ...removeExcludedPaths(paths, ctx),
       ..._documentation.paths,
     },
-    components: {
-      ..._documentation.components,
-      schemas: {
-        ...ctx.components.schemas,
-        ..._documentation.components?.schemas,
-      },
-    },
+    components,
   } satisfies OpenAPIV3_1.Document;
 }
 
@@ -177,14 +171,7 @@ async function generatePaths<
       defaultOptionsForThisMethod,
     );
 
-    ctx.components = {
-      ...ctx.components,
-      ...components,
-      schemas: {
-        ...ctx.components.schemas,
-        ...components.schemas,
-      },
-    };
+    ctx.components = mergeComponentsObjects(ctx.components, components);
 
     registerSchemaPath({
       route,
@@ -291,43 +278,98 @@ async function getSpec(
       };
     }
   } else {
-    const parameters: OpenAPIV3_1.ParameterObject[] = [];
+    let parameters: (
+      | OpenAPIV3_1.ParameterObject
+      | OpenAPIV3_1.ReferenceObject
+    )[] = [];
 
     if ("$ref" in result.schema) {
-      parameters.push({
-        in: middlewareHandler.target,
-        // @ts-expect-error
-        name: result.schema.$ref,
-        // @ts-expect-error
-        schema: result.schema,
-      });
-    } else {
-      for (const [key, value] of Object.entries(
-        result.schema.properties ?? {},
-      )) {
-        const def: (typeof parameters)[number] = {
-          in: middlewareHandler.target,
-          name: key,
-          // @ts-expect-error
-          schema: value,
-          required: result.schema.required?.includes(key),
-        };
+      const ref = result.schema.$ref as string;
 
-        if (
-          def.schema &&
-          "description" in def.schema &&
-          def.schema.description
-        ) {
-          def.description = def.schema.description;
-          def.schema.description = undefined;
+      const pos = ref.split("/").pop();
+
+      if (pos && result.components?.schemas?.[pos]) {
+        const schema = result.components.schemas[pos];
+
+        const newParameters = generateParameters(
+          middlewareHandler.target,
+          schema,
+        )[0];
+
+        if (!result.components.parameters) {
+          result.components.parameters = {};
         }
 
-        parameters.push(def);
+        result.components.parameters[pos] = newParameters;
+
+        delete result.components.schemas[pos];
+
+        parameters.push({
+          $ref: `#/components/parameters/${pos}`,
+        });
       }
+    } else {
+      parameters = generateParameters(middlewareHandler.target, result.schema);
     }
 
     docs.parameters = parameters;
   }
 
   return { schema: docs, components: result.components };
+}
+
+function generateParameters(target: string, schema: OpenAPIV3_1.SchemaObject) {
+  const parameters: OpenAPIV3_1.ParameterObject[] = [];
+
+  for (const [key, value] of Object.entries(schema.properties ?? {})) {
+    const def: OpenAPIV3_1.ParameterObject = {
+      in: target === "param" ? "path" : target,
+      name: key,
+      // @ts-expect-error
+      schema: value,
+      required: schema.required?.includes(key),
+    };
+
+    if (def.schema && "description" in def.schema && def.schema.description) {
+      def.description = def.schema.description;
+      def.schema.description = undefined;
+    }
+
+    parameters.push(def);
+  }
+
+  return parameters;
+}
+
+function mergeComponentsObjects(
+  ...components: (OpenAPIV3_1.ComponentsObject | undefined)[]
+) {
+  return components.reduce<OpenAPIV3_1.ComponentsObject>(
+    (prev, component, index) => {
+      if (!component || index === 0) return prev;
+
+      if (
+        (prev.schemas && Object.keys(prev.schemas).length > 0) ||
+        (component.schemas && Object.keys(component.schemas).length > 0)
+      ) {
+        prev.schemas = {
+          ...prev.schemas,
+          ...component.schemas,
+        };
+      }
+
+      if (
+        (prev.parameters && Object.keys(prev.parameters).length > 0) ||
+        (component.parameters && Object.keys(component.parameters).length > 0)
+      ) {
+        prev.parameters = {
+          ...prev.parameters,
+          ...component.parameters,
+        };
+      }
+
+      return prev;
+    },
+    components[0] ?? {},
+  );
 }

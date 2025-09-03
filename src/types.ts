@@ -65,19 +65,6 @@ export type GenerateSpecOptions = {
   defaultOptions: Partial<Record<AllowedMethods | "ALL", DescribeRouteOptions>>;
 };
 
-type HaveDefaultValues =
-  | "documentation"
-  | "excludeStaticFile"
-  | "exclude"
-  | "excludeMethods"
-  | "excludeTags";
-
-export type SanitizedGenerateSpecOptions = Pick<
-  GenerateSpecOptions,
-  HaveDefaultValues
-> &
-  Omit<Partial<GenerateSpecOptions>, HaveDefaultValues>;
-
 export type DescribeRouteOptions = Omit<
   OpenAPIV3_1.OperationObject,
   "responses" | "parameters"
@@ -117,4 +104,22 @@ export type RegisterSchemaPathOptions = {
     operationId?: string | ((route: RouterRoute) => string);
   };
   paths: Partial<OpenAPIV3_1.PathsObject>;
+};
+
+type HaveDefaultValues =
+  | "documentation"
+  | "excludeStaticFile"
+  | "exclude"
+  | "excludeMethods"
+  | "excludeTags";
+
+type SanitizedGenerateSpecOptions = Pick<
+  GenerateSpecOptions,
+  HaveDefaultValues
+> &
+  Omit<Partial<GenerateSpecOptions>, HaveDefaultValues>;
+
+export type SpecContext = {
+  components: OpenAPIV3_1.ComponentsObject;
+  options: SanitizedGenerateSpecOptions;
 };
