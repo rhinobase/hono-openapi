@@ -1,8 +1,0 @@
-{
-  "name": "sandbox",
-  "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "apps/sandbox/src",
-  "projectType": "application",
-  "tags": [],
-  "targets": {}
-}
