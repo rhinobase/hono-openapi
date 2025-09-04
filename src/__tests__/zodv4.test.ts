@@ -89,7 +89,7 @@ describe("zod v4", () => {
       validator("json", z.object({ message: z.string() })),
       describeResponse(
         (c) => {
-          return c.json({ error: "seom" }, 400);
+          return c.json({ error: "some" }, 400);
         },
         {
           200: {
