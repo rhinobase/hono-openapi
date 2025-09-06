@@ -17,11 +17,11 @@ export type ResolverReturnType = ReturnType<typeof resolver> & {
 
 export type HandlerUniqueProperty =
   | (ResolverReturnType & {
-      target: keyof ValidationTargets;
-    })
+    target: keyof ValidationTargets;
+  })
   | {
-      spec: DescribeRouteOptions;
-    };
+    spec: DescribeRouteOptions;
+  };
 
 export type GenerateSpecOptions = {
   /**
@@ -72,43 +72,46 @@ export type GenerateSpecOptions = {
   defaultOptions: Partial<Record<AllowedMethods | "ALL", DescribeRouteOptions>>;
 };
 
+type OperationId = string | ((route: RouterRoute) => string);
+
 export type DescribeRouteOptions = Omit<
   OpenAPIV3_1.OperationObject,
-  "responses" | "parameters"
+  "responses" | "parameters" | "operationId"
 > & {
+  operationId?: OperationId;
   /**
    * Pass `true` to hide route from OpenAPI/swagger document
    */
   hide?:
-    | boolean
-    | ((props: {
-        c?: Context;
-        method: string;
-        path: string;
-      }) => boolean);
+  | boolean
+  | ((props: {
+    c?: Context;
+    method: string;
+    path: string;
+  }) => boolean);
   /**
    * Responses of the request
    */
   responses?: {
     [key: string]:
-      | (OpenAPIV3_1.ResponseObject & {
-          content?: {
-            [key: string]: Omit<OpenAPIV3_1.MediaTypeObject, "schema"> & {
-              schema?:
-                | OpenAPIV3_1.ReferenceObject
-                | OpenAPIV3_1.SchemaObject
-                | ResolverReturnType;
-            };
-          };
-        })
-      | OpenAPIV3_1.ReferenceObject;
+    | (OpenAPIV3_1.ResponseObject & {
+      content?: {
+        [key: string]: Omit<OpenAPIV3_1.MediaTypeObject, "schema"> & {
+          schema?:
+          | OpenAPIV3_1.ReferenceObject
+          | OpenAPIV3_1.SchemaObject
+          | ResolverReturnType;
+        };
+      };
+    })
+    | OpenAPIV3_1.ReferenceObject;
   };
 };
 
 export type RegisterSchemaPathOptions = {
   route: RouterRoute;
   specs?: DescribeRouteOptions & {
-    operationId?: string | ((route: RouterRoute) => string);
+    operationId?: OperationId;
   };
   paths: Partial<OpenAPIV3_1.PathsObject>;
 };
