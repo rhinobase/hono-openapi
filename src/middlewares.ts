@@ -10,7 +10,7 @@ import type {
   Next,
   ValidationTargets,
 } from "hono";
-import type { BlankInput, TypedResponse } from "hono/types";
+import type { TypedResponse } from "hono/types";
 import type { StatusCode } from "hono/utils/http-status";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type {
@@ -55,16 +55,16 @@ export function validator<
   Out = StandardSchemaV1.InferOutput<Schema>,
   I extends Input = {
     in: HasUndefined<In> extends true
-      ? {
-          [K in Target]?: In extends ValidationTargets[K]
-            ? In
-            : { [K2 in keyof In]?: ValidationTargets[K][K2] };
-        }
-      : {
-          [K in Target]: In extends ValidationTargets[K]
-            ? In
-            : { [K2 in keyof In]: ValidationTargets[K][K2] };
-        };
+    ? {
+      [K in Target]?: In extends ValidationTargets[K]
+      ? In
+      : { [K2 in keyof In]?: ValidationTargets[K][K2] };
+    }
+    : {
+      [K in Target]: In extends ValidationTargets[K]
+      ? In
+      : { [K2 in keyof In]: ValidationTargets[K][K2] };
+    };
     out: { [K in Target]: Out };
   },
   V extends I = I,
@@ -105,14 +105,14 @@ export function describeRoute(spec: DescribeRouteOptions): MiddlewareHandler {
 
 type ResponseObject<T extends Partial<Record<StatusCode, StandardSchemaV1>>> = {
   [K in keyof T]:
-    | OpenAPIV3_1.ReferenceObject
-    | (OpenAPIV3_1.ResponseObject & {
-        content?: {
-          [media: string]: OpenAPIV3_1.MediaTypeObject & {
-            vSchema?: T[K];
-          };
-        };
-      });
+  | OpenAPIV3_1.ReferenceObject
+  | (OpenAPIV3_1.ResponseObject & {
+    content?: {
+      [media: string]: OpenAPIV3_1.MediaTypeObject & {
+        vSchema?: T[K];
+      };
+    };
+  });
 };
 
 type Num<T> = T extends `${infer N extends number}` ? N : T;
@@ -123,36 +123,36 @@ type HandlerResponse<
   >,
 > = {
   [K in keyof T]: T[K] extends StandardSchemaV1
-    ? PromiseOr<
-        TypedResponse<
-          StandardSchemaV1.InferOutput<T[K]>,
-          Num<K> extends StatusCode ? Num<K> : never
-        >
-      >
-    : never;
+  ? PromiseOr<
+    TypedResponse<
+      StandardSchemaV1.InferOutput<T[K]>,
+      Num<K> extends StatusCode ? Num<K> : never
+    >
+  >
+  : never;
 }[keyof T];
 
 export type Handler<
-  E extends Env = any,
-  P extends string = any,
-  I extends Input = BlankInput,
+  E extends Env,
+  P extends string,
+  I extends Input,
   T extends Partial<Record<StatusCode, StandardSchemaV1>> = Partial<
     Record<StatusCode, StandardSchemaV1>
   >,
 > = (c: Context<E, P, I>, next: Next) => HandlerResponse<T>;
 
 export function describeResponse<
-  E extends Env = any,
-  P extends string = any,
-  I extends Input = BlankInput,
+  E extends Env,
+  P extends string,
+  I extends Input,
   T extends Partial<Record<StatusCode, StandardSchemaV1>> = Partial<
     Record<StatusCode, StandardSchemaV1>
   >,
 >(
-  handler: Handler<E, P, I, T>,
+  handler: Handler<E, P, I>,
   responses: ResponseObject<T>,
   options?: Record<string, unknown>,
-): Handler<E, P, I, T> {
+): Handler<E, P, I> {
   const _responses = Object.entries(responses).reduce(
     (acc, [statusCode, response]) => {
       if (response.content) {

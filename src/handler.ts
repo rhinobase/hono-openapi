@@ -250,7 +250,7 @@ async function getSpec(
 
   const result = await middlewareHandler.toOpenAPISchema();
   const docs: Pick<OpenAPIV3_1.OperationObject, "parameters" | "requestBody"> =
-    {};
+    defaultOptions ?? {};
 
   if (
     middlewareHandler.target === "form" ||
