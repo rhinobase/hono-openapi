@@ -149,10 +149,10 @@ export function describeResponse<
     Record<StatusCode, StandardSchemaV1>
   >,
 >(
-  handler: Handler<E, P, I>,
+  handler: Handler<E, P, I, T>,
   responses: ResponseObject<T>,
   options?: Record<string, unknown>,
-): Handler<E, P, I> {
+): Handler<E, P, I, T> {
   const _responses = Object.entries(responses).reduce(
     (acc, [statusCode, response]) => {
       if (response.content) {
