@@ -52,7 +52,7 @@ const capitalize = (word: string) =>
   word.charAt(0).toUpperCase() + word.slice(1);
 
 const generateOperationId = (route: RouterRoute) => {
-  let operationId = route.method;
+  let operationId = route.method.toLowerCase();
 
   if (route.path === "/") return `${operationId}Index`;
 
