@@ -235,10 +235,7 @@ async function getSpec(
             const result = await raw.schema.toOpenAPISchema();
             raw.schema = result.schema;
             if (result.components) {
-              components = {
-                ...components,
-                ...result.components,
-              };
+              components = mergeComponentsObjects(components, result.components);
             }
           }
         }
