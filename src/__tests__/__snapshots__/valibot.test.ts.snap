@@ -13,7 +13,7 @@ exports[`valibot > basic 1`] = `
     "/": {
       "get": {
         "description": "This is a test route",
-        "operationId": "GETIndex",
+        "operationId": "getIndex",
         "requestBody": {
           "content": {
             "application/json": {
@@ -91,7 +91,7 @@ exports[`valibot > with metadata 1`] = `
     "/": {
       "get": {
         "description": "This is a test route",
-        "operationId": "GETIndex",
+        "operationId": "getIndex",
         "requestBody": {
           "content": {
             "application/json": {

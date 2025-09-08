@@ -13,7 +13,7 @@ exports[`zod v3 > basic 1`] = `
     "/": {
       "get": {
         "description": "This is a test route",
-        "operationId": "GETIndex",
+        "operationId": "getIndex",
         "requestBody": {
           "content": {
             "application/json": {
@@ -86,7 +86,7 @@ exports[`zod v3 > describeResponse 1`] = `
     "/{id}": {
       "get": {
         "description": "This is a test route",
-        "operationId": "GET:id",
+        "operationId": "get:id",
         "parameters": [
           {
             "$ref": "#/components/parameters/Param",
@@ -175,7 +175,7 @@ exports[`zod v3 > with metadata 1`] = `
     "/": {
       "get": {
         "description": "This is a test route",
-        "operationId": "GETIndex",
+        "operationId": "getIndex",
         "requestBody": {
           "content": {
             "application/json": {
@@ -240,7 +240,7 @@ exports[`zod v3 > with reference in parameter 1`] = `
     "/{id}": {
       "get": {
         "description": "This is a test route",
-        "operationId": "GET:id",
+        "operationId": "get:id",
         "parameters": [
           {
             "$ref": "#/components/parameters/Param",

@@ -13,7 +13,7 @@ exports[`arktype > basic 1`] = `
     "/": {
       "get": {
         "description": "This is a test route",
-        "operationId": "GETIndex",
+        "operationId": "getIndex",
         "requestBody": {
           "content": {
             "application/json": {
@@ -89,7 +89,7 @@ exports[`arktype > with metadata 1`] = `
     "/": {
       "get": {
         "description": "This is a test route",
-        "operationId": "GETIndex",
+        "operationId": "getIndex",
         "requestBody": {
           "content": {
             "application/json": {
