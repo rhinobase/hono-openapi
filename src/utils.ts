@@ -221,6 +221,8 @@ export function removeExcludedPaths(
       for (const method of Object.keys(value)) {
         const schema = value[method];
 
+        if (schema == null) continue;
+
         if (key.includes("{")) {
           if (!schema.parameters) schema.parameters = [];
 

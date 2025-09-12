@@ -343,7 +343,7 @@ function mergeComponentsObjects(
 ) {
   return components.reduce<OpenAPIV3_1.ComponentsObject>(
     (prev, component, index) => {
-      if (!component || index === 0) return prev;
+      if (component == null || index === 0) return prev;
 
       if (
         (prev.schemas && Object.keys(prev.schemas).length > 0) ||
