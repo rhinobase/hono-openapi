@@ -12,11 +12,11 @@ importers:
         specifier: ^0.1.2
         version: 0.1.2(@standard-schema/spec@1.0.0)(hono@4.8.3)
       '@standard-community/standard-json':
-        specifier: ^0.3.0-rc.4
-        version: 0.3.0-rc.4(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.22)(effect@3.17.13)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.76)
+        specifier: ^0.3.0
+        version: 0.3.0(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.22)(effect@3.17.13)(quansync@0.2.11)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.76)
       '@standard-community/standard-openapi':
-        specifier: ^0.2.0-rc.1
-        version: 0.2.0-rc.1(@standard-community/standard-json@0.3.0-rc.4(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.22)(effect@3.17.13)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.76))(@standard-schema/spec@1.0.0)(arktype@2.1.22)(openapi-types@12.1.3)(valibot@1.1.0(typescript@5.8.3))(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)
+        specifier: ^0.2.0
+        version: 0.2.0(@standard-community/standard-json@0.3.0(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.22)(effect@3.17.13)(quansync@0.2.11)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.76))(@standard-schema/spec@1.0.0)(arktype@2.1.22)(openapi-types@12.1.3)(quansync@0.2.11)(valibot@1.1.0(typescript@5.8.3))(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)
       '@types/json-schema':
         specifier: ^7.0.15
         version: 7.0.15
@@ -456,14 +456,15 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@standard-community/standard-json@0.3.0-rc.4':
-    resolution: {integrity: sha512-AcFJqiYt0nj17VoReUkEhTq1JzM2oEytCyBoR0j09yHqrrHp1g6kvXoh+IyMWIeqWYVUml9wzr5VJrfxh69/8g==}
+  '@standard-community/standard-json@0.3.0':
+    resolution: {integrity: sha512-VbswuF71KxiDb7BfAOU8hjQWtPLkc2g9Y3JF3IoonoR/NfCvYr9SUFP5jJO4zl9kOgCcGAVwcA4P/uBsS2DSnQ==}
     peerDependencies:
       '@standard-schema/spec': ^1.0.0
       '@types/json-schema': ^7.0.15
       '@valibot/to-json-schema': ^1.3.0
       arktype: ^2.1.20
       effect: ^3.16.8
+      quansync: ^0.2.11
       valibot: ^1.1.0
       zod: ^3.25.0 || ^4.0.0
       zod-to-json-schema: ^3.24.5
@@ -481,13 +482,14 @@ packages:
       zod-to-json-schema:
         optional: true
 
-  '@standard-community/standard-openapi@0.2.0-rc.1':
-    resolution: {integrity: sha512-Gu/wshVs6Lid+fCo9yu5AT0bjcxLCBtOi6idmkGtT5wll9rLdvfOcvzklrklUQgdQX/Xj9AA3nIBllHdqLEBZg==}
+  '@standard-community/standard-openapi@0.2.0':
+    resolution: {integrity: sha512-hpkklarm04a4lV+bMAEZpcE9sNzuV3UYLLB7YjAngXwvUsB8QE2tbSryko5moXQa4rj3ozbJjSdFxt3MDOEhzg==}
     peerDependencies:
-      '@standard-community/standard-json': ^0.3.0-rc.1
+      '@standard-community/standard-json': ^0.3.0
       '@standard-schema/spec': ^1.0.0
       arktype: ^2.1.20
       openapi-types: ^12.1.3
+      quansync: ^0.2.11
       valibot: ^1.1.0
       zod: ^3.25.0 || ^4.0.0
       zod-openapi: ^4
@@ -754,6 +756,9 @@ packages:
 
   pure-rand@6.1.0:
     resolution: {integrity: sha512-bVWawvoZoBYpp6yIoQtQXHZjmz35RSVHnUOTefl8Vcjr8snTPY1wnpSPMWekcFwbxI6gtmT7rSYPFvz71ldiOA==}
+
+  quansync@0.2.11:
+    resolution: {integrity: sha512-AifT7QEbW9Nri4tAwR5M/uzpBuqfZf+zwaEM/QkzEjj7NBuFD2rBuy0K3dE+8wltbezDV7JMA0WfnCPYRSYbXA==}
 
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
@@ -1179,10 +1184,11 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.44.1':
     optional: true
 
-  '@standard-community/standard-json@0.3.0-rc.4(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.22)(effect@3.17.13)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.76)':
+  '@standard-community/standard-json@0.3.0(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.22)(effect@3.17.13)(quansync@0.2.11)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.76)':
     dependencies:
       '@standard-schema/spec': 1.0.0
       '@types/json-schema': 7.0.15
+      quansync: 0.2.11
     optionalDependencies:
       '@valibot/to-json-schema': 1.3.0(valibot@1.1.0(typescript@5.8.3))
       arktype: 2.1.22
@@ -1190,11 +1196,12 @@ snapshots:
       valibot: 1.1.0(typescript@5.8.3)
       zod: 3.25.76
 
-  '@standard-community/standard-openapi@0.2.0-rc.1(@standard-community/standard-json@0.3.0-rc.4(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.22)(effect@3.17.13)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.76))(@standard-schema/spec@1.0.0)(arktype@2.1.22)(openapi-types@12.1.3)(valibot@1.1.0(typescript@5.8.3))(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)':
+  '@standard-community/standard-openapi@0.2.0(@standard-community/standard-json@0.3.0(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.22)(effect@3.17.13)(quansync@0.2.11)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.76))(@standard-schema/spec@1.0.0)(arktype@2.1.22)(openapi-types@12.1.3)(quansync@0.2.11)(valibot@1.1.0(typescript@5.8.3))(zod-openapi@4.2.4(zod@3.25.76))(zod@3.25.76)':
     dependencies:
-      '@standard-community/standard-json': 0.3.0-rc.4(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.22)(effect@3.17.13)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.76)
+      '@standard-community/standard-json': 0.3.0(@standard-schema/spec@1.0.0)(@types/json-schema@7.0.15)(@valibot/to-json-schema@1.3.0(valibot@1.1.0(typescript@5.8.3)))(arktype@2.1.22)(effect@3.17.13)(quansync@0.2.11)(valibot@1.1.0(typescript@5.8.3))(zod@3.25.76)
       '@standard-schema/spec': 1.0.0
       openapi-types: 12.1.3
+      quansync: 0.2.11
     optionalDependencies:
       arktype: 2.1.22
       valibot: 1.1.0(typescript@5.8.3)
@@ -1454,6 +1461,8 @@ snapshots:
       source-map-js: 1.2.1
 
   pure-rand@6.1.0: {}
+
+  quansync@0.2.11: {}
 
   queue-microtask@1.2.3: {}
 

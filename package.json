@@ -48,8 +48,8 @@
   },
   "peerDependencies": {
     "@hono/standard-validator": "^0.1.2",
-    "@standard-community/standard-json": "^0.3.0-rc.4",
-    "@standard-community/standard-openapi": "^0.2.0-rc.1",
+    "@standard-community/standard-json": "^0.3.0",
+    "@standard-community/standard-openapi": "^0.2.0",
     "@types/json-schema": "^7.0.15",
     "hono": "^4.8.3",
     "openapi-types": "^12.1.3"
