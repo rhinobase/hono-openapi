@@ -94,7 +94,6 @@ exports[`zod v3 > describeResponse 1`] = `
           {
             "in": "query",
             "name": "limit",
-            "required": true,
             "schema": {
               "default": 10,
               "type": "number",
@@ -103,7 +102,6 @@ exports[`zod v3 > describeResponse 1`] = `
           {
             "in": "query",
             "name": "offset",
-            "required": true,
             "schema": {
               "default": 0,
               "type": "number",
@@ -248,7 +246,6 @@ exports[`zod v3 > with reference in parameter 1`] = `
           {
             "in": "query",
             "name": "limit",
-            "required": true,
             "schema": {
               "default": 10,
               "type": "number",
@@ -257,7 +254,6 @@ exports[`zod v3 > with reference in parameter 1`] = `
           {
             "in": "query",
             "name": "offset",
-            "required": true,
             "schema": {
               "default": 0,
               "type": "number",
