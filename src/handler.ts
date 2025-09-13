@@ -324,8 +324,13 @@ function generateParameters(target: string, schema: OpenAPIV3_1.SchemaObject) {
       name: key,
       // @ts-expect-error
       schema: value,
-      required: schema.required?.includes(key),
     };
+
+    const isRequired = schema.required?.includes(key);
+
+    if (isRequired) {
+      def.required = true;
+    }
 
     if (def.schema && "description" in def.schema && def.schema.description) {
       def.description = def.schema.description;
