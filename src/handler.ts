@@ -130,6 +130,7 @@ async function generatePaths<
 >(hono: Hono<E, S, P>, ctx: SpecContext): Promise<OpenAPIV3_1.PathsObject> {
   const paths: OpenAPIV3_1.PathsObject = {};
 
+  const promises: Promise<void>[] = [];
   for (const route of hono.routes) {
     const middlewareHandler = route.handler[uniqueSymbol] as
       | HandlerUniqueProperty
@@ -166,19 +167,22 @@ async function generatePaths<
     const defaultOptionsForThisMethod =
       ctx.options.defaultOptions?.[routeMethod];
 
-    const { schema: routeSpecs, components = {} } = await getSpec(
-      middlewareHandler,
-      defaultOptionsForThisMethod,
+    promises.push(
+      getSpec(middlewareHandler, defaultOptionsForThisMethod).then(
+        ({ schema: routeSpecs, components = {} }) => {
+          ctx.components = mergeComponentsObjects(ctx.components, components);
+
+          registerSchemaPath({
+            route,
+            specs: routeSpecs,
+            paths,
+          });
+        },
+      ),
     );
-
-    ctx.components = mergeComponentsObjects(ctx.components, components);
-
-    registerSchemaPath({
-      route,
-      specs: routeSpecs,
-      paths,
-    });
   }
+
+  await Promise.all(promises);
 
   return paths;
 }
@@ -235,7 +239,10 @@ async function getSpec(
             const result = await raw.schema.toOpenAPISchema();
             raw.schema = result.schema;
             if (result.components) {
-              components = mergeComponentsObjects(components, result.components);
+              components = mergeComponentsObjects(
+                components,
+                result.components,
+              );
             }
           }
         }
