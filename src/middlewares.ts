@@ -18,6 +18,7 @@ import type {
 } from "hono";
 import type { TypedResponse } from "hono/types";
 import type { StatusCode } from "hono/utils/http-status";
+import type { JSONSchema7 } from "json-schema";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type {
   DescribeRouteOptions,
@@ -54,7 +55,8 @@ export function resolver<Schema extends StandardSchemaV1>(
   return {
     vendor: schema["~standard"].vendor,
     validate: schema["~standard"].validate,
-    toJSONSchema: () => toJsonSchema(schema, options),
+    toJSONSchema: () =>
+      toJsonSchema(schema, options) as JSONSchema7 | Promise<JSONSchema7>,
     toOpenAPISchema: () => toOpenAPISchema(schema, options),
   };
 }
