@@ -17,7 +17,7 @@ describe("basic", () => {
       },
     );
 
-    const specs = await generateSpecs(app, {
+    await generateSpecs(app, {
       defaultOptions: {
         GET: {
           operationId,

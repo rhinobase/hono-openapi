@@ -1,6 +1,12 @@
 import { type Hook, sValidator } from "@hono/standard-validator";
-import { toJsonSchema } from "@standard-community/standard-json";
-import { toOpenAPISchema } from "@standard-community/standard-openapi";
+import {
+  loadVendor as loadVendorJson,
+  toJsonSchema,
+} from "@standard-community/standard-json";
+import {
+  loadVendor as loadVendorOpenAPI,
+  toOpenAPISchema,
+} from "@standard-community/standard-openapi";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type {
   Context,
@@ -19,6 +25,22 @@ import type {
   ResolverReturnType,
 } from "./types";
 import { uniqueSymbol } from "./utils";
+
+export function loadVendor(
+  vendor: string,
+  fn: {
+    toJSONSchema?: Parameters<typeof loadVendorJson>[1];
+    toOpenAPISchema?: Parameters<typeof loadVendorOpenAPI>[1];
+  },
+) {
+  if (fn.toJSONSchema) {
+    loadVendorJson(vendor, fn.toJSONSchema);
+  }
+
+  if (fn.toOpenAPISchema) {
+    loadVendorOpenAPI(vendor, fn.toOpenAPISchema);
+  }
+}
 
 /**
  * Generate a resolver for a validation schema
