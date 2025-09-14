@@ -18,7 +18,6 @@ exports[`valibot > basic 1`] = `
           "content": {
             "application/json": {
               "schema": {
-                "$schema": "http://json-schema.org/draft-07/schema#",
                 "properties": {
                   "message": {
                     "type": "string",
@@ -37,7 +36,6 @@ exports[`valibot > basic 1`] = `
             "content": {
               "application/json": {
                 "schema": {
-                  "$schema": "http://json-schema.org/draft-07/schema#",
                   "properties": {
                     "message": {
                       "type": "string",
@@ -96,7 +94,6 @@ exports[`valibot > with metadata 1`] = `
           "content": {
             "application/json": {
               "schema": {
-                "$schema": "http://json-schema.org/draft-07/schema#",
                 "properties": {
                   "message": {
                     "type": "string",
