@@ -76,7 +76,7 @@ type OperationId = string | ((route: RouterRoute) => string);
 
 export type DescribeRouteOptions = Omit<
   OpenAPIV3_1.OperationObject,
-  "responses" | "parameters" | "operationId"
+  "responses" | "operationId"
 > & {
   operationId?: OperationId;
   /**
