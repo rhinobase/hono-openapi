@@ -166,7 +166,10 @@ async function generatePaths<
     const defaultOptionsForThisMethod =
       ctx.options.defaultOptions?.[routeMethod];
 
-    const { schema: routeSpecs, components = {} } = await getSpec(middlewareHandler, defaultOptionsForThisMethod)
+    const { schema: routeSpecs, components = {} } = await getSpec(
+      middlewareHandler,
+      defaultOptionsForThisMethod,
+    );
 
     ctx.components = mergeComponentsObjects(ctx.components, components);
 
