@@ -103,7 +103,7 @@ describe("valibot", () => {
         }),
         undefined,
         {
-          typeMode: "output",
+          options: { typeMode: "output" },
         },
       ),
       async (c) => {

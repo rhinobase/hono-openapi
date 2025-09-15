@@ -1,3 +1,4 @@
+import type { ToOpenAPISchemaContext } from "@standard-community/standard-openapi";
 import type { Context } from "hono";
 import type { RouterRoute, ValidationTargets } from "hono/types";
 import type { OpenAPIV3_1 } from "openapi-types";
@@ -12,7 +13,7 @@ export type ResolverReturnType = ReturnType<typeof resolver> & {
      * Override the media type of the request body, if not specified, it will be `application/json` for `json` target and `multipart/form-data` for `form` target.
      */
     media?: string;
-  } & { [key: string]: unknown };
+  } & Partial<ToOpenAPISchemaContext>;
 };
 
 export type HandlerUniqueProperty =
