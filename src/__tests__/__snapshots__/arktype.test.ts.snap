@@ -129,3 +129,44 @@ exports[`arktype > with metadata 1`] = `
   "tags": undefined,
 }
 `;
+
+exports[`arktype > with options 1`] = `
+{
+  "components": {},
+  "info": {
+    "description": "Development documentation",
+    "title": "Hono Documentation",
+    "version": "0.0.0",
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "getIndex",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "id": {
+                    "pattern": "^(?:(?!^-0$)-?(?:(?:0|[1-9]\\d*)))$",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "id",
+                ],
+                "type": "object",
+              },
+            },
+          },
+        },
+        "responses": {
+          "200": {},
+        },
+      },
+    },
+  },
+  "tags": undefined,
+}
+`;

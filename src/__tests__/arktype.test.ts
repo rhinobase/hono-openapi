@@ -82,4 +82,24 @@ describe("arktype", () => {
 
     expect(specs).toMatchSnapshot();
   });
+
+  it("with options", async () => {
+    const app = new Hono().get(
+      "/",
+      validator("json", type({ id: "string.integer.parse" }), undefined, {
+        options: {
+          // eslint-disable-next-line -- Fallback to simple string | string[] JSON schema
+          fallback: (ctx: any) => ctx.base,
+        }
+      }),
+      async (c) => {
+        const json = await c.req.valid("json");
+        return c.json({ id: json.id });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs).toMatchSnapshot();
+  });
 });
