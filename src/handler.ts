@@ -17,6 +17,7 @@ import type {
 import {
   ALLOWED_METHODS,
   type AllowedMethods,
+  clearSpecsContext,
   registerSchemaPath,
   removeExcludedPaths,
   uniqueSymbol,
@@ -80,6 +81,7 @@ export async function generateSpecs<
   };
 
   const _documentation = ctx.options.documentation ?? {};
+  clearSpecsContext();
   const paths = await generatePaths(hono, ctx);
 
   // Hide routes
