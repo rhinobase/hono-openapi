@@ -26,4 +26,5 @@ jobs:
       - name: Build packages
         run: pnpm build
 
-      - run: pnpm exec pkg-pr-new publish "."
+      - name: Create release preview PR
+        run: pnpm exec pkg-pr-new publish "."
