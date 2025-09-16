@@ -101,6 +101,10 @@ function getPathContext(path: string) {
   return context;
 }
 
+export function clearSpecsContext() {
+  specsByPathContext.clear();
+}
+
 function mergeSpecs(
   route: RouterRoute,
   ...specs: RegisterSchemaPathOptions["specs"][]
