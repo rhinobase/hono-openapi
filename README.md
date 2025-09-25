@@ -4,7 +4,7 @@
 [![npm version](https://img.shields.io/npm/v/hono-openapi.svg)](https://npmjs.org/package/hono-openapi "View this project on NPM")
 [![npm downloads](https://img.shields.io/npm/dm/hono-openapi)](https://www.npmjs.com/package/hono-openapi)
 
-This can automatically generate the OpenAPI specification for the Hono API using your validation schema, which can be used to generate client libraries, documentation, and more.
+This can automatically generate the OpenAPI specification for the Hono App using your validation schema, which can be used to generate client libraries, documentation, and more.
 
 This lib supports all the validation libs which are [Standard Schema](https://standardschema.dev/) compliant.
 
@@ -19,5 +19,5 @@ Visit our [contributing docs](https://github.com/rhinobase/hono-openapi/blob/mai
 
 ## Credits
 
-- The idea for this project was inspired by [ElysiaJS](https://elysiajs.com/) and their amazing work on generating [OpenAPI](https://elysiajs.com/recipe/openapi.html) specifications.
+- The idea for this project was inspired by [ElysiaJS](https://elysiajs.com/) and their amazing work on generating [OpenAPI](https://elysiajs.com/patterns/openapi) specifications.
 - This project would not have been possible without the work of [Sam Chung](https://github.com/samchungy) and his [Zod OpenAPI](https://github.com/samchungy/zod-openapi) package.
