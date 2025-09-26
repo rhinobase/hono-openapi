@@ -46,4 +46,45 @@ describe("effect", () => {
 
     expect(specs).toMatchSnapshot();
   });
+
+  it("with reference in parameter", async () => {
+    const param = Schema.standardSchemaV1(
+      Schema.Struct({
+        message: Schema.String,
+      }).annotations({ identifier: "Param" }),
+    );
+
+    const app = new Hono().get(
+      "/",
+      describeRoute({
+        tags: ["test"],
+        summary: "Test route",
+        description: "This is a test route",
+        responses: {
+          200: {
+            description: "Success",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  Schema.standardSchemaV1(
+                    Schema.Struct({
+                      message: Schema.String,
+                    }),
+                  ),
+                ),
+              },
+            },
+          },
+        },
+      }),
+      validator("param", param),
+      async (c) => {
+        return c.json({ message: "Hello, world!" });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs).toMatchSnapshot();
+  });
 });

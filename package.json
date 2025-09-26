@@ -50,7 +50,7 @@
   "peerDependencies": {
     "@hono/standard-validator": "^0.1.2",
     "@standard-community/standard-json": "^0.3.1",
-    "@standard-community/standard-openapi": "^0.2.4",
+    "@standard-community/standard-openapi": "^0.2.5",
     "@types/json-schema": "^7.0.15",
     "hono": "^4.8.3",
     "openapi-types": "^12.1.3"
