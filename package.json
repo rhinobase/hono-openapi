@@ -12,6 +12,7 @@
   "license": "MIT",
   "scripts": {
     "build": "pkgroll --clean-dist",
+    "lint": "biome check .",
     "format": "biome check --write .",
     "prepare": "is-ci || husky",
     "test": "vitest"
@@ -31,8 +32,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rhinobase/hono-openapi.git",
-    "directory": "packages/core"
+    "url": "git+https://github.com/rhinobase/hono-openapi.git"
   },
   "bugs": {
     "url": "https://github.com/rhinobase/hono-openapi/issues"
