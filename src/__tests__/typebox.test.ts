@@ -41,6 +41,54 @@ describe("typebox", () => {
     expect(specs).toMatchSnapshot();
   });
 
+  it("with JSON Schema", async () => {
+    const app = new Hono().get(
+      "/",
+      describeRoute({
+        tags: ["test"],
+        summary: "Test route",
+        description: "This is a test route",
+        responses: {
+          200: {
+            description: "Success",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  Compile({
+                    type: "object",
+                    required: ["x", "y", "z"],
+                    properties: {
+                      x: { type: "number" },
+                      y: { type: "number" },
+                      z: { type: "number" },
+                    },
+                  }),
+                ),
+              },
+            },
+          },
+        },
+      }),
+      validator(
+        "json",
+        Compile({
+          type: "object",
+          required: ["message"],
+          properties: {
+            message: { type: "string" },
+          },
+        }),
+      ),
+      async (c) => {
+        return c.json({ x: 1, y: 2, z: 3 });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs).toMatchSnapshot();
+  });
+
   it("with metadata", async () => {
     const app = new Hono().get(
       "/",
