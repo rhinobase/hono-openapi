@@ -50,14 +50,17 @@ export function loadVendor(
  */
 export function resolver<Schema extends StandardSchemaV1>(
   schema: Schema,
-  options?: Record<string, unknown>,
+  userDefinedOptions?: Record<string, unknown>,
 ) {
   return {
     vendor: schema["~standard"].vendor,
     validate: schema["~standard"].validate,
-    toJSONSchema: () =>
-      toJsonSchema(schema, options) as JSONSchema7 | Promise<JSONSchema7>,
-    toOpenAPISchema: () => toOpenAPISchema(schema, options),
+    toJSONSchema: (customOptions?: Record<string, unknown>) =>
+      toJsonSchema(schema, { ...userDefinedOptions, ...customOptions }) as
+        | JSONSchema7
+        | Promise<JSONSchema7>,
+    toOpenAPISchema: (customOptions?: Record<string, unknown>) =>
+      toOpenAPISchema(schema, { ...userDefinedOptions, ...customOptions }),
   };
 }
 
