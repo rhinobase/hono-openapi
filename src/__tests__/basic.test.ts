@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from "vitest";
 import z from "zod";
 import { generateSpecs } from "../handler.js";
 import { describeRoute, resolver, validator } from "../middlewares.js";
-import "zod-openapi/extend";
 
 describe("basic", () => {
   it("operationId", async () => {
