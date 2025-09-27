@@ -1,0 +1,146 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`sury > basic 1`] = `
+{
+  "components": {},
+  "info": {
+    "description": "Development documentation",
+    "title": "Hono Documentation",
+    "version": "0.0.0",
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/": {
+      "get": {
+        "description": "This is a test route",
+        "operationId": "getIndex",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "properties": {
+                  "message": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "message",
+                ],
+                "type": "object",
+              },
+            },
+          },
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                    },
+                  },
+                  "required": [
+                    "message",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "Success",
+          },
+        },
+        "summary": "Test route",
+        "tags": [
+          "test",
+        ],
+      },
+    },
+  },
+  "tags": undefined,
+}
+`;
+
+exports[`sury > with metadata 1`] = `
+{
+  "components": {
+    "schemas": {
+      "SuccessResponse": {
+        "additionalProperties": true,
+        "properties": {
+          "myString": {
+            "type": "string",
+          },
+          "myUnion": {
+            "anyOf": [
+              {
+                "type": "number",
+              },
+              {
+                "type": "boolean",
+              },
+            ],
+          },
+        },
+        "required": [
+          "myString",
+          "myUnion",
+        ],
+        "type": "object",
+      },
+    },
+  },
+  "info": {
+    "description": "Development documentation",
+    "title": "Hono Documentation",
+    "version": "0.0.0",
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/": {
+      "get": {
+        "description": "This is a test route",
+        "operationId": "getIndex",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "properties": {
+                  "message": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "message",
+                ],
+                "type": "object",
+              },
+            },
+          },
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse",
+                },
+              },
+            },
+            "description": "Success",
+          },
+        },
+        "summary": "Test route",
+        "tags": [
+          "test",
+        ],
+      },
+    },
+  },
+  "tags": undefined,
+}
+`;
