@@ -5,6 +5,7 @@ import {
 } from "@standard-community/standard-json";
 import {
   loadVendor as loadVendorOpenAPI,
+  type ToOpenAPISchemaContext,
   toOpenAPISchema,
 } from "@standard-community/standard-openapi";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
@@ -51,13 +52,14 @@ export function loadVendor(
 export function resolver<Schema extends StandardSchemaV1>(
   schema: Schema,
   options?: Record<string, unknown>,
+  openAPIOptions?: Partial<ToOpenAPISchemaContext>,
 ) {
   return {
     vendor: schema["~standard"].vendor,
     validate: schema["~standard"].validate,
     toJSONSchema: () =>
       toJsonSchema(schema, options) as JSONSchema7 | Promise<JSONSchema7>,
-    toOpenAPISchema: () => toOpenAPISchema(schema, options),
+    toOpenAPISchema: () => toOpenAPISchema(schema, openAPIOptions ?? options),
   };
 }
 
