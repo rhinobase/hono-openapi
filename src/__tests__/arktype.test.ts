@@ -90,7 +90,7 @@ describe("arktype", () => {
         options: {
           // eslint-disable-next-line -- Fallback to simple string | string[] JSON schema
           fallback: (ctx: any) => ctx.base,
-        }
+        },
       }),
       async (c) => {
         const json = await c.req.valid("json");
