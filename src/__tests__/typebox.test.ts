@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import Type from "typebox";
-import { Compile } from "typebox/compile";
 import { describe, expect, it } from "vitest";
 import { generateSpecs } from "../handler.js";
+import { jsonschema } from "../jsonschema/jsonschema.js";
 import { describeRoute, resolver, validator } from "../middlewares.js";
 
 describe("typebox", () => {
@@ -19,7 +19,7 @@ describe("typebox", () => {
             content: {
               "application/json": {
                 schema: resolver(
-                  Compile(
+                  jsonschema(
                     Type.Object({
                       message: Type.String(),
                     }),
@@ -30,7 +30,7 @@ describe("typebox", () => {
           },
         },
       }),
-      validator("json", Compile(Type.Object({ message: Type.String() }))),
+      validator("json", jsonschema(Type.Object({ message: Type.String() }))),
       async (c) => {
         return c.json({ message: "Hello, world!" });
       },
@@ -54,7 +54,7 @@ describe("typebox", () => {
             content: {
               "application/json": {
                 schema: resolver(
-                  Compile({
+                  jsonschema({
                     type: "object",
                     required: ["x", "y", "z"],
                     properties: {
@@ -71,7 +71,7 @@ describe("typebox", () => {
       }),
       validator(
         "json",
-        Compile({
+        jsonschema({
           type: "object",
           required: ["message"],
           properties: {
@@ -102,7 +102,7 @@ describe("typebox", () => {
             content: {
               "application/json": {
                 schema: resolver(
-                  Compile(
+                  jsonschema(
                     Type.Object(
                       {
                         message: Type.String(),
@@ -118,7 +118,7 @@ describe("typebox", () => {
           },
         },
       }),
-      validator("json", Compile(Type.Object({ message: Type.String() }))),
+      validator("json", jsonschema(Type.Object({ message: Type.String() }))),
       async (c) => {
         return c.json({ message: "Hello, world!" });
       },
