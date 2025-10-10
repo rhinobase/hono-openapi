@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { describe, expect, it } from "vitest";
-import z from "zod/v4";
+import { beforeEach, describe, expect, it } from "vitest";
+import z from "zod";
 import { generateSpecs } from "../handler.js";
 import {
   describeResponse,
@@ -10,6 +10,10 @@ import {
 } from "../middlewares.js";
 
 describe("zod v4", () => {
+  beforeEach(() => {
+    z.globalRegistry.clear();
+  });
+
   it("basic", async () => {
     const app = new Hono().get(
       "/",
@@ -60,7 +64,7 @@ describe("zod v4", () => {
                     .object({
                       message: z.string(),
                     })
-                    .meta({ ref: "SuccessResponse" }),
+                    .meta({ id: "SuccessResponse" }),
                 ),
               },
             },
@@ -105,7 +109,7 @@ describe("zod v4", () => {
                   .object({
                     message: z.string(),
                   })
-                  .meta({ ref: "SuccessResponse" }),
+                  .meta({ id: "SuccessResponse" }),
               },
             },
           },

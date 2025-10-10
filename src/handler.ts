@@ -18,6 +18,7 @@ import {
   ALLOWED_METHODS,
   type AllowedMethods,
   clearSpecsContext,
+  getComponents,
   registerSchemaPath,
   removeExcludedPaths,
   uniqueSymbol,
@@ -173,7 +174,10 @@ async function generatePaths<
       defaultOptionsForThisMethod,
     );
 
-    ctx.components = mergeComponentsObjects(ctx.components, components);
+    ctx.components = mergeComponentsObjects(
+      ctx.components,
+      getComponents(components),
+    );
 
     registerSchemaPath({
       route,
@@ -239,7 +243,7 @@ async function getSpec(
             if (result.components) {
               components = mergeComponentsObjects(
                 components,
-                result.components,
+                getComponents(result.components),
               );
             }
           }
@@ -302,7 +306,7 @@ async function getSpec(
           result.components.parameters = {};
         }
 
-        result.components.parameters[pos] = newParameters;
+        result.components.parameters[pos] = newParameters!;
 
         delete result.components.schemas[pos];
 

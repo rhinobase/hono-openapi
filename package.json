@@ -15,7 +15,9 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "prepare": "is-ci || husky",
-    "test": "vitest"
+    "test:legacy": "node overrideZod.js && vitest run dir src/__tests__/legacy && node overrideZod.js",
+    "test:modern": "vitest run --exclude src/__tests__/legacy/*",
+    "test": "pnpm test:modern && pnpm test:legacy"
   },
   "keywords": [
     "hono",
@@ -74,13 +76,21 @@
     "nano-staged": "^0.8.0",
     "pkg-pr-new": "^0.0.60",
     "pkgroll": "^2.13.1",
+    "sury": "^10.0.0",
     "typebox": "^1.0.17",
     "typescript": "^5.8.3",
-    "sury": "^10.0.0",
     "valibot": "^1.1.0",
     "vitest": "^3.2.4",
-    "zod": "^3.23.8",
-    "zod-openapi": "^4"
+    "zod": "^4.1.11",
+    "zod-openapi": "^5.4.1"
   },
-  "packageManager": "pnpm@10.0.0"
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ],
+    "patchedDependencies": {
+      "@standard-community/standard-openapi": "patches/@standard-community__standard-openapi.patch"
+    }
+  },
+  "packageManager": "pnpm@10.17.1"
 }
