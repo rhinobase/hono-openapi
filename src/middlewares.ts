@@ -148,16 +148,16 @@ type HandlerResponse<
   T extends Partial<Record<StatusCode, StandardSchemaV1>> = Partial<
     Record<StatusCode, StandardSchemaV1>
   >,
-> = {
-  [K in keyof T]: T[K] extends StandardSchemaV1
-    ? PromiseOr<
-        TypedResponse<
+> = PromiseOr<
+  {
+    [K in keyof T]: T[K] extends StandardSchemaV1
+      ? TypedResponse<
           StandardSchemaV1.InferOutput<T[K]>,
           Num<K> extends StatusCode ? Num<K> : never
         >
-      >
-    : never;
-}[keyof T];
+      : never;
+  }[keyof T]
+>;
 
 export type Handler<
   E extends Env,
