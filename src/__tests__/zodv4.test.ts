@@ -88,8 +88,13 @@ describe("zod v4", () => {
       }),
       validator("json", z.object({ message: z.string() })),
       describeResponse(
-        (c) => {
-          return c.json({ error: "some" }, 400);
+        async (c) => {
+          try {
+            return c.json({ message: "Hello World" }, 200);
+          } catch (e) {
+            console.error(e);
+            return c.json({ error: e.message }, 400);
+          }
         },
         {
           200: {
