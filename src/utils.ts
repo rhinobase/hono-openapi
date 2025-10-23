@@ -214,7 +214,7 @@ export function removeExcludedPaths(
     const shouldIncludePath =
       !excludeStaticFile || // Include all paths when static file filtering is disabled
       key.includes("{") || // Always include paths with parameters (e.g., /users/{id}.json)
-      !key.split("/").pop()?.includes("."); // Include if last segment has no period (e.g., /my.workspace/action)
+      !key.split("/").pop()?.includes("."); // Exclude if last segment has a period (e.g., /style.css)
 
     if (
       isPathExcluded &&
