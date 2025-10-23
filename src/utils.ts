@@ -211,15 +211,15 @@ export function removeExcludedPaths(
       return x.test(key);
     });
 
-    // If excludeStaticFile is true, we want to exclude static files
-    const isStaticFileExcluded = excludeStaticFile
-      ? !key.includes(".") || key.includes("{")
-      : true;
+    const shouldIncludePath =
+      !excludeStaticFile || // Include all paths when static file filtering is disabled
+      key.includes("{") || // Always include paths with parameters (e.g., /users/{id}.json)
+      !key.split("/").pop()?.includes("."); // Include if last segment has no period (e.g., /my.workspace/action)
 
     if (
       isPathExcluded &&
       !(key.includes("*") && !key.includes("{")) &&
-      isStaticFileExcluded &&
+      shouldIncludePath &&
       value != null
     ) {
       for (const method of Object.keys(value)) {

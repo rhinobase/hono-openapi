@@ -44,7 +44,7 @@ export type GenerateSpecOptions = {
   includeEmptyPaths: boolean;
 
   /**
-   * Determine if Swagger should exclude static files.
+   * Determine if Swagger should exclude static files (by checking if the last path segment contains a period).
    *
    * @default true
    */
