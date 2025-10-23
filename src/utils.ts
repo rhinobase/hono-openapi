@@ -205,88 +205,97 @@ export function removeExcludedPaths(
   const _exclude = Array.isArray(exclude) ? exclude : [exclude];
 
   for (const [key, value] of Object.entries(paths)) {
-    const isPathExcluded = !_exclude.some((x) => {
-      if (typeof x === "string") return key === x;
+    // Skip paths with no route data
+    if (value == null) continue;
 
+    // Check if path is explicitly excluded by user configuration
+    const isExplicitlyExcluded = _exclude.some((x) => {
+      if (typeof x === "string") return key === x;
       return x.test(key);
     });
+    if (isExplicitlyExcluded) continue;
 
-    const shouldIncludePath =
-      !excludeStaticFile || // Include all paths when static file filtering is disabled
-      key.includes("{") || // Always include paths with parameters (e.g., /users/{id}.json)
-      !key.split("/").pop()?.includes("."); // Exclude if last segment has a period (e.g., /style.css)
+    // Skip wildcard paths that don't have parameters (e.g., /static/*)
+    // Keep wildcard paths with parameters (e.g., /users/{id}/*)
+    const isWildcardWithoutParameters = key.includes("*") && !key.includes("{");
+    if (isWildcardWithoutParameters) continue;
 
-    if (
-      isPathExcluded &&
-      !(key.includes("*") && !key.includes("{")) &&
-      shouldIncludePath &&
-      value != null
-    ) {
-      for (const method of Object.keys(value)) {
-        const schema = value[method];
+    // Apply static file filtering if enabled
+    if (excludeStaticFile) {
+      const hasPathParameters = key.includes("{");
+      const lastSegment = key.split("/").pop() || "";
+      const looksLikeStaticFile = lastSegment.includes(".");
 
-        if (schema == null) continue;
+      // Exclude files that look like static files (e.g., /style.css, /image.png)
+      // But always include parameterized routes even if they have file extensions (e.g., /users/{id}.json)
+      const shouldExcludeAsStaticFile =
+        !hasPathParameters && looksLikeStaticFile;
+      if (shouldExcludeAsStaticFile) continue;
+    }
 
-        if (key.includes("{")) {
-          if (!schema.parameters) schema.parameters = [];
+    // Path passes all filters, include it in the spec
+    for (const method of Object.keys(value)) {
+      const schema = value[method];
 
-          const pathParameters = key
-            .split("/")
-            .filter(
-              (x) =>
-                x.startsWith("{") &&
-                !schema.parameters.find(
-                  (params: Record<string, unknown>) =>
-                    params.in === "path" &&
-                    params.name === x.slice(1, x.length - 1),
-                ),
-            );
+      if (schema == null) continue;
 
-          for (const param of pathParameters) {
-            const paramName = param.slice(1, param.length - 1);
+      if (key.includes("{")) {
+        if (!schema.parameters) schema.parameters = [];
 
-            const index = schema.parameters.findIndex(
-              (
-                x: OpenAPIV3_1.ParameterObject | OpenAPIV3_1.ReferenceObject,
-              ) => {
-                if ("$ref" in x) {
-                  const pos = x.$ref.split("/").pop();
-                  if (pos) {
-                    const param = ctx.components.parameters?.[pos];
+        const pathParameters = key
+          .split("/")
+          .filter(
+            (x) =>
+              x.startsWith("{") &&
+              !schema.parameters.find(
+                (params: Record<string, unknown>) =>
+                  params.in === "path" &&
+                  params.name === x.slice(1, x.length - 1),
+              ),
+          );
 
-                    // TODO: Need to figure out a way to handle this better
-                    if (param && !("$ref" in param)) {
-                      return param.in === "path" && param.name === paramName;
-                    }
+        for (const param of pathParameters) {
+          const paramName = param.slice(1, param.length - 1);
+
+          const index = schema.parameters.findIndex(
+            (x: OpenAPIV3_1.ParameterObject | OpenAPIV3_1.ReferenceObject) => {
+              if ("$ref" in x) {
+                const pos = x.$ref.split("/").pop();
+                if (pos) {
+                  const param = ctx.components.parameters?.[pos];
+
+                  // TODO: Need to figure out a way to handle this better
+                  if (param && !("$ref" in param)) {
+                    return param.in === "path" && param.name === paramName;
                   }
-
-                  return false;
                 }
 
-                return x.in === "path" && x.name === paramName;
-              },
-            );
+                return false;
+              }
 
-            if (index === -1) {
-              schema.parameters.push({
-                schema: { type: "string" },
-                in: "path",
-                name: paramName,
-                required: true,
-              });
-            }
+              return x.in === "path" && x.name === paramName;
+            },
+          );
+
+          if (index === -1) {
+            schema.parameters.push({
+              schema: { type: "string" },
+              in: "path",
+              name: paramName,
+              required: true,
+            });
           }
-        }
-
-        if (!schema.responses) {
-          schema.responses = {
-            200: {},
-          };
         }
       }
 
-      newPaths[key] = value;
+      if (!schema.responses) {
+        schema.responses = {
+          200: {},
+        };
+      }
     }
+
+    newPaths[key] = value;
   }
 
   return newPaths;
