@@ -88,8 +88,13 @@ describe("zod v4", () => {
       }),
       validator("json", z.object({ message: z.string() })),
       describeResponse(
-        (c) => {
-          return c.json({ error: "some" }, 400);
+        async (c) => {
+          try {
+            return c.json({ message: "Hello World" }, 200);
+          } catch (e) {
+            console.error(e);
+            return c.json({ error: e.message }, 400);
+          }
         },
         {
           200: {
@@ -117,6 +122,27 @@ describe("zod v4", () => {
         },
       ),
     );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs).toMatchSnapshot();
+  });
+
+  it("with global validator", async () => {
+    const app = new Hono()
+      .use(validator("query", z.object({ q1: z.string() })))
+      .get(
+        "/",
+        describeRoute({
+          tags: ["test"],
+          summary: "Test route",
+          description: "This is a test route",
+        }),
+        validator("query", z.object({ q2: z.string() })),
+        async (c) => {
+          return c.json({ message: "Hello, world!" });
+        },
+      );
 
     const specs = await generateSpecs(app);
 

@@ -92,8 +92,8 @@ describe("arktype", () => {
           fallback: (ctx: any) => ctx.base,
         },
       }),
-      async (c) => {
-        const json = await c.req.valid("json");
+      (c) => {
+        const json = c.req.valid("json");
         return c.json({ id: json.id });
       },
     );

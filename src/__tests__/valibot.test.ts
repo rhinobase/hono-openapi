@@ -106,8 +106,8 @@ describe("valibot", () => {
           options: { typeMode: "output" },
         },
       ),
-      async (c) => {
-        const { names } = await c.req.valid("query");
+      (c) => {
+        const { names } = c.req.valid("query");
         return c.json({ message: `Hello ${names.join(", ")}!` });
       },
     );

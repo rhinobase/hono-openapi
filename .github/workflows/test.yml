@@ -1,19 +1,18 @@
-name: Run Tests
-
-on: push
+name: CI Tests
+on: [push, pull_request]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
 
-      - name: Setup Node.js LTS
-        uses: actions/setup-node@v4
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v5
         with:
-          node-version: 'lts/*'
+          node-version: 22.x
+          package-manager-cache: false
 
       - name: Install PNPM
         uses: pnpm/action-setup@v4
