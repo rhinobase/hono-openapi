@@ -25,7 +25,7 @@ describe("zod v4", () => {
                 schema: resolver(
                   z.object({
                     message: z.string(),
-                  }),
+                  })
                 ),
               },
             },
@@ -35,7 +35,7 @@ describe("zod v4", () => {
       validator("json", z.object({ message: z.string() })),
       async (c) => {
         return c.json({ message: "Hello, world!" });
-      },
+      }
     );
 
     const specs = await generateSpecs(app);
@@ -60,7 +60,7 @@ describe("zod v4", () => {
                     .object({
                       message: z.string(),
                     })
-                    .meta({ ref: "SuccessResponse" }),
+                    .meta({ ref: "SuccessResponse" })
                 ),
               },
             },
@@ -70,7 +70,7 @@ describe("zod v4", () => {
       validator("json", z.object({ message: z.string() })),
       async (c) => {
         return c.json({ message: "Hello, world!" });
-      },
+      }
     );
 
     const specs = await generateSpecs(app);
@@ -119,9 +119,30 @@ describe("zod v4", () => {
               },
             },
           },
-        },
-      ),
+        }
+      )
     );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs).toMatchSnapshot();
+  });
+
+  it("with global validator", async () => {
+    const app = new Hono()
+      .use(validator("query", z.object({ q1: z.string() })))
+      .get(
+        "/",
+        describeRoute({
+          tags: ["test"],
+          summary: "Test route",
+          description: "This is a test route",
+        }),
+        validator("query", z.object({ q2: z.string() })),
+        async (c) => {
+          return c.json({ message: "Hello, world!" });
+        }
+      );
 
     const specs = await generateSpecs(app);
 

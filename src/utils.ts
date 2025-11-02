@@ -127,7 +127,7 @@ function mergeSpecs(
             if (key === "tags") {
               prev[key] = Array.from(new Set(values));
             } else if (key === "parameters") {
-              prev[key] = mergeParameters(prev[key], ...value);
+              prev[key] = mergeParameters(values);
             } else {
               prev[key] = values;
             }
@@ -153,7 +153,7 @@ function mergeSpecs(
     },
     {
       operationId: generateOperationId(route),
-    },
+    }
   );
 }
 
@@ -192,7 +192,7 @@ export function registerSchemaPath({
         route,
         ...pathContext,
         paths[path]?.[method],
-        specs,
+        specs
       );
     }
   }
@@ -200,7 +200,7 @@ export function registerSchemaPath({
 
 export function removeExcludedPaths(
   paths: OpenAPIV3_1.PathsObject,
-  ctx: SpecContext,
+  ctx: SpecContext
 ) {
   const { exclude, excludeStaticFile } = ctx.options;
   const newPaths: OpenAPIV3_1.PathsObject = {};
@@ -240,8 +240,8 @@ export function removeExcludedPaths(
                 !schema.parameters.find(
                   (params: Record<string, unknown>) =>
                     params.in === "path" &&
-                    params.name === x.slice(1, x.length - 1),
-                ),
+                    params.name === x.slice(1, x.length - 1)
+                )
             );
 
           for (const param of pathParameters) {
@@ -249,7 +249,7 @@ export function removeExcludedPaths(
 
             const index = schema.parameters.findIndex(
               (
-                x: OpenAPIV3_1.ParameterObject | OpenAPIV3_1.ReferenceObject,
+                x: OpenAPIV3_1.ParameterObject | OpenAPIV3_1.ReferenceObject
               ) => {
                 if ("$ref" in x) {
                   const pos = x.$ref.split("/").pop();
@@ -266,7 +266,7 @@ export function removeExcludedPaths(
                 }
 
                 return x.in === "path" && x.name === paramName;
-              },
+              }
             );
 
             if (index === -1) {
