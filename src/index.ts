@@ -1,4 +1,5 @@
 export { generateSpecs, openAPIRouteHandler } from "./handler.js";
+export * from "./jsonschema";
 export {
   describeResponse,
   describeRoute,

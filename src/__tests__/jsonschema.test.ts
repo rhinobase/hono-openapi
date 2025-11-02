@@ -1,11 +1,10 @@
 import { Hono } from "hono";
-import Type from "typebox";
 import { describe, expect, it } from "vitest";
 import { generateSpecs } from "../handler.js";
 import { jsonschema } from "../jsonschema/jsonschema.js";
 import { describeRoute, resolver, validator } from "../middlewares.js";
 
-describe("typebox", () => {
+describe("jsonschema", () => {
   it("basic", async () => {
     const app = new Hono().get(
       "/",
@@ -19,18 +18,29 @@ describe("typebox", () => {
             content: {
               "application/json": {
                 schema: resolver(
-                  jsonschema(
-                    Type.Object({
-                      message: Type.String(),
-                    }),
-                  ),
+                  jsonschema({
+                    type: "object",
+                    required: ["message"],
+                    properties: {
+                      message: { type: "string" },
+                    },
+                  }),
                 ),
               },
             },
           },
         },
       }),
-      validator("json", jsonschema(Type.Object({ message: Type.String() }))),
+      validator(
+        "json",
+        jsonschema({
+          type: "object",
+          required: ["message"],
+          properties: {
+            message: { type: "string" },
+          },
+        }),
+      ),
       async (c) => {
         return c.json({ message: "Hello, world!" });
       },
@@ -102,23 +112,30 @@ describe("typebox", () => {
             content: {
               "application/json": {
                 schema: resolver(
-                  jsonschema(
-                    Type.Object(
-                      {
-                        message: Type.String(),
-                      },
-                      {
-                        $id: "SuccessResponse",
-                      },
-                    ),
-                  ),
+                  jsonschema({
+                    type: "object",
+                    $id: "SuccessResponse",
+                    required: ["message"],
+                    properties: {
+                      message: { type: "string" },
+                    },
+                  }),
                 ),
               },
             },
           },
         },
       }),
-      validator("json", jsonschema(Type.Object({ message: Type.String() }))),
+      validator(
+        "json",
+        jsonschema({
+          type: "object",
+          required: ["message"],
+          properties: {
+            message: { type: "string" },
+          },
+        }),
+      ),
       async (c) => {
         return c.json({ message: "Hello, world!" });
       },
