@@ -126,6 +126,8 @@ function mergeSpecs(
 
             if (key === "tags") {
               prev[key] = Array.from(new Set(values));
+            } else if (key === "parameters") {
+              prev[key] = mergeParameters(values);
             } else {
               prev[key] = values;
             }

@@ -127,4 +127,25 @@ describe("zod v4", () => {
 
     expect(specs).toMatchSnapshot();
   });
+
+  it("with global validator", async () => {
+    const app = new Hono()
+      .use(validator("query", z.object({ q1: z.string() })))
+      .get(
+        "/",
+        describeRoute({
+          tags: ["test"],
+          summary: "Test route",
+          description: "This is a test route",
+        }),
+        validator("query", z.object({ q2: z.string() })),
+        async (c) => {
+          return c.json({ message: "Hello, world!" });
+        },
+      );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs).toMatchSnapshot();
+  });
 });
