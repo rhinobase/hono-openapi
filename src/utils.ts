@@ -242,7 +242,8 @@ export function removeExcludedPaths(
       if (schema == null) continue;
 
       if (key.includes("{")) {
-        if (!schema.parameters) schema.parameters = [];
+        // Clone the parameters array to avoid mutating shared references
+        schema.parameters = schema.parameters ? [...schema.parameters] : [];
 
         const pathParameters = key
           .split("/")
