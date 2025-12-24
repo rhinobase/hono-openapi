@@ -173,4 +173,50 @@ describe("basic", () => {
 
     expect(specs).toMatchSnapshot();
   });
+
+  it("composed handler", async () => {
+    const subApp = new Hono();
+    subApp.onError((err, c) => c.json({ message: err.message }, 500));
+    subApp.get(
+      "/",
+      describeRoute({
+        description: "This is sub app route",
+        responses: {
+          200: {
+            description: "Success",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z.object({
+                    message: z.string(),
+                  }),
+                ),
+              },
+            },
+          },
+          500: {
+            description: "Error",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z.object({
+                    message: z.string(),
+                  }),
+                ),
+              },
+            },
+          },
+        },
+      }),
+      async (c) => {
+        return c.json({ message: "Hello, world!" });
+      },
+    );
+
+    const app = new Hono();
+    app.route("/", subApp);
+
+    const specs = await generateSpecs(app);
+    expect(specs).toMatchSnapshot();
+  });
 });
