@@ -23,21 +23,26 @@ The following steps will get you up and running to contribute to Hono OpenAPI:
 
 ## Development
 
-To improve our development process, we’ve set up tooling and systems, and Hono OpenAPI uses a monorepo structure by `nx`.
+To improve our development process, we've set up tooling and systems.
 
 ### Tooling
 
 - [PNPM](https://pnpm.io/) to manage packages and dependencies
-- [NX](https://nx.dev/) to manage the monorepo, changelog generation, and release management
-- [SWC](https://swc.rs/) to bundle packages
+- [pkgroll](https://github.com/privatenumber/pkgroll) to bundle the package
+- [Biome](https://biomejs.dev/) for linting and formatting
+- [Vitest](https://vitest.dev/) for testing
 
 ### Commands
 
-**`pnpm install`**: bootstraps the entire project, symlinks all dependencies.
+**`pnpm install`**: installs all dependencies.
 
-**`pnpm nx build [package name]`**: run build for a particular package.
+**`pnpm build`**: builds the package.
 
-**`pnpm nx run-many -t build`**: run build for all the packages.
+**`pnpm test`**: runs the test suite.
+
+**`pnpm lint`**: checks for linting issues.
+
+**`pnpm format`**: formats the code.
 
 ## Think you found a bug?
 
@@ -66,8 +71,6 @@ When you create a commit we kindly ask you to follow the convention `category(sc
 - `ci`: all changes regarding the configuration of continuous integration (i.e. GitHub actions, ci system)
 - `chore`: all changes to the repository that do not fit into any of the above categories
 
-You can use `pnpm commit` command to help you with your commits
-
 If you are interested in the detailed specification you can visit <https://www.conventionalcommits.org/> or check out the [Angular Commit Message Guidelines](https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#-commit-message-guidelines).
 
 ### Steps to PR
@@ -76,7 +79,7 @@ If you are interested in the detailed specification you can visit <https://www.c
 
 2. Create a new branch out of the `main` branch. We follow the convention `[type/scope]`. For example `fix/memcache` or `docs/core`. `type` can be either `docs`, `fix`, `feat`, `build`, or any other conventional commit type. `scope` is just a short id that describes the scope of work.
 
-3. Make and commit your changes following the [commit convention](https://github.com/rhinobase/hono-openapi/blob/main/CONTRIBUTING.md#commit-convention). As you develop, you can run `pnpm nx build [package name]` to make sure everything works as expected.
+3. Make and commit your changes following the [commit convention](https://github.com/rhinobase/hono-openapi/blob/main/CONTRIBUTING.md#commit-convention). As you develop, you can run `pnpm build` and `pnpm test` to make sure everything works as expected.
 
 ### Tests
 
