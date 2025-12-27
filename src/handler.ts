@@ -7,6 +7,7 @@ import type {
   MiddlewareHandler,
   Schema,
 } from "hono/types";
+import { findTargetHandler } from "hono/utils/handler";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type {
   DescribeRouteOptions,
@@ -133,7 +134,7 @@ async function generatePaths<
   const paths: OpenAPIV3_1.PathsObject = {};
 
   for (const route of hono.routes) {
-    const middlewareHandler = route.handler[uniqueSymbol] as
+    const middlewareHandler = findTargetHandler(route.handler)[uniqueSymbol] as
       | HandlerUniqueProperty
       | undefined;
 
