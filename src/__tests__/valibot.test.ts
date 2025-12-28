@@ -20,7 +20,7 @@ describe("valibot", () => {
                 schema: resolver(
                   v.object({
                     message: v.string(),
-                  }),
+                  })
                 ),
               },
             },
@@ -30,7 +30,7 @@ describe("valibot", () => {
       validator("json", v.object({ message: v.string() })),
       async (c) => {
         return c.json({ message: "Hello, world!" });
-      },
+      }
     );
 
     const specs = await generateSpecs(app);
@@ -55,8 +55,8 @@ describe("valibot", () => {
                     v.object({
                       message: v.string(),
                     }),
-                    v.metadata({ ref: "SuccessResponse" }),
-                  ),
+                    v.metadata({ ref: "SuccessResponse" })
+                  )
                 ),
               },
             },
@@ -66,7 +66,7 @@ describe("valibot", () => {
       validator("json", v.object({ message: v.string() })),
       async (c) => {
         return c.json({ message: "Hello, world!" });
-      },
+      }
     );
 
     const specs = await generateSpecs(app);
@@ -98,22 +98,49 @@ describe("valibot", () => {
           names: v.pipe(
             v.string(),
             v.transform((val) => val.split("|")),
-            v.array(v.string()),
+            v.array(v.string())
           ),
         }),
         undefined,
         {
           options: { typeMode: "output" },
-        },
+        }
       ),
       (c) => {
         const { names } = c.req.valid("query");
         return c.json({ message: `Hello ${names.join(", ")}!` });
-      },
+      }
     );
 
     const specs = await generateSpecs(app);
 
+    expect(specs).toMatchSnapshot();
+  });
+
+  it("with examples", async () => {
+    const app = new Hono().get(
+      "/",
+      describeRoute({
+        responses: {
+          200: {
+            description: "Success",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  v.pipe(
+                    v.string(),
+                    v.examples(["hello world", "example text"])
+                  )
+                ),
+              },
+            },
+          },
+        },
+      }),
+      (c) => c.json("hello")
+    );
+
+    const specs = await generateSpecs(app);
     expect(specs).toMatchSnapshot();
   });
 });
