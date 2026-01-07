@@ -298,7 +298,18 @@ export function removeExcludedPaths(
       }
     }
 
-    newPaths[key] = value;
+    // Build filtered value with only non-null methods
+    const filteredValue: OpenAPIV3_1.PathItemObject = {};
+    for (const method of Object.keys(value)) {
+      if (value[method] != null) {
+        filteredValue[method] = value[method];
+      }
+    }
+
+    // Only add path if it has at least one valid method
+    if (Object.keys(filteredValue).length > 0) {
+      newPaths[key] = filteredValue;
+    }
   }
 
   return newPaths;
