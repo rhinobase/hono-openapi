@@ -116,4 +116,56 @@ describe("valibot", () => {
 
     expect(specs).toMatchSnapshot();
   });
+
+
+    it("with unsupported schema", async () => {
+        const app = new Hono().get(
+            "/",
+            describeRoute({
+                responses: {
+                    200: {
+                        description: "Success",
+                        content: {
+                            "application/json": {
+                                schema: resolver(v.string()),
+                            },
+                        },
+                    },
+                },
+            }),
+            validator(
+                "query",
+                v.object({
+                  unrepresentable: v.record(
+                      v.picklist(['table', 'boat']),
+                      v.array(
+                          v.variant('type', [
+                              v.object({
+                                  type: v.literal('table'),
+                                  length: v.number(),
+                              }),
+                              v.object({
+                                  type: v.literal('boat'),
+                                  speed: v.number(),
+                              }),
+                          ])
+                      )
+                  )
+                }),
+                undefined,
+                {
+                    options: { typeMode: "output", errorMode: "ignore" },
+                },
+            ),
+            async (c) => {
+                const { unrepresentable } = await c.req.valid("query");
+                return c.json({ message: `Hello` });
+            },
+        );
+
+        const specs = await generateSpecs(app);
+
+        expect(specs).toMatchSnapshot();
+    });
+
 });
