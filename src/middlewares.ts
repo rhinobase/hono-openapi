@@ -18,6 +18,7 @@ import type {
 } from "hono";
 import type { TypedResponse } from "hono/types";
 import type { StatusCode } from "hono/utils/http-status";
+import { validator as honoValidator } from "hono/validator";
 import type { JSONSchema7 } from "json-schema";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type {
@@ -101,9 +102,67 @@ export function validator<
   hook?: Hook<StandardSchemaV1.InferOutput<Schema>, E, P, Target>,
   options?: ResolverReturnType["options"],
 ): MiddlewareHandler<E, P, V> {
-  const middleware = sValidator(target, schema, hook);
+  let middleware: MiddlewareHandler<E, P, V>;
 
-  // @ts-expect-error not typed well
+  // Check if we should use qs parsing for query parameters
+  if (target === "query" && options?.qs?.enabled) {
+    // Create a custom middleware that parses query string with qs first
+    const qsOptions = { ...options.qs };
+    delete qsOptions.enabled; // Remove our custom 'enabled' flag
+
+    // Use hono's validator with custom query parsing
+    // @ts-expect-error not typed well
+    middleware = honoValidator(target, async (_value, c) => {
+      // Dynamically import qs only when needed (it's an optional peer dependency)
+      const qs = await import("qs");
+
+      // Get the raw query string
+      const url = new URL(c.req.url);
+      const queryString = url.search.slice(1); // Remove the leading '?'
+
+      let parsed: {
+        [key: string]: unknown;
+      } = {};
+      if (queryString) {
+        // Parse with qs instead of using the standard query parser
+        parsed = qs.default.parse(queryString, qsOptions as qs.IParseOptions);
+      }
+
+      // Validate the parsed data with the schema
+      const result = await schema["~standard"].validate(parsed);
+
+      if (hook) {
+        const hookResult = await hook(
+          result.issues
+            ? { data: parsed, error: result.issues, success: false, target }
+            : { data: result.value, success: true, target },
+          c,
+        );
+        if (hookResult) {
+          if (hookResult instanceof Response) {
+            return hookResult;
+          }
+          if ("response" in hookResult) {
+            return hookResult.response;
+          }
+        }
+      }
+
+      if (result.issues) {
+        return c.json(
+          { data: parsed, error: result.issues, success: false },
+          400,
+        );
+      }
+
+      return result.value;
+    });
+  } else {
+    // Use standard validator for non-query targets or when qs is disabled
+    // @ts-expect-error not typed well
+    middleware = sValidator(target, schema, hook);
+  }
+
   return Object.assign(middleware, {
     [uniqueSymbol]: {
       target,
