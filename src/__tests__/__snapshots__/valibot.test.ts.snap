@@ -179,3 +179,66 @@ exports[`valibot > with transformation 1`] = `
   "tags": undefined,
 }
 `;
+
+exports[`valibot > with tuple 1`] = `
+{
+  "components": {},
+  "info": {
+    "description": "Development documentation",
+    "title": "Hono Documentation",
+    "version": "0.0.0",
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/": {
+      "get": {
+        "description": "This is a test route",
+        "operationId": "getIndex",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "message": {
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "message",
+                ],
+                "type": "object",
+              },
+            },
+          },
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "minItems": 2,
+                  "prefixItems": [
+                    {
+                      "type": "string",
+                    },
+                    {
+                      "type": "number",
+                    },
+                  ],
+                  "type": "array",
+                },
+              },
+            },
+            "description": "Success",
+          },
+        },
+        "summary": "Test route",
+        "tags": [
+          "test",
+        ],
+      },
+    },
+  },
+  "tags": undefined,
+}
+`;

@@ -74,6 +74,40 @@ describe("valibot", () => {
     expect(specs).toMatchSnapshot();
   });
 
+  it.only("with tuple", async () => {
+    const app = new Hono().get(
+      "/",
+      describeRoute({
+        tags: ["test"],
+        summary: "Test route",
+        description: "This is a test route",
+        responses: {
+          200: {
+            description: "Success",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  v.tuple([
+                    v.string(),
+                    v.number(),
+                  ]),
+                ),
+              },
+            },
+          },
+        },
+      }),
+      validator("json", v.object({ message: v.string() })),
+      async (c) => {
+        return c.json({ message: "Hello, world!" });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs).toMatchSnapshot();
+  });
+
   it("with transformation", async () => {
     const app = new Hono().get(
       "/",
