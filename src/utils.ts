@@ -48,8 +48,14 @@ const toOpenAPIPath = (path: string) =>
     })
     .join("/");
 
-const capitalize = (word: string) =>
-  word.charAt(0).toUpperCase() + word.slice(1);
+const toPascalCase = (text: string) =>
+  text
+    // capitalize the first letter of each word
+    .replaceAll(/(\w)(\w*)/g, (_, firstChar: string, rest: string) => {
+      return `${firstChar.toUpperCase()}${rest}`;
+    })
+    // replace all non-word characters except the first character
+    .replaceAll(/(?<!^)\W/g, "");
 
 const generateOperationId = (route: RouterRoute) => {
   let operationId = route.method.toLowerCase();
@@ -58,9 +64,9 @@ const generateOperationId = (route: RouterRoute) => {
 
   for (const segment of route.path.split("/")) {
     if (segment.charCodeAt(0) === 123) {
-      operationId += `By${capitalize(segment.slice(1, -1))}`;
+      operationId += `By${toPascalCase(segment.slice(1, -1))}`;
     } else {
-      operationId += capitalize(segment);
+      operationId += toPascalCase(segment);
     }
   }
 
