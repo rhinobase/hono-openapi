@@ -166,8 +166,9 @@ async function generatePaths<
       }
     }
 
-    const defaultOptionsForThisMethod =
-      ctx.options.defaultOptions?.[routeMethod];
+    const defaultOptionsForThisMethod = ctx.options.defaultOptions?.[
+      routeMethod
+    ] && { ...ctx.options.defaultOptions[routeMethod] };
 
     const { schema: routeSpecs, components = {} } = await getSpec(
       middlewareHandler,
@@ -253,7 +254,7 @@ async function getSpec(
 
   const result = await middlewareHandler.toOpenAPISchema();
   const docs: Pick<OpenAPIV3_1.OperationObject, "parameters" | "requestBody"> =
-    defaultOptions ?? {};
+    { ...defaultOptions };
 
   if (
     middlewareHandler.target === "form" ||
