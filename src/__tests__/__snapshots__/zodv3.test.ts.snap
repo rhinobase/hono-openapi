@@ -86,7 +86,7 @@ exports[`zod v3 > describeResponse 1`] = `
     "/{id}": {
       "get": {
         "description": "This is a test route",
-        "operationId": "get:Id",
+        "operationId": "getById",
         "parameters": [
           {
             "$ref": "#/components/parameters/Param",
@@ -322,7 +322,7 @@ exports[`zod v3 > with reference in parameter 1`] = `
     "/{id}": {
       "get": {
         "description": "This is a test route",
-        "operationId": "get:Id",
+        "operationId": "getById",
         "parameters": [
           {
             "$ref": "#/components/parameters/Param",
