@@ -20,33 +20,32 @@ export const ALLOWED_METHODS = [
 
 export type AllowedMethods = (typeof ALLOWED_METHODS)[number];
 
+const toOpenAPIPathSegment = (segment: string) => {
+  let tmp = segment;
+
+  // Example - ":id"
+  if (tmp.startsWith(":")) {
+    const match = tmp.match(/^:([^{?]+)(?:{(.+)})?(\?)?$/);
+    if (match) {
+      const paramName = match[1];
+      tmp = `{${paramName}}`;
+    } else {
+      // Remove the leading colon ":"
+      tmp = tmp.slice(1, tmp.length);
+
+      // If it ends with "?", remove it
+      // This is for optional parameters
+      if (tmp.endsWith("?")) tmp = tmp.slice(0, -1);
+
+      tmp = `{${tmp}}`;
+    }
+  }
+
+  return tmp;
+};
+
 const toOpenAPIPath = (path: string) =>
-  path
-    .split("/")
-    .map((x) => {
-      let tmp = x;
-
-      // Example - ":id"
-      if (tmp.startsWith(":")) {
-        const match = tmp.match(/^:([^{?]+)(?:{(.+)})?(\?)?$/);
-        if (match) {
-          const paramName = match[1];
-          tmp = `{${paramName}}`;
-        } else {
-          // Remove the leading colon ":"
-          tmp = tmp.slice(1, tmp.length);
-
-          // If it ends with "?", remove it
-          // This is for optional parameters
-          if (tmp.endsWith("?")) tmp = tmp.slice(0, -1);
-
-          tmp = `{${tmp}}`;
-        }
-      }
-
-      return tmp;
-    })
-    .join("/");
+  path.split("/").map(toOpenAPIPathSegment).join("/");
 
 const capitalize = (word: string) =>
   word.charAt(0).toUpperCase() + word.slice(1);
@@ -57,10 +56,11 @@ const generateOperationId = (route: RouterRoute) => {
   if (route.path === "/") return `${operationId}Index`;
 
   for (const segment of route.path.split("/")) {
-    if (segment.charCodeAt(0) === 123) {
-      operationId += `By${capitalize(segment.slice(1, -1))}`;
+    const openApiPathSegment = toOpenAPIPathSegment(segment);
+    if (openApiPathSegment.charCodeAt(0) === 123) {
+      operationId += `By${capitalize(openApiPathSegment.slice(1, -1))}`;
     } else {
-      operationId += capitalize(segment);
+      operationId += capitalize(openApiPathSegment);
     }
   }
 
