@@ -176,4 +176,116 @@ describe("zod v3", () => {
 
     expect(specs).toMatchSnapshot();
   });
+
+  it("operation id for path with dash", async () => {
+    const query = z.object({
+      limit: z.coerce.number().default(10),
+      offset: z.coerce.number().default(0),
+    });
+
+    const param = z
+      .object({
+        id: z.coerce.number(),
+      })
+      .openapi({ ref: "Param" });
+
+    const app = new Hono().get(
+      "/some-path",
+      describeRoute({
+        tags: ["test"],
+        summary: "Test route",
+        description: "This is a test route",
+      }),
+      validator("param", param),
+      validator("query", query),
+      describeResponse(
+        async (c) => {
+          c.req.valid("query");
+          c.req.valid("param");
+
+          return c.json({
+            result: [],
+            count: 0,
+          });
+        },
+        {
+          200: {
+            description: "Success",
+            content: {
+              "application/json": {
+                vSchema: z.object({
+                  result: z.array(z.string()),
+                  count: z.number(),
+                }),
+              },
+            },
+          },
+        },
+      ),
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs).toMatchSnapshot();
+  });
+
+  it("operation id for path with underscore", async () => {
+    const app = new Hono().get(
+      "/api_v1/users",
+      describeRoute({
+        tags: ["test"],
+        summary: "Test route",
+        description: "This is a test route",
+      }),
+      async (c) => {
+        return c.json({ message: "Hello" });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs.paths?.["/api_v1/users"]?.get?.operationId).toBe(
+      "getApiV1Users",
+    );
+  });
+
+  it("operation id for path param with dash", async () => {
+    const app = new Hono().get(
+      "/users/:user-id",
+      describeRoute({
+        tags: ["test"],
+        summary: "Test route",
+        description: "This is a test route",
+      }),
+      async (c) => {
+        return c.json({ message: "Hello" });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs.paths?.["/users/{user-id}"]?.get?.operationId).toBe(
+      "getUsersByUserId",
+    );
+  });
+
+  it("operation id for multiple dashed segments", async () => {
+    const app = new Hono().get(
+      "/api-v1/user-profile",
+      describeRoute({
+        tags: ["test"],
+        summary: "Test route",
+        description: "This is a test route",
+      }),
+      async (c) => {
+        return c.json({ message: "Hello" });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs.paths?.["/api-v1/user-profile"]?.get?.operationId).toBe(
+      "getApiV1UserProfile",
+    );
+  });
 });
