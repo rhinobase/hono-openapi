@@ -236,7 +236,11 @@ async function getSpec(
           if (!raw) continue;
 
           if (raw.schema && "toOpenAPISchema" in raw.schema) {
-            const result = await raw.schema.toOpenAPISchema();
+            const result = await raw.schema.toOpenAPISchema({
+              options: {
+                target: 'draft-2020-12',
+              },
+            });
             raw.schema = result.schema;
             if (result.components) {
               components = mergeComponentsObjects(
@@ -252,7 +256,11 @@ async function getSpec(
     return { schema: tmp, components };
   }
 
-  const result = await middlewareHandler.toOpenAPISchema();
+  const result = await middlewareHandler.toOpenAPISchema({
+    options: {
+      target: 'draft-2020-12',
+    },
+  });
   const docs: Pick<OpenAPIV3_1.OperationObject, "parameters" | "requestBody"> =
     { ...defaultOptions };
 
