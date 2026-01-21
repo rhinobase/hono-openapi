@@ -148,4 +148,42 @@ describe("zod v4", () => {
 
     expect(specs).toMatchSnapshot();
   });
+
+  it("defaultOptions should not cause parameter pollution between routes", async () => {
+    const app = new Hono()
+      .get(
+        "/hello",
+        describeRoute({}),
+        validator("query", z.object({ name: z.string() })),
+        (c) => {
+          const { name } = c.req.valid("query");
+          return c.text(`Hello, ${name}!`);
+        },
+      )
+      .get(
+        "/world",
+        describeRoute({}),
+        validator("query", z.object({ greeting: z.string() })),
+        (c) => {
+          const { greeting } = c.req.valid("query");
+          return c.text(`${greeting}, world!`);
+        },
+      );
+
+    const specs = await generateSpecs(app, {
+      defaultOptions: {
+        GET: {},
+      },
+    });
+
+    // Verify /hello only has 'name' parameter
+    const helloParams = specs.paths["/hello"]?.get?.parameters;
+    expect(helloParams).toHaveLength(1);
+    expect(helloParams?.[0]).toMatchObject({ name: "name", in: "query" });
+
+    // Verify /world only has 'greeting' parameter (not 'name' from /hello)
+    const worldParams = specs.paths["/world"]?.get?.parameters;
+    expect(worldParams).toHaveLength(1);
+    expect(worldParams?.[0]).toMatchObject({ name: "greeting", in: "query" });
+  });
 });
