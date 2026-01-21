@@ -49,12 +49,10 @@ const toOpenAPIPath = (path: string) =>
 
 const toPascalCase = (text: string) =>
   text
-    // capitalize the first letter of each word
-    .replaceAll(/(\w)(\w*)/g, (_, firstChar: string, rest: string) => {
-      return `${firstChar.toUpperCase()}${rest}`;
-    })
-    // replace all non-word characters except the first character
-    .replaceAll(/(?<!^)\W/g, "");
+    .split(/[\W_]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join("");
 
 const generateOperationId = (route: RouterRoute) => {
   let operationId = route.method.toLowerCase();
