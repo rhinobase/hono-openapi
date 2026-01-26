@@ -20,6 +20,8 @@
   "keywords": [
     "hono",
     "openapi",
+    "mcp",
+    "model-context-protocol",
     "zod",
     "valibot",
     "typebox",
@@ -48,7 +50,7 @@
         "default": "./dist/index.cjs"
       }
     },
-    "/mcp": {
+    "./mcp": {
       "import": {
         "types": "./dist/mcp/index.d.ts",
         "default": "./dist/mcp/index.js"
@@ -61,6 +63,7 @@
   },
   "peerDependencies": {
     "@hono/standard-validator": "^0.2.0",
+    "@modelcontextprotocol/sdk": "^1.25.3",
     "@standard-community/standard-json": "^0.3.5",
     "@standard-community/standard-openapi": "^0.2.9",
     "@types/json-schema": "^7.0.15",
@@ -69,6 +72,9 @@
   },
   "peerDependenciesMeta": {
     "@hono/standard-validator": {
+      "optional": true
+    },
+    "@modelcontextprotocol/sdk": {
       "optional": true
     },
     "hono": {
