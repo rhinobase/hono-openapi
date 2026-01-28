@@ -2,10 +2,20 @@ import type { ToOpenAPISchemaContext } from "@standard-community/standard-openap
 import type { Context } from "hono";
 import type { RouterRoute, ValidationTargets } from "hono/types";
 import type { OpenAPIV3_1 } from "openapi-types";
+import type { IParseOptions } from "qs";
 import type { resolver } from "./middlewares.js";
 import type { AllowedMethods } from "./utils.js";
 
 export type PromiseOr<T> = T | Promise<T>;
+
+export type QsOptions = IParseOptions & {
+  /**
+   * Enable qs parsing for query parameters. When enabled, nested objects and arrays
+   * in query strings will be parsed according to qs conventions.
+   * @default false
+   */
+  enabled?: boolean;
+};
 
 export type ResolverReturnType = ReturnType<typeof resolver> & {
   options?: {
@@ -13,6 +23,11 @@ export type ResolverReturnType = ReturnType<typeof resolver> & {
      * Override the media type of the request body, if not specified, it will be `application/json` for `json` target and `multipart/form-data` for `form` target.
      */
     media?: string;
+    /**
+     * Options for parsing query strings using qs library.
+     * Only applicable when target is "query".
+     */
+    qs?: QsOptions;
   } & Partial<ToOpenAPISchemaContext>;
 };
 

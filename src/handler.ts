@@ -13,6 +13,7 @@ import type {
   DescribeRouteOptions,
   GenerateSpecOptions,
   HandlerUniqueProperty,
+  ResolverReturnType,
   SpecContext,
 } from "./types";
 import {
@@ -298,6 +299,7 @@ async function getSpec(
         const newParameters = generateParameters(
           middlewareHandler.target,
           schema,
+          middlewareHandler.options,
         )[0];
 
         if (!result.components.parameters) {
@@ -313,7 +315,11 @@ async function getSpec(
         });
       }
     } else {
-      parameters = generateParameters(middlewareHandler.target, result.schema);
+      parameters = generateParameters(
+        middlewareHandler.target,
+        result.schema,
+        middlewareHandler.options,
+      );
     }
 
     docs.parameters = parameters;
@@ -322,8 +328,13 @@ async function getSpec(
   return { schema: docs, components: result.components };
 }
 
-function generateParameters(target: string, schema: OpenAPIV3_1.SchemaObject) {
+function generateParameters(
+  target: string,
+  schema: OpenAPIV3_1.SchemaObject,
+  options?: ResolverReturnType["options"],
+) {
   const parameters: OpenAPIV3_1.ParameterObject[] = [];
+  const isQueryWithQs = target === "query" && options?.qs?.enabled;
 
   for (const [key, value] of Object.entries(schema.properties ?? {})) {
     const def: OpenAPIV3_1.ParameterObject = {
@@ -332,6 +343,19 @@ function generateParameters(target: string, schema: OpenAPIV3_1.SchemaObject) {
       // @ts-expect-error
       schema: value,
     };
+
+    // For query parameters with qs enabled, detect nested structures
+    if (isQueryWithQs && target === "query" && isNestedSchema(value)) {
+      // Add style and explode for nested objects
+      if ("type" in value && value.type === "object") {
+        def.style = "deepObject";
+        def.explode = true;
+      } else if ("type" in value && value.type === "array") {
+        // For arrays, we can use different styles based on the array items
+        def.style = "form";
+        def.explode = true;
+      }
+    }
 
     const isRequired = schema.required?.includes(key);
 
@@ -348,6 +372,27 @@ function generateParameters(target: string, schema: OpenAPIV3_1.SchemaObject) {
   }
 
   return parameters;
+}
+
+/**
+ * Check if a schema represents a nested structure (object or array)
+ */
+function isNestedSchema(
+  schema: OpenAPIV3_1.SchemaObject | OpenAPIV3_1.ReferenceObject,
+): boolean {
+  if ("$ref" in schema) return false;
+
+  // Check if it's an object with properties (nested object)
+  if (schema.type === "object" && schema.properties) {
+    return true;
+  }
+
+  // Check if it's an array (could be array of primitives or objects)
+  if (schema.type === "array") {
+    return true;
+  }
+
+  return false;
 }
 
 function mergeComponentsObjects(
