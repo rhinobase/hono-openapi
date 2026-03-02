@@ -15,6 +15,7 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "prepare": "is-ci || husky",
+    "typecheck": "tsc -p . --noEmit",
     "test": "vitest"
   },
   "keywords": [
