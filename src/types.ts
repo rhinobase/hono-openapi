@@ -24,17 +24,61 @@ export type HandlerUniqueProperty =
       spec: DescribeRouteOptions;
     };
 
+/**
+ * A media type object that accepts resolver() output in addition to standard schema types.
+ */
+type MediaTypeObjectWithResolver = Omit<
+  OpenAPIV3_1.MediaTypeObject,
+  "schema"
+> & {
+  schema?:
+    | OpenAPIV3_1.ReferenceObject
+    | OpenAPIV3_1.SchemaObject
+    | ResolverReturnType;
+};
+
+/**
+ * A response object that accepts resolver() output in schema positions.
+ */
+type ResponseObjectWithResolver =
+  | (Omit<OpenAPIV3_1.ResponseObject, "content"> & {
+      content?: {
+        [media: string]: MediaTypeObjectWithResolver;
+      };
+    })
+  | OpenAPIV3_1.ReferenceObject;
+
+/**
+ * Components object that accepts resolver() output in response schemas.
+ */
+type ComponentsObjectWithResolver = Omit<
+  OpenAPIV3_1.ComponentsObject,
+  "responses"
+> & {
+  responses?: {
+    [key: string]: ResponseObjectWithResolver;
+  };
+};
+
+/**
+ * Extended document type that allows resolver() in documentation.components.responses
+ */
+type DocumentWithResolver = Omit<
+  Partial<OpenAPIV3_1.Document>,
+  | "x-express-openapi-additional-middleware"
+  | "x-express-openapi-validation-strict"
+  | "components"
+> & {
+  components?: ComponentsObjectWithResolver;
+};
+
 export type GenerateSpecOptions = {
   /**
    * Customize OpenAPI config, refers to Swagger 2.0 config
    *
    * @see https://swagger.io/specification/v2/
    */
-  documentation: Omit<
-    Partial<OpenAPIV3_1.Document>,
-    | "x-express-openapi-additional-middleware"
-    | "x-express-openapi-validation-strict"
-  >;
+  documentation: DocumentWithResolver;
 
   /**
    * Include paths which don't have the handlers.

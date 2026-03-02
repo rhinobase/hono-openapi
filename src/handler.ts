@@ -13,6 +13,7 @@ import type {
   DescribeRouteOptions,
   GenerateSpecOptions,
   HandlerUniqueProperty,
+  ResolverReturnType,
   SpecContext,
 } from "./types";
 import {
@@ -101,8 +102,13 @@ export async function generateSpecs<
     }
   }
 
-  const components = mergeComponentsObjects(
+  // Resolve any resolver() objects inside documentation.components
+  const resolvedDocComponents = await resolveDocumentationComponents(
     _documentation.components,
+  );
+
+  const components = mergeComponentsObjects(
+    resolvedDocComponents,
     ctx.components,
   );
 
@@ -348,6 +354,55 @@ function generateParameters(target: string, schema: OpenAPIV3_1.SchemaObject) {
   }
 
   return parameters;
+}
+
+async function resolveDocumentationComponents(
+  components?: Record<string, unknown>,
+): Promise<OpenAPIV3_1.ComponentsObject | undefined> {
+  if (!components) return undefined;
+
+  let resolvedComponents: OpenAPIV3_1.ComponentsObject = {
+    ...(components as OpenAPIV3_1.ComponentsObject),
+  };
+
+  // Resolve schemas in components.responses
+  const responses = resolvedComponents.responses;
+  if (responses) {
+    for (const key of Object.keys(responses)) {
+      const response = responses[key];
+
+      if (!response || !("content" in response)) continue;
+
+      const content = (response as OpenAPIV3_1.ResponseObject).content;
+      if (!content) continue;
+
+      for (const contentKey of Object.keys(content)) {
+        const raw = content[contentKey] as {
+          schema?:
+            | ResolverReturnType
+            | OpenAPIV3_1.SchemaObject
+            | OpenAPIV3_1.ReferenceObject;
+        };
+
+        if (!raw?.schema) continue;
+
+        if ("toOpenAPISchema" in raw.schema) {
+          const result = await (
+            raw.schema as ResolverReturnType
+          ).toOpenAPISchema();
+          raw.schema = result.schema;
+          if (result.components) {
+            resolvedComponents = mergeComponentsObjects(
+              resolvedComponents,
+              result.components,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  return resolvedComponents;
 }
 
 function mergeComponentsObjects(
