@@ -27,7 +27,7 @@ export type HandlerUniqueProperty =
 /**
  * A media type object that accepts resolver() output in addition to standard schema types.
  */
-type MediaTypeObjectWithResolver = Omit<
+export type MediaTypeObjectWithResolver = Omit<
   OpenAPIV3_1.MediaTypeObject,
   "schema"
 > & {
@@ -40,7 +40,7 @@ type MediaTypeObjectWithResolver = Omit<
 /**
  * A response object that accepts resolver() output in schema positions.
  */
-type ResponseObjectWithResolver =
+export type ResponseObjectWithResolver =
   | (Omit<OpenAPIV3_1.ResponseObject, "content"> & {
       content?: {
         [media: string]: MediaTypeObjectWithResolver;
@@ -49,15 +49,10 @@ type ResponseObjectWithResolver =
   | OpenAPIV3_1.ReferenceObject;
 
 /**
- * Components object that accepts resolver() output in response schemas.
+ * A responses map that accepts resolver() output in schema positions.
  */
-type ComponentsObjectWithResolver = Omit<
-  OpenAPIV3_1.ComponentsObject,
-  "responses"
-> & {
-  responses?: {
-    [key: string]: ResponseObjectWithResolver;
-  };
+export type ResponsesWithResolver = {
+  [key: string]: ResponseObjectWithResolver;
 };
 
 /**
@@ -69,7 +64,9 @@ type DocumentWithResolver = Omit<
   | "x-express-openapi-validation-strict"
   | "components"
 > & {
-  components?: ComponentsObjectWithResolver;
+  components?: Omit<OpenAPIV3_1.ComponentsObject, "responses"> & {
+    responses?: ResponsesWithResolver;
+  };
 };
 
 export type GenerateSpecOptions = {
@@ -133,20 +130,7 @@ export type DescribeRouteOptions = Omit<
   /**
    * Responses of the request
    */
-  responses?: {
-    [key: string]:
-      | (OpenAPIV3_1.ResponseObject & {
-          content?: {
-            [key: string]: Omit<OpenAPIV3_1.MediaTypeObject, "schema"> & {
-              schema?:
-                | OpenAPIV3_1.ReferenceObject
-                | OpenAPIV3_1.SchemaObject
-                | ResolverReturnType;
-            };
-          };
-        })
-      | OpenAPIV3_1.ReferenceObject;
-  };
+  responses?: ResponsesWithResolver;
 };
 
 export type RegisterSchemaPathOptions = {
