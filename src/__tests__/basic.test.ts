@@ -88,6 +88,85 @@ describe("path parameters", () => {
   });
 });
 
+describe("path context matching", () => {
+  it("should not apply describeRoute context from one router to unrelated routes with same trailing path", async () => {
+    // Reproduces https://github.com/rhinobase/hono-openapi/issues/143
+    // /players middleware should NOT apply to /collections/players
+    const app = new Hono();
+
+    app.route(
+      "/players",
+      new Hono().use(
+        describeRoute({
+          tags: ["Players"],
+        }),
+      ),
+    );
+
+    app.route(
+      "/collections",
+      new Hono()
+        .use(
+          describeRoute({
+            tags: ["Player Collections"],
+          }),
+        )
+        .get(
+          "/players",
+          describeRoute({
+            summary: "Hello",
+          }),
+          async (c) => {
+            return c.body("hello world");
+          },
+        ),
+    );
+
+    const specs = await generateSpecs(app);
+
+    const collectionPlayers = specs.paths["/collections/players"]?.get;
+    expect(collectionPlayers).toBeDefined();
+    // Should only have "Player Collections" tag, NOT "Players"
+    expect(collectionPlayers?.tags).toEqual(["Player Collections"]);
+    expect(collectionPlayers?.tags).not.toContain("Players");
+  });
+
+  it("should correctly scope context to prefix-matched paths only", async () => {
+    // Module-level middleware with describeRoute on /module should not
+    // apply to /module2 even though /module2 starts with /module
+    const app = new Hono();
+
+    app.route(
+      "/module",
+      new Hono().use(
+        describeRoute({
+          tags: ["Module"],
+        }),
+      ),
+    );
+
+    app.route(
+      "/module2",
+      new Hono().get(
+        "/endpoint",
+        describeRoute({
+          summary: "Module2 endpoint",
+        }),
+        async (c) => {
+          return c.body("hello");
+        },
+      ),
+    );
+
+    const specs = await generateSpecs(app);
+
+    const module2Endpoint = specs.paths["/module2/endpoint"]?.get;
+    expect(module2Endpoint).toBeDefined();
+    // /module2/endpoint should NOT get the "Module" tag from /module middleware
+    expect(module2Endpoint?.tags).toBeUndefined();
+  });
+});
+
 describe("basic", () => {
   it("operationId", async () => {
     const operationId = vi.fn(() => "hello");
