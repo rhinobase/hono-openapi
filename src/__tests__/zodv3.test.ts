@@ -288,4 +288,44 @@ describe("zod v3", () => {
       "getApiV1UserProfile",
     );
   });
+
+  it("describeResponse with Date schema matches c.json serialization", async () => {
+    const ResponseSchema = z.object({
+      name: z.string(),
+      createdAt: z.date(),
+    });
+
+    const app = new Hono().get(
+      "/",
+      describeResponse(
+        (c) => {
+          // Date is JSON-serialized to string by c.json()
+          return c.json({ name: "test", createdAt: new Date() }, 200);
+        },
+        {
+          200: {
+            description: "OK",
+            content: {
+              "application/json": {
+                vSchema: ResponseSchema,
+              },
+            },
+          },
+        },
+      ),
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs.paths["/"]?.get?.responses).toEqual({
+      200: {
+        description: "OK",
+        content: {
+          "application/json": {
+            schema: expect.any(Object),
+          },
+        },
+      },
+    });
+  });
 });

@@ -2,7 +2,12 @@ import { Hono } from "hono";
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
 import { generateSpecs } from "../handler.js";
-import { describeRoute, resolver, validator } from "../middlewares.js";
+import {
+  describeResponse,
+  describeRoute,
+  resolver,
+  validator,
+} from "../middlewares.js";
 
 describe("valibot", () => {
   it("basic", async () => {
@@ -115,5 +120,44 @@ describe("valibot", () => {
     const specs = await generateSpecs(app);
 
     expect(specs).toMatchSnapshot();
+  });
+
+  it("describeResponse with Date schema matches c.json serialization", async () => {
+    const ResponseSchema = v.object({
+      name: v.string(),
+      createdAt: v.date(),
+    });
+
+    const app = new Hono().get(
+      "/",
+      describeResponse(
+        (c) => {
+          return c.json({ name: "test", createdAt: new Date() }, 200);
+        },
+        {
+          200: {
+            description: "OK",
+            content: {
+              "application/json": {
+                vSchema: ResponseSchema,
+              },
+            },
+          },
+        },
+      ),
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs.paths["/"]?.get?.responses).toEqual({
+      200: {
+        description: "OK",
+        content: {
+          "application/json": {
+            schema: expect.any(Object),
+          },
+        },
+      },
+    });
   });
 });

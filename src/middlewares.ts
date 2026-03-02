@@ -18,6 +18,7 @@ import type {
 } from "hono";
 import type { TypedResponse } from "hono/types";
 import type { StatusCode } from "hono/utils/http-status";
+import type { JSONParsed } from "hono/utils/types";
 import type { JSONSchema7 } from "json-schema";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type {
@@ -152,7 +153,7 @@ type HandlerResponse<
   {
     [K in keyof T]: T[K] extends StandardSchemaV1
       ? TypedResponse<
-          StandardSchemaV1.InferOutput<T[K]>,
+          JSONParsed<StandardSchemaV1.InferOutput<T[K]>>,
           Num<K> extends StatusCode ? Num<K> : never
         >
       : never;
