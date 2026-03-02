@@ -364,4 +364,111 @@ describe("zod v4", () => {
       },
     });
   });
+
+  it("z.date() should be converted to string with date-time format", async () => {
+    const app = new Hono().get(
+      "/",
+      describeRoute({
+        responses: {
+          200: {
+            description: "Success",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z.object({
+                    name: z.string(),
+                    createdAt: z.date(),
+                  }),
+                ),
+              },
+            },
+          },
+        },
+      }),
+      async (c) => {
+        return c.json({ name: "test", createdAt: new Date() });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    const schema =
+      specs.paths["/"]?.get?.responses?.[200]?.content?.["application/json"]
+        ?.schema;
+    expect(schema).toBeDefined();
+    expect(schema.type).toBe("object");
+    expect(schema.properties?.createdAt).toEqual({
+      type: "string",
+      format: "date-time",
+    });
+  });
+
+  it("z.date() should work in validator schemas", async () => {
+    const app = new Hono().post(
+      "/",
+      validator("json", z.object({ scheduledAt: z.date() })),
+      async (c) => {
+        return c.json({ ok: true });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    const requestBody = specs.paths["/"]?.post?.requestBody as any;
+    expect(requestBody).toBeDefined();
+    const schema = requestBody.content?.["application/json"]?.schema;
+    expect(schema).toBeDefined();
+    expect(schema.properties?.scheduledAt).toEqual({
+      type: "string",
+      format: "date-time",
+    });
+  });
+
+  it("user-provided override should take precedence over default z.date() handling", async () => {
+    const customOverride = (ctx: {
+      zodSchema: { _zod: { def: { type: string } } };
+      jsonSchema: Record<string, unknown>;
+    }) => {
+      if (ctx.zodSchema._zod.def.type === "date") {
+        ctx.jsonSchema.type = "string";
+        ctx.jsonSchema.format = "date";
+      }
+    };
+
+    const app = new Hono().get(
+      "/",
+      describeRoute({
+        responses: {
+          200: {
+            description: "Success",
+            content: {
+              "application/json": {
+                schema: resolver(z.object({ createdAt: z.date() }), {
+                  options: {
+                    unrepresentable: "any",
+                    override: customOverride,
+                  },
+                }),
+              },
+            },
+          },
+        },
+      }),
+      async (c) => {
+        return c.json({ createdAt: new Date() });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    const schema =
+      specs.paths["/"]?.get?.responses?.[200]?.content?.["application/json"]
+        ?.schema;
+    expect(schema).toBeDefined();
+    // Should use the user's custom format ("date") not our default ("date-time")
+    expect(schema.properties?.createdAt).toEqual({
+      type: "string",
+      format: "date",
+    });
+  });
 });
