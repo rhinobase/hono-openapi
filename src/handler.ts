@@ -103,16 +103,16 @@ export async function generateSpecs<
   }
 
   // Resolve any resolver() objects inside documentation.components.responses
-  let docComponents: OpenAPIV3_1.ComponentsObject =
-    (_documentation.components as OpenAPIV3_1.ComponentsObject) ?? {};
-  if (_documentation.components?.responses) {
-    const resolved = await resolveResponseSchemas(
-      _documentation.components.responses,
-    );
-    docComponents = mergeComponentsObjects(docComponents, resolved.components);
-  }
+  const { components: resolvedDocComponents } = _documentation.components
+    ?.responses
+    ? await resolveResponseSchemas(_documentation.components.responses)
+    : { components: {} };
 
-  const components = mergeComponentsObjects(docComponents, ctx.components);
+  const components = mergeComponentsObjects(
+    _documentation.components as OpenAPIV3_1.ComponentsObject,
+    resolvedDocComponents,
+    ctx.components,
+  );
 
   return {
     openapi: "3.1.0",
