@@ -30,6 +30,7 @@ exports[`typebox > basic 1`] = `
               },
             },
           },
+          "required": true,
         },
         "responses": {
           "200": {
@@ -92,6 +93,7 @@ exports[`typebox > with JSON Schema 1`] = `
               },
             },
           },
+          "required": true,
         },
         "responses": {
           "200": {
@@ -176,6 +178,7 @@ exports[`typebox > with metadata 1`] = `
               },
             },
           },
+          "required": true,
         },
         "responses": {
           "200": {

@@ -260,6 +260,7 @@ async function getSpec(
       !docs.requestBody.content
     ) {
       docs.requestBody = {
+        required: true,
         content: {
           [media]: {
             schema: result.schema,

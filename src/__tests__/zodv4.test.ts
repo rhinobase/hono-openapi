@@ -304,6 +304,22 @@ describe("zod v4", () => {
     expect(worldParams?.[0]).toMatchObject({ name: "greeting", in: "query" });
   });
 
+  it("validator should set requestBody.required to true", async () => {
+    const app = new Hono().post(
+      "/",
+      validator("json", z.object({ name: z.string() })),
+      async (c) => {
+        return c.json({ ok: true });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    const requestBody = specs.paths["/"]?.post?.requestBody as any;
+    expect(requestBody).toBeDefined();
+    expect(requestBody.required).toBe(true);
+  });
+
   it("describeResponse with Date schema matches c.json serialization", async () => {
     const ResponseSchema = z.object({
       name: z.string(),

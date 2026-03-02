@@ -30,6 +30,7 @@ exports[`valibot > basic 1`] = `
               },
             },
           },
+          "required": true,
         },
         "responses": {
           "200": {
@@ -106,6 +107,7 @@ exports[`valibot > with metadata 1`] = `
               },
             },
           },
+          "required": true,
         },
         "responses": {
           "200": {
