@@ -61,35 +61,58 @@ export function resolver<Schema extends StandardSchemaV1>(
 ) {
   const vendor = schema["~standard"].vendor;
 
-  // For ArkType schemas, provide a sensible default fallback for morph nodes
-  // so that morph schemas (e.g. `string.numeric.parse`) don't crash during
-  // OpenAPI spec generation. Users can still override with their own fallback.
-  const userOptions = (
-    userDefinedOptions as { options?: Record<string, unknown> } | undefined
-  )?.options;
-  const needsArktypeFallback = vendor === "arktype" && !userOptions?.fallback;
-
-  const mergedOptions = needsArktypeFallback
-    ? { fallback: arktypeMorphFallback, ...userOptions }
-    : userOptions;
-
   return {
     vendor,
     validate: schema["~standard"].validate,
     toJSONSchema: (customOptions?: Record<string, unknown>) =>
-      toJsonSchema(schema, {
-        ...mergedOptions,
-        ...customOptions,
-      }) as JSONSchema7 | Promise<JSONSchema7>,
+      toJsonSchema(schema, { ...userDefinedOptions, ...customOptions }) as
+        | JSONSchema7
+        | Promise<JSONSchema7>,
     toOpenAPISchema: (customOptions?: Record<string, unknown>) =>
       toOpenAPISchema(schema, {
         ...userDefinedOptions,
         ...customOptions,
-        options: {
-          ...mergedOptions,
-          ...(customOptions as { options?: Record<string, unknown> })?.options,
-        },
+        ...(vendor === "arktype"
+          ? injectArktypeFallback(userDefinedOptions, customOptions)
+          : undefined),
       }),
+  };
+}
+
+/**
+ * Build the `options` override for an ArkType schema's `toOpenAPISchema`
+ * context. The default handler in `@standard-community/standard-openapi`
+ * passes `context.options` to ArkType's `toJsonSchema()`, so the `fallback`
+ * must live inside that nested `options` object.
+ *
+ * If the caller already supplied a `fallback` (at either nesting level),
+ * it is preserved.
+ */
+function injectArktypeFallback(
+  userDefined?: Record<string, unknown>,
+  custom?: Record<string, unknown>,
+): { options: Record<string, unknown> } | undefined {
+  const userNested = userDefined?.options as
+    | Record<string, unknown>
+    | undefined;
+  const customNested = custom?.options as Record<string, unknown> | undefined;
+
+  // User already provided a fallback — don't override
+  if (
+    userDefined?.fallback ||
+    userNested?.fallback ||
+    custom?.fallback ||
+    customNested?.fallback
+  ) {
+    return undefined;
+  }
+
+  return {
+    options: {
+      fallback: arktypeMorphFallback,
+      ...userNested,
+      ...customNested,
+    },
   };
 }
 
