@@ -96,8 +96,15 @@ function getPathContext(path: string) {
   const context: RegisterSchemaPathOptions["specs"][] = [];
 
   for (const [key, data] of specsByPathContext) {
-    // TODO: Improve path matching https://github.com/rhinobase/hono-openapi/issues/143
-    if (data && path.match(key)) {
+    if (!data) continue;
+
+    // Strip trailing wildcard (e.g., "/players/*" -> "/players")
+    const prefix = key.endsWith("/*") ? key.slice(0, -2) : key;
+
+    // Context should only apply when the path starts with the prefix,
+    // and either matches exactly or continues with a "/" segment boundary.
+    // This prevents "/players" context from matching "/collections/players".
+    if (path === prefix || path.startsWith(`${prefix}/`)) {
       context.push(data);
     }
   }
