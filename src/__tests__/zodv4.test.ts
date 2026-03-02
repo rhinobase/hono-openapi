@@ -149,6 +149,123 @@ describe("zod v4", () => {
     expect(specs).toMatchSnapshot();
   });
 
+  it("resolver in documentation.components.responses", async () => {
+    const errorSchema = z
+      .object({ message: z.string() })
+      .meta({ ref: "Error" });
+
+    const app = new Hono().get(
+      "/",
+      describeRoute({
+        tags: ["test"],
+        summary: "Test route",
+        description: "This is a test route",
+        responses: {
+          200: {
+            description: "Success",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z.object({
+                    message: z.string(),
+                  }),
+                ),
+              },
+            },
+          },
+          404: {
+            $ref: "#/components/responses/NotFoundError",
+          },
+        },
+      }),
+      validator("json", z.object({ message: z.string() })),
+      async (c) => {
+        return c.json({ message: "Hello, world!" });
+      },
+    );
+
+    const specs = await generateSpecs(app, {
+      documentation: {
+        components: {
+          responses: {
+            NotFoundError: {
+              description: "Not Found",
+              content: {
+                "application/json": {
+                  schema: resolver(errorSchema),
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // The resolver in documentation.components should be resolved to a proper OpenAPI schema
+    const notFoundResponse = specs.components?.responses?.NotFoundError as any;
+    expect(notFoundResponse).toBeDefined();
+    expect(notFoundResponse.description).toBe("Not Found");
+
+    // The schema should be resolved (not contain vendor/validate/toOpenAPISchema)
+    const schema = notFoundResponse.content?.["application/json"]?.schema;
+    expect(schema).toBeDefined();
+    expect(schema).not.toHaveProperty("vendor");
+    expect(schema).not.toHaveProperty("validate");
+    expect(schema).not.toHaveProperty("toOpenAPISchema");
+
+    // Should be a $ref since errorSchema has .meta({ ref: "Error" })
+    expect(schema).toHaveProperty("$ref");
+    expect(schema.$ref).toBe("#/components/schemas/Error");
+
+    // The Error schema should be in components.schemas
+    expect(specs.components?.schemas?.Error).toBeDefined();
+  });
+
+  it("resolver in documentation.components.responses without ref", async () => {
+    const errorSchema = z.object({ message: z.string() });
+
+    const app = new Hono().get(
+      "/",
+      describeRoute({
+        tags: ["test"],
+        summary: "Test route",
+        description: "This is a test route",
+      }),
+      validator("json", z.object({ message: z.string() })),
+      async (c) => {
+        return c.json({ message: "Hello, world!" });
+      },
+    );
+
+    const specs = await generateSpecs(app, {
+      documentation: {
+        components: {
+          responses: {
+            InternalError: {
+              description: "Internal Server Error",
+              content: {
+                "application/json": {
+                  schema: resolver(errorSchema),
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // The resolver should be resolved to an inline schema
+    const errorResponse = specs.components?.responses?.InternalError as any;
+    expect(errorResponse).toBeDefined();
+
+    const schema = errorResponse.content?.["application/json"]?.schema;
+    expect(schema).toBeDefined();
+    expect(schema).not.toHaveProperty("vendor");
+    expect(schema).not.toHaveProperty("toOpenAPISchema");
+    expect(schema).toHaveProperty("type", "object");
+    expect(schema.properties?.message).toHaveProperty("type", "string");
+  });
+
   it("defaultOptions should not cause parameter pollution between routes", async () => {
     const app = new Hono()
       .get(

@@ -13,6 +13,7 @@ import type {
   DescribeRouteOptions,
   GenerateSpecOptions,
   HandlerUniqueProperty,
+  ResponsesWithResolver,
   SpecContext,
 } from "./types";
 import {
@@ -101,8 +102,17 @@ export async function generateSpecs<
     }
   }
 
+  // Resolve any resolver() objects inside documentation.components.responses
+  const { components: resolvedDocComponents } = _documentation.components
+    ?.responses
+    ? await resolveResponseSchemas(_documentation.components.responses)
+    : { components: {} };
+
+  // After resolveResponseSchemas, resolver objects in responses have been
+  // resolved in-place, so the cast below is safe.
   const components = mergeComponentsObjects(
-    _documentation.components,
+    _documentation.components as OpenAPIV3_1.ComponentsObject,
+    resolvedDocComponents,
     ctx.components,
   );
 
@@ -214,7 +224,6 @@ async function getSpec(
 ) {
   // If the middleware handler has a spec, that is decribeRoute middleware
   if ("spec" in middlewareHandler) {
-    let components: OpenAPIV3_1.ComponentsObject = {};
     const tmp = {
       ...defaultOptions,
       ...middlewareHandler.spec,
@@ -224,29 +233,10 @@ async function getSpec(
       },
     };
 
+    let components: OpenAPIV3_1.ComponentsObject = {};
     if (tmp.responses) {
-      for (const key of Object.keys(tmp.responses)) {
-        const response = tmp.responses[key];
-
-        if (!response || !("content" in response)) continue;
-
-        for (const contentKey of Object.keys(response.content ?? {})) {
-          const raw = response.content?.[contentKey];
-
-          if (!raw) continue;
-
-          if (raw.schema && "toOpenAPISchema" in raw.schema) {
-            const result = await raw.schema.toOpenAPISchema();
-            raw.schema = result.schema;
-            if (result.components) {
-              components = mergeComponentsObjects(
-                components,
-                result.components,
-              );
-            }
-          }
-        }
-      }
+      const resolved = await resolveResponseSchemas(tmp.responses);
+      components = resolved.components;
     }
 
     return { schema: tmp, components };
@@ -348,6 +338,36 @@ function generateParameters(target: string, schema: OpenAPIV3_1.SchemaObject) {
   }
 
   return parameters;
+}
+
+/**
+ * Resolve any resolver() objects in a responses map, returning the
+ * cleaned responses and any components produced during resolution.
+ */
+async function resolveResponseSchemas(responses: ResponsesWithResolver) {
+  let components: OpenAPIV3_1.ComponentsObject = {};
+
+  for (const key of Object.keys(responses)) {
+    const response = responses[key];
+
+    if (!response || !("content" in response)) continue;
+
+    for (const contentKey of Object.keys(response.content ?? {})) {
+      const raw = response.content?.[contentKey];
+
+      if (!raw) continue;
+
+      if (raw.schema && "toOpenAPISchema" in raw.schema) {
+        const result = await raw.schema.toOpenAPISchema();
+        raw.schema = result.schema;
+        if (result.components) {
+          components = mergeComponentsObjects(components, result.components);
+        }
+      }
+    }
+  }
+
+  return { responses, components };
 }
 
 function mergeComponentsObjects(

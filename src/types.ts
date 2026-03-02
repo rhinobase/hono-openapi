@@ -24,17 +24,58 @@ export type HandlerUniqueProperty =
       spec: DescribeRouteOptions;
     };
 
+/**
+ * A media type object that accepts resolver() output in addition to standard schema types.
+ */
+type MediaTypeObjectWithResolver = Omit<
+  OpenAPIV3_1.MediaTypeObject,
+  "schema"
+> & {
+  schema?:
+    | OpenAPIV3_1.ReferenceObject
+    | OpenAPIV3_1.SchemaObject
+    | ResolverReturnType;
+};
+
+/**
+ * A response object that accepts resolver() output in schema positions.
+ */
+type ResponseObjectWithResolver =
+  | (Omit<OpenAPIV3_1.ResponseObject, "content"> & {
+      content?: {
+        [media: string]: MediaTypeObjectWithResolver;
+      };
+    })
+  | OpenAPIV3_1.ReferenceObject;
+
+/**
+ * A responses map that accepts resolver() output in schema positions.
+ */
+export type ResponsesWithResolver = {
+  [key: string]: ResponseObjectWithResolver;
+};
+
+/**
+ * Extended document type that allows resolver() in documentation.components.responses
+ */
+type DocumentWithResolver = Omit<
+  Partial<OpenAPIV3_1.Document>,
+  | "x-express-openapi-additional-middleware"
+  | "x-express-openapi-validation-strict"
+  | "components"
+> & {
+  components?: Omit<OpenAPIV3_1.ComponentsObject, "responses"> & {
+    responses?: ResponsesWithResolver;
+  };
+};
+
 export type GenerateSpecOptions = {
   /**
    * Customize OpenAPI config, refers to Swagger 2.0 config
    *
    * @see https://swagger.io/specification/v2/
    */
-  documentation: Omit<
-    Partial<OpenAPIV3_1.Document>,
-    | "x-express-openapi-additional-middleware"
-    | "x-express-openapi-validation-strict"
-  >;
+  documentation: DocumentWithResolver;
 
   /**
    * Include paths which don't have the handlers.
@@ -89,20 +130,7 @@ export type DescribeRouteOptions = Omit<
   /**
    * Responses of the request
    */
-  responses?: {
-    [key: string]:
-      | (OpenAPIV3_1.ResponseObject & {
-          content?: {
-            [key: string]: Omit<OpenAPIV3_1.MediaTypeObject, "schema"> & {
-              schema?:
-                | OpenAPIV3_1.ReferenceObject
-                | OpenAPIV3_1.SchemaObject
-                | ResolverReturnType;
-            };
-          };
-        })
-      | OpenAPIV3_1.ReferenceObject;
-  };
+  responses?: ResponsesWithResolver;
 };
 
 export type RegisterSchemaPathOptions = {
