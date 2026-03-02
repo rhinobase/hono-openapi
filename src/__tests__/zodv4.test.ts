@@ -303,4 +303,49 @@ describe("zod v4", () => {
     expect(worldParams).toHaveLength(1);
     expect(worldParams?.[0]).toMatchObject({ name: "greeting", in: "query" });
   });
+
+  it("describeResponse with Date schema matches c.json serialization", async () => {
+    const ResponseSchema = z.object({
+      name: z.string(),
+      createdAt: z.iso.date(),
+    });
+
+    const app = new Hono().get(
+      "/",
+      describeResponse(
+        (c) => {
+          return c.json(
+            {
+              name: "test",
+              createdAt: new Date(),
+            },
+            200,
+          );
+        },
+        {
+          200: {
+            description: "OK",
+            content: {
+              "application/json": {
+                vSchema: ResponseSchema,
+              },
+            },
+          },
+        },
+      ),
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs.paths["/"]?.get?.responses).toEqual({
+      200: {
+        description: "OK",
+        content: {
+          "application/json": {
+            schema: expect.any(Object),
+          },
+        },
+      },
+    });
+  });
 });
