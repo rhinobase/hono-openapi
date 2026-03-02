@@ -52,6 +52,25 @@ export function loadVendor(
 const arktypeMorphFallback = (ctx: { base: unknown }) => ctx.base;
 
 /**
+ * Default override for Zod v4 schemas — converts `z.date()` to
+ * `{ type: "string", format: "date-time" }` since Date cannot be
+ * represented in JSON Schema and Zod v4's `toJSONSchema` throws by default.
+ *
+ * Must be used together with `unrepresentable: "any"` so that `z.date()`
+ * doesn't throw during processing (it produces `{}` instead), then this
+ * override fills in the correct type and format during the emit phase.
+ */
+const zodV4DateOverride = (ctx: {
+  zodSchema: { _zod: { def: { type: string } } };
+  jsonSchema: Record<string, unknown>;
+}) => {
+  if (ctx.zodSchema._zod.def.type === "date") {
+    ctx.jsonSchema.type = "string";
+    ctx.jsonSchema.format = "date-time";
+  }
+};
+
+/**
  * Generate a resolver for a validation schema
  * @param schema Validation schema
  * @returns Resolver result
@@ -75,6 +94,9 @@ export function resolver<Schema extends StandardSchemaV1>(
         ...customOptions,
         ...(vendor === "arktype"
           ? injectArktypeFallback(userDefinedOptions, customOptions)
+          : undefined),
+        ...(vendor === "zod"
+          ? injectZodV4DateOverride(schema, userDefinedOptions, customOptions)
           : undefined),
       }),
   };
@@ -111,6 +133,54 @@ function injectArktypeFallback(
   return {
     options: {
       fallback: arktypeMorphFallback,
+      ...userNested,
+      ...customNested,
+    },
+  };
+}
+
+/**
+ * Inject a default `override` and `unrepresentable: "any"` into Zod v4
+ * schemas' `toOpenAPISchema` context so that `z.date()` is converted to
+ * `{ type: "string", format: "date-time" }` instead of throwing
+ * "Date cannot be represented in JSON Schema".
+ *
+ * Two options work together:
+ * - `unrepresentable: "any"` prevents the throw during processing (Date
+ *   produces `{}` instead of throwing)
+ * - `override` fills in `{ type: "string", format: "date-time" }` during
+ *   the emit phase
+ *
+ * Only applies to Zod v4 schemas (detected by the `_zod` property).
+ * If the caller already supplied an `override`, it is preserved.
+ */
+function injectZodV4DateOverride(
+  schema: StandardSchemaV1,
+  userDefined?: Record<string, unknown>,
+  custom?: Record<string, unknown>,
+): { options: Record<string, unknown> } | undefined {
+  // Only apply to Zod v4 schemas (Zod v3 doesn't have `_zod`)
+  if (!("_zod" in schema)) return undefined;
+
+  const userNested = userDefined?.options as
+    | Record<string, unknown>
+    | undefined;
+  const customNested = custom?.options as Record<string, unknown> | undefined;
+
+  // User already provided an override — don't replace it
+  if (
+    userDefined?.override ||
+    userNested?.override ||
+    custom?.override ||
+    customNested?.override
+  ) {
+    return undefined;
+  }
+
+  return {
+    options: {
+      unrepresentable: "any",
+      override: zodV4DateOverride,
       ...userNested,
       ...customNested,
     },
