@@ -44,6 +44,13 @@ export function loadVendor(
 }
 
 /**
+ * Default fallback for ArkType morph schemas — returns the input ("base")
+ * schema so that morphs like `string.numeric.parse` produce valid JSON Schema
+ * instead of throwing a `ToJsonSchemaError`.
+ */
+const arktypeMorphFallback = (ctx: { base: unknown }) => ctx.base;
+
+/**
  * Generate a resolver for a validation schema
  * @param schema Validation schema
  * @returns Resolver result
@@ -52,15 +59,37 @@ export function resolver<Schema extends StandardSchemaV1>(
   schema: Schema,
   userDefinedOptions?: Record<string, unknown>,
 ) {
+  const vendor = schema["~standard"].vendor;
+
+  // For ArkType schemas, provide a sensible default fallback for morph nodes
+  // so that morph schemas (e.g. `string.numeric.parse`) don't crash during
+  // OpenAPI spec generation. Users can still override with their own fallback.
+  const userOptions = (
+    userDefinedOptions as { options?: Record<string, unknown> } | undefined
+  )?.options;
+  const needsArktypeFallback = vendor === "arktype" && !userOptions?.fallback;
+
+  const mergedOptions = needsArktypeFallback
+    ? { fallback: arktypeMorphFallback, ...userOptions }
+    : userOptions;
+
   return {
-    vendor: schema["~standard"].vendor,
+    vendor,
     validate: schema["~standard"].validate,
     toJSONSchema: (customOptions?: Record<string, unknown>) =>
-      toJsonSchema(schema, { ...userDefinedOptions, ...customOptions }) as
-        | JSONSchema7
-        | Promise<JSONSchema7>,
+      toJsonSchema(schema, {
+        ...mergedOptions,
+        ...customOptions,
+      }) as JSONSchema7 | Promise<JSONSchema7>,
     toOpenAPISchema: (customOptions?: Record<string, unknown>) =>
-      toOpenAPISchema(schema, { ...userDefinedOptions, ...customOptions }),
+      toOpenAPISchema(schema, {
+        ...userDefinedOptions,
+        ...customOptions,
+        options: {
+          ...mergedOptions,
+          ...(customOptions as { options?: Record<string, unknown> })?.options,
+        },
+      }),
   };
 }
 
