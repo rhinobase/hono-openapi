@@ -245,6 +245,12 @@ export function removeExcludedPaths(
 
       if (schema == null) continue;
 
+      // Check for validator usage BEFORE auto-generating path parameters,
+      // so we only detect params from actual validator() calls
+      const hasValidation =
+        schema.requestBody ||
+        (schema.parameters && schema.parameters.length > 0);
+
       if (key.includes("{")) {
         // Clone the parameters array to avoid mutating shared references
         schema.parameters = schema.parameters ? [...schema.parameters] : [];
@@ -299,6 +305,21 @@ export function removeExcludedPaths(
         schema.responses = {
           200: {},
         };
+      }
+
+      // Auto-inject a 400 validation error response for routes that use validators
+      if (
+        hasValidation &&
+        ctx.options.defaultValidationErrorResponse !== false &&
+        !schema.responses["400"]
+      ) {
+        const errorResponse = ctx.options.defaultValidationErrorResponse;
+
+        if (typeof errorResponse === "object") {
+          schema.responses["400"] = errorResponse;
+        } else if (ctx.validationErrorResponse) {
+          schema.responses["400"] = ctx.validationErrorResponse;
+        }
       }
     }
 

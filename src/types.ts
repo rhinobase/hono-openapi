@@ -112,6 +112,15 @@ export type GenerateSpecOptions = {
    * Default options for `describeRoute` method
    */
   defaultOptions: Partial<Record<AllowedMethods | "ALL", DescribeRouteOptions>>;
+
+  /**
+   * Automatically include a 400 validation error response for routes
+   * that use `validator()`. Set to `false` to disable, `true` to use
+   * the built-in schema, or provide a custom `ResponseObject`.
+   *
+   * @default true
+   */
+  defaultValidationErrorResponse: boolean | OpenAPIV3_1.ResponseObject;
 };
 
 type OperationId = string | ((route: RouterRoute) => string);
@@ -157,4 +166,5 @@ type SanitizedGenerateSpecOptions = Pick<
 export type SpecContext = {
   components: OpenAPIV3_1.ComponentsObject;
   options: SanitizedGenerateSpecOptions;
+  validationErrorResponse?: OpenAPIV3_1.ResponseObject;
 };
