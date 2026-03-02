@@ -108,6 +108,8 @@ export async function generateSpecs<
     ? await resolveResponseSchemas(_documentation.components.responses)
     : { components: {} };
 
+  // After resolveResponseSchemas, resolver objects in responses have been
+  // resolved in-place, so the cast below is safe.
   const components = mergeComponentsObjects(
     _documentation.components as OpenAPIV3_1.ComponentsObject,
     resolvedDocComponents,

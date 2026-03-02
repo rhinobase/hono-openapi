@@ -27,7 +27,7 @@ export type HandlerUniqueProperty =
 /**
  * A media type object that accepts resolver() output in addition to standard schema types.
  */
-export type MediaTypeObjectWithResolver = Omit<
+type MediaTypeObjectWithResolver = Omit<
   OpenAPIV3_1.MediaTypeObject,
   "schema"
 > & {
@@ -40,7 +40,7 @@ export type MediaTypeObjectWithResolver = Omit<
 /**
  * A response object that accepts resolver() output in schema positions.
  */
-export type ResponseObjectWithResolver =
+type ResponseObjectWithResolver =
   | (Omit<OpenAPIV3_1.ResponseObject, "content"> & {
       content?: {
         [media: string]: MediaTypeObjectWithResolver;
