@@ -51,6 +51,33 @@ exports[`arktype > basic 1`] = `
             },
             "description": "Success",
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {},
+                    "error": {
+                      "items": {},
+                      "type": "array",
+                    },
+                    "success": {
+                      "enum": [
+                        false,
+                      ],
+                      "type": "boolean",
+                    },
+                  },
+                  "required": [
+                    "success",
+                    "error",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "Validation Error",
+          },
         },
         "summary": "Test route",
         "tags": [
@@ -97,6 +124,33 @@ exports[`arktype > morph schema in json body without explicit fallback 1`] = `
         },
         "responses": {
           "200": {},
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {},
+                    "error": {
+                      "items": {},
+                      "type": "array",
+                    },
+                    "success": {
+                      "enum": [
+                        false,
+                      ],
+                      "type": "boolean",
+                    },
+                  },
+                  "required": [
+                    "success",
+                    "error",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "Validation Error",
+          },
         },
       },
     },
@@ -131,6 +185,33 @@ exports[`arktype > morph schema in param without explicit fallback 1`] = `
         ],
         "responses": {
           "200": {},
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {},
+                    "error": {
+                      "items": {},
+                      "type": "array",
+                    },
+                    "success": {
+                      "enum": [
+                        false,
+                      ],
+                      "type": "boolean",
+                    },
+                  },
+                  "required": [
+                    "success",
+                    "error",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "Validation Error",
+          },
         },
       },
     },
@@ -196,6 +277,33 @@ exports[`arktype > with metadata 1`] = `
             },
             "description": "Success",
           },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {},
+                    "error": {
+                      "items": {},
+                      "type": "array",
+                    },
+                    "success": {
+                      "enum": [
+                        false,
+                      ],
+                      "type": "boolean",
+                    },
+                  },
+                  "required": [
+                    "success",
+                    "error",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "Validation Error",
+          },
         },
         "summary": "Test route",
         "tags": [
@@ -242,6 +350,33 @@ exports[`arktype > with options 1`] = `
         },
         "responses": {
           "200": {},
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {},
+                    "error": {
+                      "items": {},
+                      "type": "array",
+                    },
+                    "success": {
+                      "enum": [
+                        false,
+                      ],
+                      "type": "boolean",
+                    },
+                  },
+                  "required": [
+                    "success",
+                    "error",
+                  ],
+                  "type": "object",
+                },
+              },
+            },
+            "description": "Validation Error",
+          },
         },
       },
     },

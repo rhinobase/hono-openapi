@@ -31,6 +31,31 @@ const DEFAULT_OPTIONS: Partial<GenerateSpecOptions> = {
   exclude: [],
   excludeMethods: ["OPTIONS"],
   excludeTags: [],
+  defaultValidationErrorResponse: true,
+};
+
+/**
+ * Default 400 response matching `@hono/standard-validator`'s error output:
+ * `{ success: false, error: <issues>, data: <input> }`
+ */
+const DEFAULT_VALIDATION_ERROR: OpenAPIV3_1.ResponseObject = {
+  description: "Validation Error",
+  content: {
+    "application/json": {
+      schema: {
+        type: "object",
+        properties: {
+          success: { type: "boolean", enum: [false] },
+          error: {
+            type: "array",
+            items: {},
+          },
+          data: {},
+        },
+        required: ["success", "error"],
+      },
+    },
+  },
 };
 
 /**
@@ -80,6 +105,7 @@ export async function generateSpecs<
       ...DEFAULT_OPTIONS,
       ...options,
     },
+    validationErrorResponse: DEFAULT_VALIDATION_ERROR,
   };
 
   const _documentation = ctx.options.documentation ?? {};
