@@ -30,6 +30,7 @@ exports[`arktype > basic 1`] = `
               },
             },
           },
+          "required": true,
         },
         "responses": {
           "200": {
@@ -92,6 +93,7 @@ exports[`arktype > morph schema in json body without explicit fallback 1`] = `
               },
             },
           },
+          "required": true,
         },
         "responses": {
           "200": {},
@@ -181,6 +183,7 @@ exports[`arktype > with metadata 1`] = `
               },
             },
           },
+          "required": true,
         },
         "responses": {
           "200": {
@@ -235,6 +238,7 @@ exports[`arktype > with options 1`] = `
               },
             },
           },
+          "required": true,
         },
         "responses": {
           "200": {},

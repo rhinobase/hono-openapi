@@ -30,6 +30,7 @@ exports[`zod v3 > basic 1`] = `
               },
             },
           },
+          "required": true,
         },
         "responses": {
           "200": {
@@ -274,6 +275,7 @@ exports[`zod v3 > with metadata 1`] = `
               },
             },
           },
+          "required": true,
         },
         "responses": {
           "200": {

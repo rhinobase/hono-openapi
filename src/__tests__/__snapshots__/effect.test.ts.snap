@@ -31,6 +31,7 @@ exports[`effect > basic 1`] = `
               },
             },
           },
+          "required": true,
         },
         "responses": {
           "200": {
