@@ -102,4 +102,38 @@ describe("arktype", () => {
 
     expect(specs).toMatchSnapshot();
   });
+
+  it("morph schema in param without explicit fallback", async () => {
+    const IdParamsSchema = type({
+      id: "string.numeric.parse",
+    });
+
+    const app = new Hono().get(
+      "/users/:id",
+      validator("param", IdParamsSchema),
+      (c) => {
+        const { id } = c.req.valid("param");
+        return c.json({ id });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs).toMatchSnapshot();
+  });
+
+  it("morph schema in json body without explicit fallback", async () => {
+    const app = new Hono().post(
+      "/",
+      validator("json", type({ id: "string.integer.parse" })),
+      (c) => {
+        const json = c.req.valid("json");
+        return c.json({ id: json.id });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs).toMatchSnapshot();
+  });
 });

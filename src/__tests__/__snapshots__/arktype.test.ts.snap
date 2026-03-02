@@ -62,6 +62,81 @@ exports[`arktype > basic 1`] = `
 }
 `;
 
+exports[`arktype > morph schema in json body without explicit fallback 1`] = `
+{
+  "components": {},
+  "info": {
+    "description": "Development documentation",
+    "title": "Hono Documentation",
+    "version": "0.0.0",
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/": {
+      "post": {
+        "operationId": "postIndex",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "id": {
+                    "pattern": "^(?:(?!^-0$)-?(?:(?:0|[1-9]\\d*)))$",
+                    "type": "string",
+                  },
+                },
+                "required": [
+                  "id",
+                ],
+                "type": "object",
+              },
+            },
+          },
+        },
+        "responses": {
+          "200": {},
+        },
+      },
+    },
+  },
+  "tags": undefined,
+}
+`;
+
+exports[`arktype > morph schema in param without explicit fallback 1`] = `
+{
+  "components": {},
+  "info": {
+    "description": "Development documentation",
+    "title": "Hono Documentation",
+    "version": "0.0.0",
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/users/{id}": {
+      "get": {
+        "operationId": "getUsersById",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "pattern": "^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?))$",
+              "type": "string",
+            },
+          },
+        ],
+        "responses": {
+          "200": {},
+        },
+      },
+    },
+  },
+  "tags": undefined,
+}
+`;
+
 exports[`arktype > with metadata 1`] = `
 {
   "components": {
