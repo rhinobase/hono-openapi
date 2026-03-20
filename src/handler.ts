@@ -314,6 +314,20 @@ async function getSpec(
 }
 
 function generateParameters(target: string, schema: OpenAPIV3_1.SchemaObject) {
+  if (Array.isArray(schema.allOf)) {
+    const merged = schema.allOf.reduce((acc, s) => ({
+      properties: { ...acc.properties, ...s.properties },
+      required: [...(acc.required ?? []), ...(s.required ?? [])],
+    }), { properties: {}, required: [] });
+
+    return generateParameters(target, {
+      type: "object",
+      ...schema,
+      ...merged,
+      allOf: undefined,
+    });
+  }
+
   const parameters: OpenAPIV3_1.ParameterObject[] = [];
 
   for (const [key, value] of Object.entries(schema.properties ?? {})) {
