@@ -222,7 +222,7 @@ async function getSpec(
   middlewareHandler: HandlerUniqueProperty,
   defaultOptions?: Partial<DescribeRouteOptions>,
 ) {
-  // If the middleware handler has a spec, that is decribeRoute middleware
+  // If the middleware handler has a spec, that is describeRoute middleware
   if ("spec" in middlewareHandler) {
     const tmp = {
       ...defaultOptions,
@@ -239,7 +239,10 @@ async function getSpec(
       components = resolved.components;
     }
 
-    return { schema: tmp, components };
+    const normalized = await normalizeDescribeRouteSpec(tmp);
+    components = mergeComponentsObjects(components, normalized.components);
+
+    return { schema: normalized.spec, components };
   }
 
   const result = await middlewareHandler.toOpenAPISchema();
@@ -311,6 +314,118 @@ async function getSpec(
   }
 
   return { schema: docs, components: result.components };
+}
+
+async function normalizeDescribeRouteSpec(spec: DescribeRouteOptions) {
+  const normalizedSpec: DescribeRouteOptions = { ...spec };
+  let components: OpenAPIV3_1.ComponentsObject = {};
+
+  if ("json" in normalizedSpec && normalizedSpec.json != null) {
+    const resolved = await resolveShorthandSchema(normalizedSpec.json);
+    components = mergeComponentsObjects(components, resolved.components);
+
+    normalizedSpec.requestBody = mergeRequestBody(
+      normalizedSpec.requestBody,
+      "application/json",
+      resolved.schema,
+    );
+
+    delete normalizedSpec.json;
+  }
+
+  if ("query" in normalizedSpec && normalizedSpec.query != null) {
+    const resolved = await resolveShorthandSchema(normalizedSpec.query);
+    components = mergeComponentsObjects(components, resolved.components);
+
+    if ("$ref" in resolved.schema) {
+      const ref = resolved.schema.$ref as string;
+      const pos = ref.split("/").pop();
+
+      if (pos && resolved.components?.schemas?.[pos]) {
+        const schema = resolved.components.schemas[pos];
+        const newParameters = generateParameters("query", schema)[0];
+
+        if (!resolved.components.parameters) {
+          resolved.components.parameters = {};
+        }
+
+        resolved.components.parameters[pos] = newParameters;
+        delete resolved.components.schemas[pos];
+
+        normalizedSpec.parameters = [
+          ...(normalizedSpec.parameters ?? []),
+          { $ref: `#/components/parameters/${pos}` },
+        ];
+      }
+    } else {
+      normalizedSpec.parameters = [
+        ...(normalizedSpec.parameters ?? []),
+        ...generateParameters("query", resolved.schema as OpenAPIV3_1.SchemaObject),
+      ];
+    }
+
+    delete normalizedSpec.query;
+  }
+
+  return { spec: normalizedSpec, components };
+}
+
+function isReferenceObject(
+  obj: OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.RequestBodyObject,
+): obj is OpenAPIV3_1.ReferenceObject {
+  return "$ref" in obj;
+}
+
+function mergeRequestBody(
+  current?: OpenAPIV3_1.RequestBodyObject | OpenAPIV3_1.ReferenceObject,
+  media = "application/json",
+  schema?: OpenAPIV3_1.SchemaObject | OpenAPIV3_1.ReferenceObject,
+) {
+  if (current && isReferenceObject(current)) {
+    // If requestBody is a ref, don't merge, preserve it (unable to merge with inline schema).
+    return current;
+  }
+
+  const currentRequestBody = current as OpenAPIV3_1.RequestBodyObject | undefined;
+
+  const content = {
+    ...(currentRequestBody?.content ?? {}),
+    [media]: {
+      ...(currentRequestBody?.content?.[media] ?? {}),
+      schema,
+    },
+  };
+
+  return {
+    ...currentRequestBody,
+    required: currentRequestBody?.required ?? true,
+    content,
+  };
+}
+
+async function resolveShorthandSchema(
+  value: unknown,
+): Promise<{
+  schema: OpenAPIV3_1.SchemaObject | OpenAPIV3_1.ReferenceObject;
+  components: OpenAPIV3_1.ComponentsObject;
+}> {
+  if (
+    value &&
+    typeof value === "object" &&
+    "toOpenAPISchema" in value &&
+    typeof (value as any).toOpenAPISchema === "function"
+  ) {
+    const result = await (value as any).toOpenAPISchema();
+    return {
+      schema: result.schema,
+      components: result.components ?? {},
+    };
+  }
+
+  return {
+    schema: value as OpenAPIV3_1.SchemaObject,
+    components: {},
+  };
 }
 
 function generateParameters(target: string, schema: OpenAPIV3_1.SchemaObject) {

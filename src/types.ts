@@ -116,6 +116,11 @@ export type GenerateSpecOptions = {
 
 type OperationId = string | ((route: RouterRoute) => string);
 
+export type ShorthandSchemaOrResolver =
+  | ResolverReturnType
+  | OpenAPIV3_1.SchemaObject
+  | OpenAPIV3_1.ReferenceObject;
+
 export type DescribeRouteOptions = Omit<
   OpenAPIV3_1.OperationObject,
   "responses" | "operationId"
@@ -127,6 +132,14 @@ export type DescribeRouteOptions = Omit<
   hide?:
     | boolean
     | ((props: { c?: Context; method: string; path: string }) => boolean);
+  /**
+   * Shortcut to describe request body as JSON schema resolver
+   */
+  json?: ShorthandSchemaOrResolver;
+  /**
+   * Shortcut to describe query parameters as resolver
+   */
+  query?: ShorthandSchemaOrResolver;
   /**
    * Responses of the request
    */
