@@ -226,6 +226,11 @@ export function validator<
 ): MiddlewareHandler<E, P, V> {
   const middleware = sValidator(target, schema, hook);
 
+  Object.defineProperty(middleware, "name", {
+    value: "validator",
+    configurable: true,
+  });
+
   // @ts-expect-error not typed well
   return Object.assign(middleware, {
     [uniqueSymbol]: {
@@ -245,6 +250,11 @@ export function describeRoute(spec: DescribeRouteOptions): MiddlewareHandler {
   const middleware: MiddlewareHandler = async (_c, next) => {
     await next();
   };
+
+  Object.defineProperty(middleware, "name", {
+    value: "describeRoute",
+    configurable: true,
+  });
 
   return Object.assign(middleware, {
     [uniqueSymbol]: {
