@@ -16,9 +16,10 @@ import type {
   Next,
   ValidationTargets,
 } from "hono";
-import type { FormValue, ParsedFormValue, TypedResponse } from "hono/types";
+import type { TypedResponse } from "hono/types";
 import type { StatusCode } from "hono/utils/http-status";
-import type { JSONParsed, UnionToIntersection } from "hono/utils/types";
+import type { JSONParsed } from "hono/utils/types";
+import type { InferInput } from "hono/validator";
 import type { JSONSchema7 } from "json-schema";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type {
@@ -188,72 +189,6 @@ function injectZodV4DateOverride(
 }
 
 type HasUndefined<T> = undefined extends T ? true : false;
-
-/**
- * Checks if `T` is a literal union type (e.g. `"asc" | "desc"`) that should be
- * preserved in the RPC input type. Returns `false` for single literals or wide
- * types like `string`.
- */
-type IsLiteralUnion<T, Base> = [Exclude<T, undefined>] extends [Base]
-  ? [Exclude<T, undefined>] extends [UnionToIntersection<Exclude<T, undefined>>]
-    ? false
-    : true
-  : false;
-
-type IsOptionalUnion<T> = [unknown] extends [T]
-  ? false
-  : undefined extends T
-    ? true
-    : false;
-
-type SimplifyDeep<T> = { [K in keyof T]: T[K] } & {};
-
-type InferInputInner<
-  Output,
-  Target extends keyof ValidationTargets,
-  T extends FormValue,
-> = SimplifyDeep<{
-  [K in keyof Output]: IsLiteralUnion<Output[K], string> extends true
-    ? Output[K]
-    : IsOptionalUnion<Output[K]> extends true
-      ? Output[K]
-      : Target extends "form"
-        ? T | T[]
-        : Target extends "query"
-          ? string | string[]
-          : Target extends "param"
-            ? string
-            : Target extends "header"
-              ? string
-              : Target extends "cookie"
-                ? string
-                : unknown;
-}>;
-
-/**
- * Infers the RPC input type for a validation target. Preserves literal union
- * types (e.g. `"asc" | "desc"`) for autocomplete while falling back to the
- * target's wire type (e.g. `string | string[]` for queries) for coerced values
- * like `z.coerce.number()`.
- *
- * Mirrors the `InferInput` utility in `@hono/standard-validator` so that
- * `validator()` produces the same RPC types as `sValidator()`.
- */
-type InferInput<
-  Output,
-  Target extends keyof ValidationTargets,
-  T extends FormValue = ParsedFormValue,
-> = [Exclude<Output, undefined>] extends [never]
-  ? // biome-ignore lint/complexity/noBannedTypes: matches upstream utility
-    {}
-  : [Exclude<Output, undefined>] extends [object]
-    ? undefined extends Output
-      ?
-          | SimplifyDeep<InferInputInner<Exclude<Output, undefined>, Target, T>>
-          | undefined
-      : SimplifyDeep<InferInputInner<Output, Target, T>>
-    : // biome-ignore lint/complexity/noBannedTypes: matches upstream utility
-      {};
 
 /**
  * Create a validator middleware
