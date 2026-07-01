@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "module": "esnext",
+    "target": "esnext",
+    "noEmit": true,
+    "noImplicitAny": false,
+    "types": []
+  },
+  "include": ["src/__tests__/rpc-types.test.ts"]
+}
