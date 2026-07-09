@@ -220,3 +220,24 @@ describe("basic", () => {
     expect(specs).toMatchSnapshot();
   });
 });
+
+describe("QUERY method (RFC 10008 / OpenAPI 3.2)", () => {
+  it("should include QUERY routes in generated spec", async () => {
+    const app = new Hono().on(
+      "QUERY",
+      "/api/wait",
+      describeRoute({
+        description: "Search-style query endpoint",
+        responses: { 200: { description: "Results" } },
+      }),
+      async (c) => c.json({ ok: true }),
+    );
+
+    const specs = await generateSpecs(app);
+    expect(specs.openapi).toBe("3.2.0");
+    expect(specs.paths["/api/wait"]?.query).toBeDefined();
+    expect(specs.paths["/api/wait"]?.query?.description).toBe(
+      "Search-style query endpoint",
+    );
+  });
+});

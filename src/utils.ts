@@ -16,6 +16,7 @@ export const ALLOWED_METHODS = [
   "HEAD",
   "PATCH",
   "TRACE",
+  "QUERY",
 ] as const;
 
 export type AllowedMethods = (typeof ALLOWED_METHODS)[number];
@@ -191,7 +192,6 @@ export function registerSchemaPath({
     }
 
     if (paths[path]) {
-      // @ts-expect-error
       paths[path][method] = mergeSpecs(
         route,
         ...pathContext,
