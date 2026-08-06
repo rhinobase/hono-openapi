@@ -73,6 +73,7 @@ exports[`effect > basic 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },
@@ -162,6 +163,7 @@ exports[`effect > with reference in parameter 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },

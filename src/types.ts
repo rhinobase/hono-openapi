@@ -155,7 +155,8 @@ type HaveDefaultValues =
   | "excludeStaticFile"
   | "exclude"
   | "excludeMethods"
-  | "excludeTags";
+  | "excludeTags"
+  | "defaultValidationErrorResponse";
 
 type SanitizedGenerateSpecOptions = Pick<
   GenerateSpecOptions,

@@ -71,6 +71,7 @@ exports[`valibot > basic 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },
@@ -167,6 +168,7 @@ exports[`valibot > with metadata 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },
@@ -244,6 +246,7 @@ exports[`valibot > with transformation 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },

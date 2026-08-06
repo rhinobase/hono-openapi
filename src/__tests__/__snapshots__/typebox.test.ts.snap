@@ -71,6 +71,7 @@ exports[`typebox > basic 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },
@@ -169,6 +170,7 @@ exports[`typebox > with JSON Schema 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },
@@ -265,6 +267,7 @@ exports[`typebox > with metadata 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },

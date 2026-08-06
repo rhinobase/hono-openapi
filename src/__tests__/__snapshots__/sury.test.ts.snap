@@ -73,6 +73,7 @@ exports[`sury > basic 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },
@@ -182,6 +183,7 @@ exports[`sury > with metadata 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },

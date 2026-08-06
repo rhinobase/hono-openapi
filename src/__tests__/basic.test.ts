@@ -246,7 +246,7 @@ describe("default validation error response", () => {
               error: { type: "array", items: {} },
               data: {},
             },
-            required: ["success", "error"],
+            required: ["success", "error", "data"],
           },
         },
       },
@@ -424,5 +424,71 @@ describe("default validation error response", () => {
     expect(op?.responses?.["400"]).toBeDefined();
     // The marker must be stripped before emitting the spec.
     expect(JSON.stringify(op)).not.toContain("HonoOpenAPIValidator");
+  });
+
+  it("should inject a single 400 when multiple validators are on one route", async () => {
+    const app = new Hono().post(
+      "/",
+      validator("json", z.object({ a: z.string() })),
+      validator("query", z.object({ b: z.string() })),
+      async (c) => c.json({ ok: true }),
+    );
+
+    const specs = await generateSpecs(app);
+
+    const responses = specs.paths["/"]?.post?.responses ?? {};
+    expect(responses["400"]).toBeDefined();
+    expect(Object.keys(responses).filter((k) => k === "400")).toHaveLength(1);
+  });
+
+  it("should give each validator route its own 400 object (no shared reference)", async () => {
+    const app = new Hono()
+      .post("/a", validator("json", z.object({ a: z.string() })), (c) =>
+        c.json({ ok: true }),
+      )
+      .post("/b", validator("json", z.object({ b: z.string() })), (c) =>
+        c.json({ ok: true }),
+      );
+
+    const specs = await generateSpecs(app);
+
+    const a = specs.paths["/a"]?.post?.responses?.["400"];
+    const b = specs.paths["/b"]?.post?.responses?.["400"];
+    expect(a).toBeDefined();
+    expect(b).toBeDefined();
+    // Distinct object identities — mutating one must not affect the other.
+    expect(a).not.toBe(b);
+  });
+
+  it("should accept a $ref object as the custom validation error response", async () => {
+    const app = new Hono().post(
+      "/",
+      validator("json", z.object({ a: z.string() })),
+      (c) => c.json({ ok: true }),
+    );
+
+    const ref = { $ref: "#/components/responses/ValidationError" };
+    const specs = await generateSpecs(app, {
+      // @ts-expect-error a ReferenceObject is a valid ResponseObject slot
+      defaultValidationErrorResponse: ref,
+    });
+
+    expect(specs.paths["/"]?.post?.responses?.["400"]).toEqual(ref);
+  });
+
+  it("should mark data as required in the default validation error schema", async () => {
+    // @hono/standard-validator always returns { success, error, data } on a
+    // validation error, so all three are required.
+    const app = new Hono().post(
+      "/",
+      validator("json", z.object({ a: z.string() })),
+      (c) => c.json({ ok: true }),
+    );
+
+    const specs = await generateSpecs(app);
+
+    const schema = (specs.paths["/"]?.post?.responses?.["400"] as any)
+      ?.content?.["application/json"]?.schema;
+    expect(schema?.required).toEqual(["success", "error", "data"]);
   });
 });

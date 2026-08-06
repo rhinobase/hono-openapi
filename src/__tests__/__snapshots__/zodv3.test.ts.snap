@@ -71,6 +71,7 @@ exports[`zod v3 > basic 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },
@@ -182,6 +183,7 @@ exports[`zod v3 > describeResponse 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },
@@ -293,6 +295,7 @@ exports[`zod v3 > operation id for path with dash 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },
@@ -389,6 +392,7 @@ exports[`zod v3 > with metadata 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },
@@ -500,6 +504,7 @@ exports[`zod v3 > with reference in parameter 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },

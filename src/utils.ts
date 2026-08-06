@@ -325,10 +325,15 @@ export function removeExcludedPaths(
       ) {
         const errorResponse = ctx.options.defaultValidationErrorResponse;
 
+        // Clone so each route owns its own response object — the same
+        // default/custom object would otherwise be shared (by reference)
+        // across every validator route (and the module-level default).
         if (typeof errorResponse === "object") {
-          schema.responses["400"] = errorResponse;
+          schema.responses["400"] = structuredClone(errorResponse);
         } else if (ctx.validationErrorResponse) {
-          schema.responses["400"] = ctx.validationErrorResponse;
+          schema.responses["400"] = structuredClone(
+            ctx.validationErrorResponse,
+          );
         }
       }
     }

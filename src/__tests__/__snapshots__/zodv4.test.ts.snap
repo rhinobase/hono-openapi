@@ -71,6 +71,7 @@ exports[`zod v4 > basic 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },
@@ -143,6 +144,7 @@ exports[`zod v4 > with global validator 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },
@@ -239,6 +241,7 @@ exports[`zod v4 > with metadata 1`] = `
                   "required": [
                     "success",
                     "error",
+                    "data",
                   ],
                   "type": "object",
                 },

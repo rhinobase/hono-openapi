@@ -53,7 +53,7 @@ const DEFAULT_VALIDATION_ERROR: OpenAPIV3_1.ResponseObject = {
           },
           data: {},
         },
-        required: ["success", "error"],
+        required: ["success", "error", "data"],
       },
     },
   },
