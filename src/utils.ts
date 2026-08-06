@@ -7,6 +7,15 @@ import type { RegisterSchemaPathOptions, SpecContext } from "./types";
  */
 export const uniqueSymbol = Symbol("openapi");
 
+/**
+ * Internal marker key set on an operation's spec when it is produced by a
+ * `validator()` middleware. It is used to decide whether to auto-inject the
+ * default 400 validation error response, and is stripped from the operation
+ * before the spec is emitted. Must be an enumerable string key so it survives
+ * the `Object.entries`-based merge in `mergeSpecs`.
+ */
+export const VALIDATION_MARKER = "__HonoOpenAPIValidator__";
+
 export const ALLOWED_METHODS = [
   "GET",
   "PUT",
@@ -245,11 +254,12 @@ export function removeExcludedPaths(
 
       if (schema == null) continue;
 
-      // Check for validator usage BEFORE auto-generating path parameters,
-      // so we only detect params from actual validator() calls
-      const hasValidation =
-        schema.requestBody ||
-        (schema.parameters && schema.parameters.length > 0);
+      // A `validator()` middleware marks its operation with VALIDATION_MARKER.
+      // Only routes with an actual validator get the auto-injected 400 — a
+      // manually documented `requestBody`/`parameters` in `describeRoute` (or
+      // auto-generated path params) must NOT trigger it.
+      const hasValidation = schema[VALIDATION_MARKER] === true;
+      delete schema[VALIDATION_MARKER];
 
       if (key.includes("{")) {
         // Clone the parameters array to avoid mutating shared references

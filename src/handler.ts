@@ -23,6 +23,7 @@ import {
   registerSchemaPath,
   removeExcludedPaths,
   uniqueSymbol,
+  VALIDATION_MARKER,
 } from "./utils";
 
 const DEFAULT_OPTIONS: Partial<GenerateSpecOptions> = {
@@ -269,8 +270,13 @@ async function getSpec(
   }
 
   const result = await middlewareHandler.toOpenAPISchema();
-  const docs: Pick<OpenAPIV3_1.OperationObject, "parameters" | "requestBody"> =
-    { ...defaultOptions };
+  const docs: Pick<OpenAPIV3_1.OperationObject, "parameters" | "requestBody"> &
+    Record<string, unknown> = {
+    ...defaultOptions,
+    // Mark this operation as validator-derived so a default 400 validation
+    // error response can be auto-injected later (see removeExcludedPaths).
+    [VALIDATION_MARKER]: true,
+  };
 
   if (
     middlewareHandler.target === "form" ||

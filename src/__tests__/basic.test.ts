@@ -364,4 +364,65 @@ describe("default validation error response", () => {
     // Auto-generated path params should NOT trigger 400
     expect(getSpec?.responses?.["400"]).toBeUndefined();
   });
+
+  it("should not include 400 for manually documented parameters without a validator", async () => {
+    const app = new Hono().get(
+      "/search",
+      describeRoute({
+        parameters: [{ in: "query", name: "q", schema: { type: "string" } }],
+        responses: { 200: { description: "OK" } },
+      }),
+      async (c) => c.json({ ok: true }),
+    );
+
+    const specs = await generateSpecs(app);
+
+    // Documenting a query parameter is not the same as validating it.
+    expect(specs.paths["/search"]?.get?.responses?.["400"]).toBeUndefined();
+  });
+
+  it("should not include 400 for a manually documented requestBody without a validator", async () => {
+    const app = new Hono().post(
+      "/upload",
+      describeRoute({
+        requestBody: {
+          content: { "application/json": { schema: { type: "object" } } },
+        },
+        responses: { 200: { description: "OK" } },
+      }),
+      async (c) => c.json({ ok: true }),
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs.paths["/upload"]?.post?.responses?.["400"]).toBeUndefined();
+  });
+
+  it("should include 400 for a param validator", async () => {
+    const app = new Hono().get(
+      "/users/:id",
+      validator("param", z.object({ id: z.string() })),
+      async (c) => c.json({ id: c.req.param("id") }),
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs.paths["/users/{id}"]?.get?.responses?.["400"]).toBeDefined();
+  });
+
+  it("should not leak the internal validation marker into the emitted spec", async () => {
+    const app = new Hono().post(
+      "/",
+      describeRoute({ responses: { 200: { description: "OK" } } }),
+      validator("json", z.object({ message: z.string() })),
+      async (c) => c.json({ message: "Hello, world!" }),
+    );
+
+    const specs = await generateSpecs(app);
+
+    const op = specs.paths["/"]?.post;
+    expect(op?.responses?.["400"]).toBeDefined();
+    // The marker must be stripped before emitting the spec.
+    expect(JSON.stringify(op)).not.toContain("HonoOpenAPIValidator");
+  });
 });
