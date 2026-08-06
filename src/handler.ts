@@ -412,6 +412,11 @@ async function resolveResponseSchemas(responses: ResponsesWithResolver) {
  * inline under the response/request schema while `components.schemas` stays
  * empty (see #227). This lifts any leftover `$defs` into `components.schemas`
  * and strips them from the schema, mutating the result in place.
+ *
+ * Existing `components.schemas` take precedence over the lifted `$defs`: when
+ * schemas are `ref`/`$id`-annotated, the vendor already registers the real
+ * definition under `components.schemas` and leaves only a self-referential
+ * `{ $ref }` stub inside `$defs`, so the real definition must win.
  */
 function liftSchemaDefs(result: {
   schema: OpenAPIV3_1.SchemaObject;
