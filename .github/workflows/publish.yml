@@ -1,0 +1,108 @@
+name: Publish
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  actions: read
+  contents: write
+  issues: write
+  id-token: write
+
+jobs:
+  publish:
+    if: >-
+      github.event.label.name == 'accepted' &&
+      github.event.issue.state == 'open'
+    runs-on: ubuntu-latest
+    name: Publish release
+    timeout-minutes: 15
+    steps:
+      - name: Generate GitHub App token
+        id: token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.CRAFT_APP_ID }}
+          private-key: ${{ secrets.CRAFT_APP_PRIVATE_KEY }}
+
+      - name: Parse version from issue title
+        id: release
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          set -euo pipefail
+          # Title: "publish: <owner>/<repo>@<version>"
+          version="${ISSUE_TITLE##*@}"
+          if [[ -z "$version" ]]; then
+            echo "::error::Could not parse version from title: $ISSUE_TITLE"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "branch=release/$version" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: release/${{ steps.release.outputs.version }}
+          token: ${{ steps.token.outputs.token }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Set git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Ensure npm supports trusted publishing
+        run: npm install -g npm@latest
+
+      - name: Install Craft
+        run: |
+          CRAFT_URL=$(curl -fsSL https://api.github.com/repos/getsentry/craft/releases/latest \
+            | jq -r '.assets[] | select(.name == "craft") | .browser_download_url')
+          sudo curl -fsSL -o /usr/local/bin/craft "$CRAFT_URL"
+          sudo chmod +x /usr/local/bin/craft
+
+      - name: Wait for package artifacts on release branch
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          set -euo pipefail
+          branch="${{ steps.release.outputs.branch }}"
+          echo "Waiting for Package Artifacts on $branch..."
+          run_id=$(gh run list --workflow "Package Artifacts" --branch "$branch" \
+            --json databaseId --jq '.[0].databaseId')
+          if [[ -z "$run_id" || "$run_id" == "null" ]]; then
+            echo "::error::No Package Artifacts run found for branch $branch"
+            exit 1
+          fi
+          gh run watch "$run_id" --exit-status
+
+      - name: Publish with Craft
+        run: craft publish "${{ steps.release.outputs.version }}" --no-input --no-status-check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_TOKEN: ${{ steps.token.outputs.token }}
+
+      - name: Close issue on success
+        if: success()
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          gh issue close "${{ github.event.issue.number }}" \
+            --comment "Published **v${{ steps.release.outputs.version }}** successfully.
+          [Workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+      - name: Handle failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" \
+            --body "Publish failed. See [run logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})."
+          gh issue edit "${{ github.event.issue.number }}" --remove-label accepted

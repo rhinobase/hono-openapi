@@ -1,0 +1,39 @@
+name: Package Artifacts
+on:
+  push:
+    branches:
+      - "release/**"
+
+concurrency:
+  group: package-artifacts-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    name: Build & pack tarball
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Pack tarball
+        run: pnpm pack
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}
+          path: "*.tgz"
+          if-no-files-found: error

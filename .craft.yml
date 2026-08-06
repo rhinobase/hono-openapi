@@ -1,0 +1,16 @@
+# Craft Release Configuration
+# https://craft.sentry.dev/configuration/
+
+minVersion: "2.21.1"
+
+versioning:
+  policy: manual
+
+changelog:
+  filePath: CHANGELOG.md
+  policy: auto
+
+targets:
+  - name: npm
+    access: public
+  - name: github

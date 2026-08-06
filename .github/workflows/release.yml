@@ -1,0 +1,65 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Explicit version to release (e.g. 1.0.0)"
+        required: true
+        type: string
+      merge_target:
+        description: Target branch to merge into
+        required: false
+        default: "main"
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: Prepare ${{ github.event.inputs.version }}
+    steps:
+      - name: Generate GitHub App token
+        id: token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.CRAFT_APP_ID }}
+          private-key: ${{ secrets.CRAFT_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.token.outputs.token }}
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Craft prepare
+        id: craft
+        uses: getsentry/craft@v2
+        with:
+          version: ${{ github.event.inputs.version }}
+          merge_target: ${{ github.event.inputs.merge_target }}
+          publish_repo: self
+        env:
+          GITHUB_TOKEN: ${{ steps.token.outputs.token }}
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Release prepared"
+            echo "- Version: \`${{ steps.craft.outputs.version || github.event.inputs.version }}\`"
+            echo "- Release branch: \`${{ steps.craft.outputs.branch }}\`"
+            echo "- Publish request: ${{ steps.craft.outputs.issue_url }}"
+            echo ""
+            echo "Add the **accepted** label to the publish issue to publish."
+          } >> "$GITHUB_STEP_SUMMARY"
