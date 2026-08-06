@@ -270,6 +270,7 @@ async function getSpec(
   }
 
   const result = await middlewareHandler.toOpenAPISchema();
+  liftSchemaDefs(result);
   const docs: Pick<OpenAPIV3_1.OperationObject, "parameters" | "requestBody"> &
     Record<string, unknown> = {
     ...defaultOptions,
@@ -392,6 +393,7 @@ async function resolveResponseSchemas(responses: ResponsesWithResolver) {
 
       if (raw.schema && "toOpenAPISchema" in raw.schema) {
         const result = await raw.schema.toOpenAPISchema();
+        liftSchemaDefs(result);
         raw.schema = result.schema;
         if (result.components) {
           components = mergeComponentsObjects(components, result.components);
@@ -401,6 +403,31 @@ async function resolveResponseSchemas(responses: ResponsesWithResolver) {
   }
 
   return { responses, components };
+}
+
+/**
+ * Some vendors (e.g. Effect Schema) emit a top-level `$defs` map on the
+ * generated schema even after their inner `$ref`s have been rewritten to
+ * `#/components/schemas/*`. Left as-is, the definitions end up duplicated
+ * inline under the response/request schema while `components.schemas` stays
+ * empty (see #227). This lifts any leftover `$defs` into `components.schemas`
+ * and strips them from the schema, mutating the result in place.
+ */
+function liftSchemaDefs(result: {
+  schema: OpenAPIV3_1.SchemaObject;
+  components?: OpenAPIV3_1.ComponentsObject;
+}) {
+  const defs = (result.schema as { $defs?: Record<string, unknown> }).$defs;
+
+  if (!defs || typeof defs !== "object") return;
+
+  result.components ??= {};
+  result.components.schemas = {
+    ...defs,
+    ...result.components.schemas,
+  } as OpenAPIV3_1.ComponentsObject["schemas"];
+
+  delete (result.schema as { $defs?: unknown }).$defs;
 }
 
 function mergeComponentsObjects(
