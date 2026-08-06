@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { OpenAPIV3_1 } from "openapi-types";
 import { describe, expect, it } from "vitest";
 import z from "zod/v4";
 import { generateSpecs } from "../handler.js";
@@ -147,6 +148,52 @@ describe("zod v4", () => {
     const specs = await generateSpecs(app);
 
     expect(specs).toMatchSnapshot();
+  });
+
+  it("shorthand json/query in describeRoute uses requestBody/parameters", async () => {
+    const app = new Hono().get(
+      "/",
+      describeRoute({
+        tags: ["test"],
+        summary: "Test route",
+        description: "This is a test route",
+        json: resolver(z.object({ message: z.string() })),
+        query: resolver(z.object({ search: z.string() })),
+      }),
+      async (c) => {
+        return c.json({ message: "Hello, world!" });
+      },
+    );
+
+    const specs = await generateSpecs(app);
+
+    const operation = specs.paths["/"]?.get;
+
+    expect(operation).toBeDefined();
+    expect(operation).not.toHaveProperty("json");
+    expect(operation).not.toHaveProperty("query");
+
+    const requestBody = operation?.requestBody as OpenAPIV3_1.RequestBodyObject;
+    expect(requestBody).toBeDefined();
+
+    expect(requestBody.content?.["application/json"]?.schema).toEqual({
+      properties: {
+        message: { type: "string" },
+      },
+      required: ["message"],
+      type: "object",
+    });
+
+    expect(operation?.parameters).toEqual([
+      {
+        in: "query",
+        name: "search",
+        required: true,
+        schema: {
+          type: "string",
+        },
+      },
+    ]);
   });
 
   it("resolver in documentation.components.responses", async () => {
