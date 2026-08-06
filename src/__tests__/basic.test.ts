@@ -165,6 +165,68 @@ describe("path context matching", () => {
     // /module2/endpoint should NOT get the "Module" tag from /module middleware
     expect(module2Endpoint?.tags).toBeUndefined();
   });
+
+  it("should not leak context across sibling routers mounted with use('/') and a basePath", async () => {
+    // Reproduces the exact MRE from
+    // https://github.com/rhinobase/hono-openapi/issues/143
+    // where the context key has no trailing wildcard (from `use("/")`).
+    const module = new Hono();
+    module.use("/", describeRoute({ tags: ["Module"] }));
+    module.get("/1", describeRoute({ summary: "1" }), (c) => c.json({}));
+
+    const module2 = new Hono();
+    module2.use("/", describeRoute({ tags: ["Module2"] }));
+    module2.get("/2", describeRoute({ summary: "2" }), (c) => c.json({}));
+
+    const api = new Hono().basePath("/api");
+    api.route("/module", module);
+    api.route("/module2", module2);
+
+    const specs = await generateSpecs(api);
+
+    // /api/module/1 should only carry the "Module" tag
+    const moduleOne = specs.paths["/api/module/1"]?.get;
+    expect(moduleOne?.tags).toEqual(["Module"]);
+    expect(moduleOne?.tags).not.toContain("Module2");
+
+    // /api/module2/2 should only carry the "Module2" tag
+    const moduleTwo = specs.paths["/api/module2/2"]?.get;
+    expect(moduleTwo?.tags).toEqual(["Module2"]);
+    expect(moduleTwo?.tags).not.toContain("Module");
+  });
+
+  it("should apply root-level use() context to every route", async () => {
+    // A context registered at the app root (key "/*", i.e. empty prefix)
+    // must apply to all paths.
+    const app = new Hono()
+      .use(describeRoute({ tags: ["Global"] }))
+      .get("/foo", describeRoute({ summary: "foo" }), (c) => c.body("x"))
+      .get("/bar/baz", describeRoute({ summary: "bar" }), (c) => c.body("x"));
+
+    const specs = await generateSpecs(app);
+
+    expect(specs.paths["/foo"]?.get?.tags).toEqual(["Global"]);
+    expect(specs.paths["/bar/baz"]?.get?.tags).toEqual(["Global"]);
+  });
+
+  it("should apply context to nested sub-paths of the mounted prefix", async () => {
+    // Positive case: context on /players must still reach /players and
+    // deeper paths like /players/{id}.
+    const app = new Hono();
+
+    app.route(
+      "/players",
+      new Hono()
+        .use(describeRoute({ tags: ["Players"] }))
+        .get("/", describeRoute({ summary: "list" }), (c) => c.body("x"))
+        .get("/:id", describeRoute({ summary: "detail" }), (c) => c.body("x")),
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs.paths["/players"]?.get?.tags).toEqual(["Players"]);
+    expect(specs.paths["/players/{id}"]?.get?.tags).toEqual(["Players"]);
+  });
 });
 
 describe("basic", () => {
