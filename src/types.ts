@@ -37,14 +37,22 @@ type MediaTypeObjectWithResolver = Omit<
     | ResolverReturnType;
 };
 
+export type ContentWithResolver = {
+  [media: string]: MediaTypeObjectWithResolver;
+};
+
 /**
  * A response object that accepts resolver() output in schema positions.
  */
 type ResponseObjectWithResolver =
   | (Omit<OpenAPIV3_1.ResponseObject, "content"> & {
-      content?: {
-        [media: string]: MediaTypeObjectWithResolver;
-      };
+      content?: ContentWithResolver;
+    })
+  | OpenAPIV3_1.ReferenceObject;
+
+type RequestBodyObjectWithResolver =
+  | (Omit<OpenAPIV3_1.RequestBodyObject, "content"> & {
+      content: ContentWithResolver;
     })
   | OpenAPIV3_1.ReferenceObject;
 
@@ -127,9 +135,14 @@ type OperationId = string | ((route: RouterRoute) => string);
 
 export type DescribeRouteOptions = Omit<
   OpenAPIV3_1.OperationObject,
-  "responses" | "operationId"
+  "requestBody" | "responses" | "operationId"
 > & {
   operationId?: OperationId;
+  /**
+   * Request body metadata. `resolver()` values are converted to OpenAPI
+   * schemas while generating the document.
+   */
+  requestBody?: RequestBodyObjectWithResolver;
   /**
    * Pass `true` to hide route from OpenAPI/swagger document
    */
