@@ -337,7 +337,11 @@ async function getSpec(
         });
       }
     } else {
-      parameters = generateParameters(middlewareHandler.target, result.schema);
+      parameters = generateParameters(
+        middlewareHandler.target,
+        result.schema,
+        result.components?.schemas,
+      );
     }
 
     docs.parameters = parameters;
@@ -346,10 +350,14 @@ async function getSpec(
   return { schema: docs, components: result.components };
 }
 
-function generateParameters(target: string, schema: OpenAPIV3_1.SchemaObject) {
+function generateParameters(
+  target: string,
+  schema: OpenAPIV3_1.SchemaObject,
+  schemas?: OpenAPIV3_1.ComponentsObject["schemas"],
+) {
   const parameters: OpenAPIV3_1.ParameterObject[] = [];
 
-  for (const [key, property] of collectParameterProperties(schema)) {
+  for (const [key, property] of collectParameterProperties(schema, schemas)) {
     const def: OpenAPIV3_1.ParameterObject = {
       in: target === "param" ? "path" : target,
       name: key,
@@ -372,7 +380,10 @@ function generateParameters(target: string, schema: OpenAPIV3_1.SchemaObject) {
   return parameters;
 }
 
-function collectParameterProperties(schema: OpenAPIV3_1.SchemaObject) {
+function collectParameterProperties(
+  schema: OpenAPIV3_1.SchemaObject,
+  schemas?: OpenAPIV3_1.ComponentsObject["schemas"],
+) {
   const properties = new Map<
     string,
     {
@@ -381,6 +392,7 @@ function collectParameterProperties(schema: OpenAPIV3_1.SchemaObject) {
     }
   >();
 
+  const resolvingRefs = new Set<string>();
   const collect = (current: OpenAPIV3_1.SchemaObject) => {
     for (const [key, value] of Object.entries(current.properties ?? {})) {
       const existing = properties.get(key);
@@ -392,7 +404,21 @@ function collectParameterProperties(schema: OpenAPIV3_1.SchemaObject) {
     }
 
     for (const member of current.allOf ?? []) {
-      if (!("$ref" in member)) {
+      if ("$ref" in member) {
+        const prefix = "#/components/schemas/";
+        if (!member.$ref.startsWith(prefix)) continue;
+
+        const name = member.$ref
+          .slice(prefix.length)
+          .replaceAll("~1", "/")
+          .replaceAll("~0", "~");
+        const referencedSchema = schemas?.[name];
+        if (referencedSchema && !resolvingRefs.has(name)) {
+          resolvingRefs.add(name);
+          collect(referencedSchema);
+          resolvingRefs.delete(name);
+        }
+      } else {
         collect(member);
       }
     }

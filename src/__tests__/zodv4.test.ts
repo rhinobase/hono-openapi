@@ -347,6 +347,30 @@ describe("zod v4", () => {
     });
   });
 
+  it("generates parameters for referenced intersection query schemas", async () => {
+    const filters = z.intersection(
+      z.object({ search: z.string() }).meta({ ref: "SearchFilter" }),
+      z.object({ page: z.coerce.number() }).meta({ ref: "PageFilter" }),
+    );
+
+    const app = new Hono().get("/", validator("query", filters), (c) =>
+      c.json({ ok: true }),
+    );
+
+    const specs = await generateSpecs(app);
+    const parameters = specs.paths["/"]?.get?.parameters ?? [];
+    const queryParameters = parameters.filter(
+      (parameter) => "name" in parameter && parameter.in === "query",
+    );
+
+    expect(queryParameters.map((parameter) => parameter.name)).toEqual([
+      "search",
+      "page",
+    ]);
+    expect(specs.components?.schemas?.SearchFilter).toBeDefined();
+    expect(specs.components?.schemas?.PageFilter).toBeDefined();
+  });
+
   it("validator should set requestBody.required to true", async () => {
     const app = new Hono().post(
       "/",
