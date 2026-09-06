@@ -337,7 +337,11 @@ async function getSpec(
         });
       }
     } else {
-      parameters = generateParameters(middlewareHandler.target, result.schema);
+      parameters = generateParameters(
+        middlewareHandler.target,
+        result.schema,
+        result.components?.schemas,
+      );
     }
 
     docs.parameters = parameters;
@@ -346,32 +350,82 @@ async function getSpec(
   return { schema: docs, components: result.components };
 }
 
-function generateParameters(target: string, schema: OpenAPIV3_1.SchemaObject) {
+function generateParameters(
+  target: string,
+  schema: OpenAPIV3_1.SchemaObject,
+  schemas?: OpenAPIV3_1.ComponentsObject["schemas"],
+) {
   const parameters: OpenAPIV3_1.ParameterObject[] = [];
 
-  for (const [key, value] of Object.entries(schema.properties ?? {})) {
+  for (const [key, property] of collectParameterProperties(schema, schemas)) {
     const def: OpenAPIV3_1.ParameterObject = {
       in: target === "param" ? "path" : target,
       name: key,
-      // @ts-expect-error
-      schema: value,
+      // @ts-expect-error ParameterObject uses the OpenAPI 3.0 schema type.
+      schema: property.schema,
     };
 
-    const isRequired = schema.required?.includes(key);
-
-    if (isRequired) {
+    if (property.required) {
       def.required = true;
     }
 
     if (def.schema && "description" in def.schema && def.schema.description) {
       def.description = def.schema.description;
-      def.schema.description = undefined;
+      def.schema = { ...def.schema, description: undefined };
     }
 
     parameters.push(def);
   }
 
   return parameters;
+}
+
+function collectParameterProperties(
+  schema: OpenAPIV3_1.SchemaObject,
+  schemas?: OpenAPIV3_1.ComponentsObject["schemas"],
+) {
+  const properties = new Map<
+    string,
+    {
+      schema: OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.SchemaObject;
+      required: boolean;
+    }
+  >();
+
+  const resolvingRefs = new Set<string>();
+  const collect = (current: OpenAPIV3_1.SchemaObject) => {
+    for (const [key, value] of Object.entries(current.properties ?? {})) {
+      const existing = properties.get(key);
+      properties.set(key, {
+        schema: existing ? { allOf: [existing.schema, value] } : value,
+        required:
+          Boolean(current.required?.includes(key)) || existing?.required,
+      });
+    }
+
+    for (const member of current.allOf ?? []) {
+      if ("$ref" in member) {
+        const prefix = "#/components/schemas/";
+        if (!member.$ref.startsWith(prefix)) continue;
+
+        const name = member.$ref
+          .slice(prefix.length)
+          .replaceAll("~1", "/")
+          .replaceAll("~0", "~");
+        const referencedSchema = schemas?.[name];
+        if (referencedSchema && !resolvingRefs.has(name)) {
+          resolvingRefs.add(name);
+          collect(referencedSchema);
+          resolvingRefs.delete(name);
+        }
+      } else {
+        collect(member);
+      }
+    }
+  };
+
+  collect(schema);
+  return properties;
 }
 
 /**
