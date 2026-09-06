@@ -371,6 +371,57 @@ describe("zod v4", () => {
     expect(specs.components?.schemas?.PageFilter).toBeDefined();
   });
 
+  it("resolves manual request body resolvers without losing components on repeat generation", async () => {
+    const requestSchema = z
+      .object({ name: z.string() })
+      .meta({ ref: "CreateUserRequest" });
+    const responseSchema = z
+      .object({ id: z.string() })
+      .meta({ ref: "CreateUserResponse" });
+
+    const app = new Hono().post(
+      "/",
+      describeRoute({
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: resolver(requestSchema),
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "Created",
+            content: {
+              "application/json": {
+                schema: resolver(responseSchema),
+              },
+            },
+          },
+        },
+      }),
+      async (c) => c.json({ ok: true }),
+    );
+
+    const first = await generateSpecs(app);
+    const second = await generateSpecs(app);
+
+    for (const specs of [first, second]) {
+      const requestBody = specs.paths["/"]?.post?.requestBody;
+      expect(requestBody).toBeDefined();
+      expect(requestBody && "$ref" in requestBody).toBe(false);
+
+      if (!requestBody || "$ref" in requestBody) continue;
+
+      expect(requestBody.content?.["application/json"]?.schema).toEqual({
+        $ref: "#/components/schemas/CreateUserRequest",
+      });
+      expect(specs.components?.schemas?.CreateUserRequest).toBeDefined();
+      expect(specs.components?.schemas?.CreateUserResponse).toBeDefined();
+    }
+  });
+
   it("validator should set requestBody.required to true", async () => {
     const app = new Hono().post(
       "/",

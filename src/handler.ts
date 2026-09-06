@@ -10,6 +10,7 @@ import type {
 import { findTargetHandler } from "hono/utils/handler";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type {
+  ContentWithResolver,
   DescribeRouteOptions,
   GenerateSpecOptions,
   HandlerUniqueProperty,
@@ -110,6 +111,10 @@ export async function generateSpecs<
   };
 
   const _documentation = ctx.options.documentation ?? {};
+  const documentation = {
+    ..._documentation,
+    components: _documentation.components && { ..._documentation.components },
+  };
   clearSpecsContext();
   const paths = await generatePaths(hono, ctx);
 
@@ -129,35 +134,35 @@ export async function generateSpecs<
     }
   }
 
-  // Resolve any resolver() objects inside documentation.components.responses
-  const { components: resolvedDocComponents } = _documentation.components
-    ?.responses
-    ? await resolveResponseSchemas(_documentation.components.responses)
-    : { components: {} };
+  // Resolve any resolver() objects inside documentation.components.responses.
+  const resolvedDocumentation = documentation.components?.responses
+    ? await resolveResponseSchemas(documentation.components.responses)
+    : undefined;
+  if (resolvedDocumentation && documentation.components) {
+    documentation.components.responses = resolvedDocumentation.responses;
+  }
 
-  // After resolveResponseSchemas, resolver objects in responses have been
-  // resolved in-place, so the cast below is safe.
   const components = mergeComponentsObjects(
-    _documentation.components as OpenAPIV3_1.ComponentsObject,
-    resolvedDocComponents,
+    documentation.components as OpenAPIV3_1.ComponentsObject,
+    resolvedDocumentation?.components,
     ctx.components,
   );
 
   return {
     openapi: "3.1.0",
-    ..._documentation,
-    tags: _documentation.tags?.filter(
+    ...documentation,
+    tags: documentation.tags?.filter(
       (tag) => !ctx.options.excludeTags?.includes(tag?.name),
     ),
     info: {
       title: "Hono Documentation",
       description: "Development documentation",
       version: "0.0.0",
-      ..._documentation.info,
+      ...documentation.info,
     },
     paths: {
       ...removeExcludedPaths(paths, ctx),
-      ..._documentation.paths,
+      ...documentation.paths,
     },
     components,
   } satisfies OpenAPIV3_1.Document;
@@ -263,7 +268,17 @@ async function getSpec(
     let components: OpenAPIV3_1.ComponentsObject = {};
     if (tmp.responses) {
       const resolved = await resolveResponseSchemas(tmp.responses);
+      tmp.responses = resolved.responses;
       components = resolved.components;
+    }
+
+    if (tmp.requestBody && "content" in tmp.requestBody) {
+      const resolved = await resolveContentSchemas(tmp.requestBody.content);
+      tmp.requestBody = {
+        ...tmp.requestBody,
+        content: resolved.content,
+      };
+      components = mergeComponentsObjects(components, resolved.components);
     }
 
     return { schema: tmp, components };
@@ -271,8 +286,7 @@ async function getSpec(
 
   const result = await middlewareHandler.toOpenAPISchema();
   liftSchemaDefs(result);
-  const docs: Pick<OpenAPIV3_1.OperationObject, "parameters" | "requestBody"> &
-    Record<string, unknown> = {
+  const docs: DescribeRouteOptions & Record<string, unknown> = {
     ...defaultOptions,
     // Mark this operation as validator-derived so a default 400 validation
     // error response can be auto-injected later (see removeExcludedPaths).
@@ -432,31 +446,52 @@ function collectParameterProperties(
  * Resolve any resolver() objects in a responses map, returning the
  * cleaned responses and any components produced during resolution.
  */
-async function resolveResponseSchemas(responses: ResponsesWithResolver) {
+async function resolveContentSchemas(content: ContentWithResolver) {
   let components: OpenAPIV3_1.ComponentsObject = {};
+  const resolvedContent: Record<string, OpenAPIV3_1.MediaTypeObject> = {};
 
-  for (const key of Object.keys(responses)) {
-    const response = responses[key];
+  for (const [contentKey, raw] of Object.entries(content)) {
+    if (!raw) continue;
 
-    if (!response || !("content" in response)) continue;
-
-    for (const contentKey of Object.keys(response.content ?? {})) {
-      const raw = response.content?.[contentKey];
-
-      if (!raw) continue;
-
-      if (raw.schema && "toOpenAPISchema" in raw.schema) {
-        const result = await raw.schema.toOpenAPISchema();
-        liftSchemaDefs(result);
-        raw.schema = result.schema;
-        if (result.components) {
-          components = mergeComponentsObjects(components, result.components);
-        }
+    if (raw.schema && "toOpenAPISchema" in raw.schema) {
+      const result = await raw.schema.toOpenAPISchema();
+      liftSchemaDefs(result);
+      resolvedContent[contentKey] = {
+        ...raw,
+        schema: result.schema,
+      };
+      if (result.components) {
+        components = mergeComponentsObjects(components, result.components);
       }
+    } else {
+      resolvedContent[contentKey] = raw as OpenAPIV3_1.MediaTypeObject;
     }
   }
 
-  return { responses, components };
+  return { content: resolvedContent, components };
+}
+
+async function resolveResponseSchemas(responses: ResponsesWithResolver) {
+  let components: OpenAPIV3_1.ComponentsObject = {};
+  const resolvedResponses: OpenAPIV3_1.ResponsesObject = {};
+
+  for (const [key, response] of Object.entries(responses)) {
+    if (!response || !("content" in response) || !response.content) {
+      resolvedResponses[key] = response as
+        | OpenAPIV3_1.ReferenceObject
+        | OpenAPIV3_1.ResponseObject;
+      continue;
+    }
+
+    const resolved = await resolveContentSchemas(response.content);
+    resolvedResponses[key] = {
+      ...response,
+      content: resolved.content,
+    };
+    components = mergeComponentsObjects(components, resolved.components);
+  }
+
+  return { responses: resolvedResponses, components };
 }
 
 /**
