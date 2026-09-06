@@ -304,6 +304,49 @@ describe("zod v4", () => {
     expect(worldParams?.[0]).toMatchObject({ name: "greeting", in: "query" });
   });
 
+  it("generates parameters for nested intersection query schemas", async () => {
+    const filters = z.intersection(
+      z.object({ search: z.string().min(1) }),
+      z.intersection(
+        z.object({ search: z.string().max(100), page: z.coerce.number() }),
+        z.object({ includeArchived: z.coerce.boolean().optional() }),
+      ),
+    );
+
+    const app = new Hono().get("/", validator("query", filters), (c) =>
+      c.json({ ok: true }),
+    );
+
+    const specs = await generateSpecs(app);
+    const parameters = specs.paths["/"]?.get?.parameters ?? [];
+    const queryParameters = parameters.filter(
+      (parameter) => "name" in parameter && parameter.in === "query",
+    );
+
+    expect(queryParameters).toHaveLength(3);
+    expect(queryParameters.map((parameter) => parameter.name)).toEqual([
+      "search",
+      "page",
+      "includeArchived",
+    ]);
+    expect(queryParameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "search", required: true }),
+        expect.objectContaining({ name: "page", required: true }),
+        expect.objectContaining({ name: "includeArchived" }),
+      ]),
+    );
+    const search = queryParameters.find(
+      (parameter) => parameter.name === "search",
+    );
+    expect(search && "schema" in search && search.schema).toMatchObject({
+      allOf: [
+        expect.objectContaining({ minLength: 1 }),
+        expect.objectContaining({ maxLength: 100 }),
+      ],
+    });
+  });
+
   it("validator should set requestBody.required to true", async () => {
     const app = new Hono().post(
       "/",

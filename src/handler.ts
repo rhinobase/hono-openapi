@@ -349,29 +349,57 @@ async function getSpec(
 function generateParameters(target: string, schema: OpenAPIV3_1.SchemaObject) {
   const parameters: OpenAPIV3_1.ParameterObject[] = [];
 
-  for (const [key, value] of Object.entries(schema.properties ?? {})) {
+  for (const [key, property] of collectParameterProperties(schema)) {
     const def: OpenAPIV3_1.ParameterObject = {
       in: target === "param" ? "path" : target,
       name: key,
-      // @ts-expect-error
-      schema: value,
+      // @ts-expect-error ParameterObject uses the OpenAPI 3.0 schema type.
+      schema: property.schema,
     };
 
-    const isRequired = schema.required?.includes(key);
-
-    if (isRequired) {
+    if (property.required) {
       def.required = true;
     }
 
     if (def.schema && "description" in def.schema && def.schema.description) {
       def.description = def.schema.description;
-      def.schema.description = undefined;
+      def.schema = { ...def.schema, description: undefined };
     }
 
     parameters.push(def);
   }
 
   return parameters;
+}
+
+function collectParameterProperties(schema: OpenAPIV3_1.SchemaObject) {
+  const properties = new Map<
+    string,
+    {
+      schema: OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.SchemaObject;
+      required: boolean;
+    }
+  >();
+
+  const collect = (current: OpenAPIV3_1.SchemaObject) => {
+    for (const [key, value] of Object.entries(current.properties ?? {})) {
+      const existing = properties.get(key);
+      properties.set(key, {
+        schema: existing ? { allOf: [existing.schema, value] } : value,
+        required:
+          Boolean(current.required?.includes(key)) || existing?.required,
+      });
+    }
+
+    for (const member of current.allOf ?? []) {
+      if (!("$ref" in member)) {
+        collect(member);
+      }
+    }
+  };
+
+  collect(schema);
+  return properties;
 }
 
 /**
