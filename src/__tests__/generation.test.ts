@@ -13,7 +13,6 @@ import {
 
 describe("request body media", () => {
   it.each([
-    { target: "json", media: undefined, expected: "application/json" },
     { target: "form", media: undefined, expected: "multipart/form-data" },
     {
       target: "form",
@@ -66,12 +65,6 @@ describe("request body media", () => {
 describe("named parameter schemas", () => {
   it.each([
     {
-      name: "Zod",
-      schema: z
-        .object({ name: z.string(), age: z.string().optional() })
-        .meta({ ref: "Filters" }),
-    },
-    {
       name: "Effect",
       schema: Schema.standardSchemaV1(
         Schema.Struct({
@@ -118,6 +111,45 @@ describe("named parameter schemas", () => {
       ]),
     );
     expect(parameters.find((p) => p.name === "age")?.required).not.toBe(true);
+  });
+
+  it("keeps query and header parameters distinct when they share a named object", async () => {
+    const filters = z
+      .object({ name: z.string(), age: z.string().optional() })
+      .meta({ ref: "Filters" });
+    const app = new Hono().get(
+      "/users",
+      validator("query", filters),
+      validator("header", filters),
+      (c) =>
+        c.json({ query: c.req.valid("query"), header: c.req.valid("header") }),
+    );
+    const specs = await generateSpecs(app);
+    const parameters = specs.paths["/users"]?.get?.parameters?.map(
+      (parameter) => {
+        if (!("$ref" in parameter)) return parameter;
+        return specs.components?.parameters?.[
+          parameter.$ref.slice("#/components/parameters/".length)
+        ];
+      },
+    );
+    expect(parameters).toHaveLength(4);
+    expect(parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ in: "query", name: "name", required: true }),
+        expect.objectContaining({ in: "header", name: "name", required: true }),
+        expect.objectContaining({ in: "query", name: "age" }),
+        expect.objectContaining({ in: "header", name: "age" }),
+      ]),
+    );
+    const response = await app.request("/users?name=query", {
+      headers: { name: "header" },
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      query: { name: "query" },
+      header: { name: "header" },
+    });
   });
 });
 

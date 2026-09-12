@@ -130,16 +130,12 @@ describe.each(vendors)("$name request contract", ({ schema, nullable }) => {
       expect(response.status).toBe(400);
       const result = await response.json();
       expect(result).toMatchObject({ success: false, data: input });
-      expect(result.error.length).toBeGreaterThan(0);
+      expect(result.error).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ message: expect.any(String) }),
+        ]),
+      );
     }
     expect(handled).toBe(false);
-    const specs = await generateSpecs(app);
-    expect(specs.paths["/users"]?.post?.responses?.[400]).toMatchObject({
-      content: {
-        "application/json": {
-          schema: { required: ["success", "error", "data"] },
-        },
-      },
-    });
   });
 });

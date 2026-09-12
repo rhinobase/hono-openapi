@@ -342,26 +342,24 @@ async function getSpec(
       if (pos && result.components?.schemas?.[pos]) {
         const schema = result.components.schemas[pos];
 
-        const [firstParameter, ...remainingParameters] = generateParameters(
+        const generatedParameters = generateParameters(
           middlewareHandler.target,
           schema,
           result.components.schemas,
         );
 
-        if (firstParameter) {
+        if (generatedParameters.length === 1) {
           result.components.parameters ??= {};
-          result.components.parameters[pos] = firstParameter;
+          result.components.parameters[pos] = generatedParameters[0];
 
-          // A parameter component describes one field, not the entire object.
-          // Preserve the existing reference for the first field without
-          // dropping the other fields of a named object.
-          parameters.push(
-            {
-              $ref: `#/components/parameters/${pos}`,
-            },
-            ...remainingParameters,
-          );
+          // Preserve parameter references for existing single-field schemas.
+          parameters.push({ $ref: `#/components/parameters/${pos}` });
           delete result.components.schemas[pos];
+        } else {
+          // An object reference cannot name several Parameter Objects. Emit
+          // each field with its own location so reuse across targets cannot
+          // overwrite or deduplicate a field via a shared parameter reference.
+          parameters = generatedParameters;
         }
       }
     } else {
