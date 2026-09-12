@@ -60,6 +60,64 @@ describe("request body media", () => {
       expect(await response.json()).toEqual({ name: "Ada" });
     },
   );
+
+  it("keeps every media type when a route accepts JSON and form data", async () => {
+    const jsonSchema = z.object({ jsonName: z.string() });
+    const formSchema = z.object({ formName: z.string() });
+    const app = new Hono().post(
+      "/users",
+      validator("json", jsonSchema),
+      validator("form", formSchema),
+      (c) => c.json({ ok: true }),
+    );
+
+    const specs = await generateSpecs(app);
+    const body = specs.paths["/users"]?.post?.requestBody;
+    if (!body || !("content" in body)) {
+      throw new Error("Missing request body");
+    }
+
+    expect(Object.keys(body.content).sort()).toEqual([
+      "application/json",
+      "multipart/form-data",
+    ]);
+    expect(body.content["application/json"].schema).toMatchObject({
+      properties: { jsonName: { type: "string" } },
+    });
+    expect(body.content["multipart/form-data"].schema).toMatchObject({
+      properties: { formName: { type: "string" } },
+    });
+  });
+
+  it("does not combine request body references with inline content", async () => {
+    const reference = { $ref: "#/components/requestBodies/Example" };
+    const jsonValidator = validator("json", z.object({ name: z.string() }));
+    const generateRequestBody = async (
+      ...handlers: Parameters<Hono["post"]>
+    ) => {
+      const app = new Hono().post("/users", ...handlers, (c) =>
+        c.json({ ok: true }),
+      );
+      return (await generateSpecs(app)).paths["/users"]?.post?.requestBody;
+    };
+
+    const referenceThenValidator = await generateRequestBody(
+      describeRoute({ requestBody: reference }),
+      jsonValidator,
+    );
+    expect(referenceThenValidator).toMatchObject({
+      content: {
+        "application/json": expect.any(Object),
+      },
+    });
+    expect(referenceThenValidator).not.toHaveProperty("$ref");
+
+    const validatorThenReference = await generateRequestBody(
+      jsonValidator,
+      describeRoute({ requestBody: reference }),
+    );
+    expect(validatorThenReference).toEqual(reference);
+  });
 });
 
 describe("named parameter schemas", () => {
