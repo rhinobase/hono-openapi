@@ -441,7 +441,7 @@ describe("zod v4", () => {
   it("describeResponse with Date schema matches c.json serialization", async () => {
     const ResponseSchema = z.object({
       name: z.string(),
-      createdAt: z.iso.date(),
+      createdAt: z.iso.datetime(),
     });
 
     const app = new Hono().get(
@@ -451,7 +451,7 @@ describe("zod v4", () => {
           return c.json(
             {
               name: "test",
-              createdAt: new Date(),
+              createdAt: new Date("2026-01-02T03:04:05.000Z"),
             },
             200,
           );
@@ -469,6 +469,13 @@ describe("zod v4", () => {
       ),
     );
 
+    const response = await app.request("/");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      name: "test",
+      createdAt: "2026-01-02T03:04:05.000Z",
+    });
+
     const specs = await generateSpecs(app);
 
     expect(specs.paths["/"]?.get?.responses).toEqual({
@@ -476,7 +483,14 @@ describe("zod v4", () => {
         description: "OK",
         content: {
           "application/json": {
-            schema: expect.any(Object),
+            schema: expect.objectContaining({
+              properties: expect.objectContaining({
+                createdAt: expect.objectContaining({
+                  type: "string",
+                  format: "date-time",
+                }),
+              }),
+            }),
           },
         },
       },

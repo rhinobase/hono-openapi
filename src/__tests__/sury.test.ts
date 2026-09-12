@@ -90,7 +90,10 @@ describe("sury", () => {
       "/",
       describeResponse(
         (c) => {
-          return c.json({ name: "test", createdAt: new Date() }, 200);
+          return c.json(
+            { name: "test", createdAt: new Date("2026-01-02T03:04:05.000Z") },
+            200,
+          );
         },
         {
           200: {
@@ -105,6 +108,13 @@ describe("sury", () => {
       ),
     );
 
+    const response = await app.request("/");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      name: "test",
+      createdAt: "2026-01-02T03:04:05.000Z",
+    });
+
     const specs = await generateSpecs(app);
 
     expect(specs.paths["/"]?.get?.responses).toEqual({
@@ -112,7 +122,14 @@ describe("sury", () => {
         description: "OK",
         content: {
           "application/json": {
-            schema: expect.any(Object),
+            schema: expect.objectContaining({
+              properties: expect.objectContaining({
+                createdAt: expect.objectContaining({
+                  type: "string",
+                  format: "date-time",
+                }),
+              }),
+            }),
           },
         },
       },
