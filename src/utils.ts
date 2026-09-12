@@ -101,10 +101,10 @@ const specsByPathContext = new Map<
   RegisterSchemaPathOptions["specs"]
 >();
 
-function getPathContext(path: string) {
+function getPathContext(path: string, pathContext: typeof specsByPathContext) {
   const context: RegisterSchemaPathOptions["specs"][] = [];
 
-  for (const [key, data] of specsByPathContext) {
+  for (const [key, data] of pathContext) {
     if (!data) continue;
 
     // Strip trailing wildcard (e.g., "/players/*" -> "/players")
@@ -177,11 +177,10 @@ function mergeSpecs(
   );
 }
 
-export function registerSchemaPath({
-  route,
-  specs,
-  paths,
-}: RegisterSchemaPathOptions) {
+export function registerSchemaPath(
+  { route, specs, paths }: RegisterSchemaPathOptions,
+  pathContext = specsByPathContext,
+) {
   const path = toOpenAPIPath(route.path);
   const method = route.method.toLowerCase() as
     | Lowercase<AllowedMethods>
@@ -191,16 +190,16 @@ export function registerSchemaPath({
     if (!specs) return;
 
     // Merging specs with existing ones in the context
-    if (specsByPathContext.has(path)) {
-      const prev = specsByPathContext.get(path) ?? {};
+    if (pathContext.has(path)) {
+      const prev = pathContext.get(path) ?? {};
 
-      specsByPathContext.set(path, mergeSpecs(route, prev, specs));
+      pathContext.set(path, mergeSpecs(route, prev, specs));
     } else {
       // If the specs are not present, we can just set it
-      specsByPathContext.set(path, specs);
+      pathContext.set(path, specs);
     }
   } else {
-    const pathContext = getPathContext(path);
+    const context = getPathContext(path, pathContext);
 
     if (!(path in paths)) {
       paths[path] = {};
@@ -210,7 +209,7 @@ export function registerSchemaPath({
       // @ts-expect-error
       paths[path][method] = mergeSpecs(
         route,
-        ...pathContext,
+        ...context,
         paths[path]?.[method],
         specs,
       );

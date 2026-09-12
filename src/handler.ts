@@ -14,13 +14,13 @@ import type {
   DescribeRouteOptions,
   GenerateSpecOptions,
   HandlerUniqueProperty,
+  RegisterSchemaPathOptions,
   ResponsesWithResolver,
   SpecContext,
 } from "./types";
 import {
   ALLOWED_METHODS,
   type AllowedMethods,
-  clearSpecsContext,
   registerSchemaPath,
   removeExcludedPaths,
   uniqueSymbol,
@@ -115,7 +115,6 @@ export async function generateSpecs<
     ..._documentation,
     components: _documentation.components && { ..._documentation.components },
   };
-  clearSpecsContext();
   const paths = await generatePaths(hono, ctx);
 
   // Hide routes
@@ -174,6 +173,9 @@ async function generatePaths<
   S extends Schema = BlankSchema,
 >(hono: Hono<E, S, P>, ctx: SpecContext): Promise<OpenAPIV3_1.PathsObject> {
   const paths: OpenAPIV3_1.PathsObject = {};
+  // Conversion awaits vendor adapters, so concurrent generations must not
+  // share middleware metadata while traversing their routes.
+  const pathContext = new Map<string, RegisterSchemaPathOptions["specs"]>();
 
   for (const route of hono.routes) {
     const middlewareHandler = findTargetHandler(route.handler)[uniqueSymbol] as
@@ -184,10 +186,13 @@ async function generatePaths<
     if (!middlewareHandler) {
       // Include empty paths, if enabled
       if (ctx.options.includeEmptyPaths) {
-        registerSchemaPath({
-          route,
-          paths,
-        });
+        registerSchemaPath(
+          {
+            route,
+            paths,
+          },
+          pathContext,
+        );
       }
 
       continue;
@@ -215,15 +220,19 @@ async function generatePaths<
     const { schema: routeSpecs, components = {} } = await getSpec(
       middlewareHandler,
       defaultOptionsForThisMethod,
+      ctx.components.parameters,
     );
 
     ctx.components = mergeComponentsObjects(ctx.components, components);
 
-    registerSchemaPath({
-      route,
-      specs: routeSpecs,
-      paths,
-    });
+    registerSchemaPath(
+      {
+        route,
+        specs: routeSpecs,
+        paths,
+      },
+      pathContext,
+    );
   }
 
   return paths;
@@ -253,6 +262,7 @@ function getHiddenValue(options: {
 async function getSpec(
   middlewareHandler: HandlerUniqueProperty,
   defaultOptions?: Partial<DescribeRouteOptions>,
+  parameterComponents?: OpenAPIV3_1.ComponentsObject["parameters"],
 ) {
   // If the middleware handler has a spec, that is decribeRoute middleware
   if ("spec" in middlewareHandler) {
@@ -298,9 +308,10 @@ async function getSpec(
     middlewareHandler.target === "json"
   ) {
     const media =
-      (middlewareHandler.options?.media ?? middlewareHandler.target === "json")
+      middlewareHandler.options?.media ??
+      (middlewareHandler.target === "json"
         ? "application/json"
-        : "multipart/form-data";
+        : "multipart/form-data");
     if (
       !docs.requestBody ||
       !("content" in docs.requestBody) ||
@@ -333,22 +344,33 @@ async function getSpec(
       if (pos && result.components?.schemas?.[pos]) {
         const schema = result.components.schemas[pos];
 
-        const newParameters = generateParameters(
+        const generatedParameters = generateParameters(
           middlewareHandler.target,
           schema,
-        )[0];
+          result.components.schemas,
+        );
 
-        if (!result.components.parameters) {
-          result.components.parameters = {};
+        const singleParameter =
+          generatedParameters.length === 1 ? generatedParameters[0] : undefined;
+        const existingParameter = parameterComponents?.[pos];
+        if (
+          singleParameter &&
+          (!existingParameter ||
+            ("in" in existingParameter &&
+              existingParameter.in === singleParameter.in &&
+              existingParameter.name === singleParameter.name))
+        ) {
+          result.components.parameters ??= {};
+          result.components.parameters[pos] = singleParameter;
+
+          // Preserve parameter references for existing single-field schemas.
+          parameters.push({ $ref: `#/components/parameters/${pos}` });
+          delete result.components.schemas[pos];
+        } else {
+          // A reference cannot name multiple parameters or different locations.
+          // Inline conflicting parameters without overwriting an earlier ref.
+          parameters = generatedParameters;
         }
-
-        result.components.parameters[pos] = newParameters;
-
-        delete result.components.schemas[pos];
-
-        parameters.push({
-          $ref: `#/components/parameters/${pos}`,
-        });
       }
     } else {
       parameters = generateParameters(

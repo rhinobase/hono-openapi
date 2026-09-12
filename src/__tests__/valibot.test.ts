@@ -122,7 +122,7 @@ describe("valibot", () => {
     expect(specs).toMatchSnapshot();
   });
 
-  it("describeResponse with Date schema matches c.json serialization", async () => {
+  it("describeResponse honors a Date override matching c.json serialization", async () => {
     const ResponseSchema = v.object({
       name: v.string(),
       createdAt: v.date(),
@@ -132,7 +132,10 @@ describe("valibot", () => {
       "/",
       describeResponse(
         (c) => {
-          return c.json({ name: "test", createdAt: new Date() }, 200);
+          return c.json(
+            { name: "test", createdAt: new Date("2026-01-02T03:04:05.000Z") },
+            200,
+          );
         },
         {
           200: {
@@ -144,8 +147,30 @@ describe("valibot", () => {
             },
           },
         },
+        {
+          options: {
+            // Valibot dates need an explicit JSON representation.
+            overrideSchema: ({
+              valibotSchema,
+              jsonSchema,
+            }: {
+              valibotSchema: { type: string };
+              jsonSchema: object;
+            }) =>
+              valibotSchema.type === "date"
+                ? { type: "string", format: "date-time" }
+                : jsonSchema,
+          },
+        },
       ),
     );
+
+    const response = await app.request("/");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      name: "test",
+      createdAt: "2026-01-02T03:04:05.000Z",
+    });
 
     const specs = await generateSpecs(app);
 
@@ -154,7 +179,14 @@ describe("valibot", () => {
         description: "OK",
         content: {
           "application/json": {
-            schema: expect.any(Object),
+            schema: expect.objectContaining({
+              properties: expect.objectContaining({
+                createdAt: expect.objectContaining({
+                  type: "string",
+                  format: "date-time",
+                }),
+              }),
+            }),
           },
         },
       },
