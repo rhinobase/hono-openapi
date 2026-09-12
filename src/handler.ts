@@ -220,6 +220,7 @@ async function generatePaths<
     const { schema: routeSpecs, components = {} } = await getSpec(
       middlewareHandler,
       defaultOptionsForThisMethod,
+      ctx.components.parameters,
     );
 
     ctx.components = mergeComponentsObjects(ctx.components, components);
@@ -261,6 +262,7 @@ function getHiddenValue(options: {
 async function getSpec(
   middlewareHandler: HandlerUniqueProperty,
   defaultOptions?: Partial<DescribeRouteOptions>,
+  parameterComponents?: OpenAPIV3_1.ComponentsObject["parameters"],
 ) {
   // If the middleware handler has a spec, that is decribeRoute middleware
   if ("spec" in middlewareHandler) {
@@ -348,17 +350,25 @@ async function getSpec(
           result.components.schemas,
         );
 
-        if (generatedParameters.length === 1) {
+        const singleParameter =
+          generatedParameters.length === 1 ? generatedParameters[0] : undefined;
+        const existingParameter = parameterComponents?.[pos];
+        if (
+          singleParameter &&
+          (!existingParameter ||
+            ("in" in existingParameter &&
+              existingParameter.in === singleParameter.in &&
+              existingParameter.name === singleParameter.name))
+        ) {
           result.components.parameters ??= {};
-          result.components.parameters[pos] = generatedParameters[0];
+          result.components.parameters[pos] = singleParameter;
 
           // Preserve parameter references for existing single-field schemas.
           parameters.push({ $ref: `#/components/parameters/${pos}` });
           delete result.components.schemas[pos];
         } else {
-          // An object reference cannot name several Parameter Objects. Emit
-          // each field with its own location so reuse across targets cannot
-          // overwrite or deduplicate a field via a shared parameter reference.
+          // A reference cannot name multiple parameters or different locations.
+          // Inline conflicting parameters without overwriting an earlier ref.
           parameters = generatedParameters;
         }
       }
