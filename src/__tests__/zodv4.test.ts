@@ -78,6 +78,87 @@ describe("zod v4", () => {
     expect(specs).toMatchSnapshot();
   });
 
+  it("registers schemas identified by metadata IDs in components", async () => {
+    const querySchema = z.object({
+      name: z.string().optional().describe("My name").meta({ id: "Name" }),
+      address: z
+        .string()
+        .optional()
+        .describe("My address")
+        .meta({ id: "Address" }),
+    });
+    const passwordSchema = z.object({
+      password: z.string().describe("My password").meta({ id: "Password" }),
+    });
+    const app = new Hono()
+      .get(
+        "/",
+        describeRoute({
+          responses: {
+            200: {
+              description: "Success",
+              content: {
+                "application/json": { schema: resolver(querySchema) },
+              },
+            },
+          },
+        }),
+        validator("query", querySchema),
+        (c) => c.json(c.req.valid("query")),
+      )
+      .post(
+        "/password",
+        describeRoute({
+          responses: {
+            200: {
+              description: "Success",
+              content: {
+                "application/json": { schema: resolver(passwordSchema) },
+              },
+            },
+          },
+        }),
+        validator("json", passwordSchema),
+        (c) => c.json(c.req.valid("json")),
+      );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs.components?.schemas).toMatchObject({
+      Name: { id: "Name", description: "My name", type: "string" },
+      Address: { id: "Address", description: "My address", type: "string" },
+      Password: {
+        id: "Password",
+        description: "My password",
+        type: "string",
+      },
+    });
+    expect(
+      specs.paths["/"]?.get?.responses[200]?.content?.["application/json"]
+        ?.schema,
+    ).toMatchObject({
+      properties: {
+        name: { $ref: "#/components/schemas/Name" },
+        address: { $ref: "#/components/schemas/Address" },
+      },
+    });
+    expect(
+      specs.paths["/password"]?.post?.responses[200]?.content?.[
+        "application/json"
+      ]?.schema,
+    ).toMatchObject({
+      properties: { password: { $ref: "#/components/schemas/Password" } },
+    });
+
+    const requestBody = specs.paths["/password"]?.post?.requestBody;
+    if (!requestBody || !("content" in requestBody)) {
+      throw new Error("Missing password request body");
+    }
+    expect(requestBody.content["application/json"]?.schema).toMatchObject({
+      properties: { password: { $ref: "#/components/schemas/Password" } },
+    });
+  });
+
   it("with response description", async () => {
     const app = new Hono().get(
       "/",
