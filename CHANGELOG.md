@@ -1,4 +1,15 @@
 # Changelog
+## 1.3.3
+
+### Bug Fixes 🐛
+
+- Preserve multiple request body media types by @MathurAditya724 in [#250](https://github.com/rhinobase/hono-openapi/pull/250)
+- Harden schema generation with adapter behavior tests by @MathurAditya724 in [#249](https://github.com/rhinobase/hono-openapi/pull/249)
+
+### Internal Changes 🔧
+
+- Cover Zod v4 component schemas by @MathurAditya724 in [#251](https://github.com/rhinobase/hono-openapi/pull/251)
+
 ## 1.3.2
 
 ### New Features ✨
