@@ -125,6 +125,24 @@ export function clearSpecsContext() {
   specsByPathContext.clear();
 }
 
+function mergeRequestBodies(
+  previous: OpenAPIV3_1.OperationObject["requestBody"],
+  current: OpenAPIV3_1.OperationObject["requestBody"],
+) {
+  if (!previous || !current || "$ref" in previous || "$ref" in current) {
+    return current;
+  }
+
+  return {
+    ...previous,
+    ...current,
+    content: {
+      ...previous.content,
+      ...current.content,
+    },
+  };
+}
+
 function mergeSpecs(
   route: RouterRoute,
   ...specs: RegisterSchemaPathOptions["specs"][]
@@ -157,6 +175,11 @@ function mergeSpecs(
             if (key === "parameters") {
               // @ts-expect-error
               prev[key] = mergeParameters(prev[key], value);
+            } else if (key === "requestBody") {
+              prev.requestBody = mergeRequestBodies(
+                prev.requestBody,
+                value as OpenAPIV3_1.OperationObject["requestBody"],
+              );
             } else {
               prev[key] = {
                 ...prev[key],
