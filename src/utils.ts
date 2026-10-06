@@ -1,5 +1,6 @@
 import type { RouterRoute } from "hono/types";
 import type { OpenAPIV3_1 } from "openapi-types";
+import { getSpecComponents, setSpecComponents } from "./internal";
 import type { RegisterSchemaPathOptions, SpecContext } from "./types";
 
 /**
@@ -147,7 +148,7 @@ function mergeSpecs(
   route: RouterRoute,
   ...specs: RegisterSchemaPathOptions["specs"][]
 ) {
-  return specs.reduce<OpenAPIV3_1.OperationObject>(
+  const merged = specs.reduce<OpenAPIV3_1.OperationObject>(
     (prev, spec) => {
       if (!spec || !prev) return prev;
 
@@ -198,6 +199,13 @@ function mergeSpecs(
       operationId: generateOperationId(route),
     },
   );
+
+  setSpecComponents(
+    merged,
+    specs.flatMap((spec) => getSpecComponents(spec)),
+  );
+
+  return merged;
 }
 
 export function registerSchemaPath(

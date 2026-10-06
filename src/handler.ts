@@ -9,6 +9,7 @@ import type {
 } from "hono/types";
 import { findTargetHandler } from "hono/utils/handler";
 import type { OpenAPIV3_1 } from "openapi-types";
+import { getSpecComponents, setSpecComponents } from "./internal";
 import type {
   ContentWithResolver,
   DescribeRouteOptions,
@@ -141,11 +142,16 @@ export async function generateSpecs<
     documentation.components.responses = resolvedDocumentation.responses;
   }
 
+  const filteredPaths = removeExcludedPaths(paths, ctx);
   const components = mergeComponentsObjects(
     documentation.components as OpenAPIV3_1.ComponentsObject,
     resolvedDocumentation?.components,
-    ctx.components,
+    getPathComponents(filteredPaths),
   );
+  const documentedPaths = {
+    ...filteredPaths,
+    ...documentation.paths,
+  };
 
   return {
     openapi: "3.1.0",
@@ -159,10 +165,7 @@ export async function generateSpecs<
       version: "0.0.0",
       ...documentation.info,
     },
-    paths: {
-      ...removeExcludedPaths(paths, ctx),
-      ...documentation.paths,
-    },
+    paths: documentedPaths,
     components,
   } satisfies OpenAPIV3_1.Document;
 }
@@ -224,6 +227,7 @@ async function generatePaths<
     );
 
     ctx.components = mergeComponentsObjects(ctx.components, components);
+    setSpecComponents(routeSpecs, [components]);
 
     registerSchemaPath(
       {
@@ -577,4 +581,25 @@ function mergeComponentsObjects(
     },
     components[0] ?? {},
   );
+}
+
+function getPathComponents(paths: OpenAPIV3_1.PathsObject) {
+  let components: OpenAPIV3_1.ComponentsObject = {};
+
+  for (const path of Object.values(paths)) {
+    if (!path || "$ref" in path) continue;
+
+    for (const operation of Object.values(path)) {
+      if (!operation || typeof operation !== "object" || "$ref" in operation) {
+        continue;
+      }
+
+      components = mergeComponentsObjects(
+        components,
+        ...getSpecComponents(operation),
+      );
+    }
+  }
+
+  return components;
 }

@@ -159,6 +159,46 @@ describe("zod v4", () => {
     });
   });
 
+  it("omits schemas used only by hidden or excluded routes", async () => {
+    const visibleChild = z
+      .object({ name: z.string() })
+      .meta({ ref: "VisibleChild" });
+    const visible = z
+      .object({ id: z.string(), child: visibleChild })
+      .meta({ ref: "Visible" });
+    const hidden = z.object({ secret: z.string() }).meta({ ref: "Hidden" });
+    const excluded = z
+      .object({ internal: z.string() })
+      .meta({ ref: "Excluded" });
+    const response = (schema: z.ZodType) => ({
+      200: {
+        description: "OK",
+        content: { "application/json": { schema: resolver(schema) } },
+      },
+    });
+
+    const app = new Hono()
+      .get("/visible", describeRoute({ responses: response(visible) }), (c) =>
+        c.json({ id: "1" }),
+      )
+      .get(
+        "/hidden",
+        describeRoute({ hide: true, responses: response(hidden) }),
+        (c) => c.json({ secret: "s" }),
+      )
+      .get("/excluded", describeRoute({ responses: response(excluded) }), (c) =>
+        c.json({ internal: "i" }),
+      );
+
+    const specs = await generateSpecs(app, { exclude: ["/excluded"] });
+
+    expect(Object.keys(specs.paths)).toEqual(["/visible"]);
+    expect(Object.keys(specs.components?.schemas ?? {}).sort()).toEqual([
+      "Visible",
+      "VisibleChild",
+    ]);
+  });
+
   it("with response description", async () => {
     const app = new Hono().get(
       "/",
