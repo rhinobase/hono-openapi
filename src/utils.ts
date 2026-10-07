@@ -5,7 +5,7 @@ import type { RegisterSchemaPathOptions, SpecContext } from "./types";
 /**
  * The unique symbol for the middlewares, which makes it easier to identify them. Not meant to be used directly, unless you're creating a custom middleware.
  */
-export const uniqueSymbol = Symbol("openapi");
+export const uniqueSymbol = Symbol.for("hono-openapi");
 
 /**
  * Internal marker key set on an operation's spec when it is produced by a
