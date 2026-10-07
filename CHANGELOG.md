@@ -1,4 +1,10 @@
 # Changelog
+## 1.3.5
+
+### Bug Fixes 🐛
+
+- (openapi) Find routes described by another copy of the package by @MichaelDeBoey in [#257](https://github.com/rhinobase/hono-openapi/pull/257)
+
 ## 1.3.4
 
 ### Bug Fixes 🐛
