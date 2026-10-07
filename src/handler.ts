@@ -21,8 +21,10 @@ import type {
 import {
   ALLOWED_METHODS,
   type AllowedMethods,
+  documentedComponents,
   registerSchemaPath,
   removeExcludedPaths,
+  setSpecComponents,
   uniqueSymbol,
   VALIDATION_MARKER,
 } from "./utils";
@@ -141,10 +143,17 @@ export async function generateSpecs<
     documentation.components.responses = resolvedDocumentation.responses;
   }
 
+  const documentedPaths = removeExcludedPaths(paths, ctx);
+
+  // Components are collected from every route, including the ones hidden or
+  // excluded above, so only keep those the rest of the document uses.
   const components = mergeComponentsObjects(
     documentation.components as OpenAPIV3_1.ComponentsObject,
     resolvedDocumentation?.components,
-    ctx.components,
+    documentedComponents(ctx.components, documentedPaths, [
+      documentation,
+      resolvedDocumentation?.components,
+    ]),
   );
 
   return {
@@ -160,7 +169,7 @@ export async function generateSpecs<
       ...documentation.info,
     },
     paths: {
-      ...removeExcludedPaths(paths, ctx),
+      ...documentedPaths,
       ...documentation.paths,
     },
     components,
@@ -224,6 +233,7 @@ async function generatePaths<
     );
 
     ctx.components = mergeComponentsObjects(ctx.components, components);
+    setSpecComponents(routeSpecs, [components]);
 
     registerSchemaPath(
       {

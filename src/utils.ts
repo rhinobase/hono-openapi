@@ -96,6 +96,21 @@ function mergeParameters(...params: (Parameter[] | undefined)[]): Parameter[] {
   return Array.from(merged.values());
 }
 
+/**
+ * The components each operation's specs brought in. `mergeSpecs` carries them
+ * over to the operation it builds, so an operation knows every component its
+ * own route and the middleware applied to it contributed.
+ */
+const specComponents = new WeakMap<object, OpenAPIV3_1.ComponentsObject[]>();
+
+export const setSpecComponents = (
+  spec: object,
+  components: OpenAPIV3_1.ComponentsObject[],
+) => specComponents.set(spec, components);
+
+export const getSpecComponents = (spec: unknown) =>
+  (spec != null && typeof spec === "object" && specComponents.get(spec)) || [];
+
 const specsByPathContext = new Map<
   string,
   RegisterSchemaPathOptions["specs"]
@@ -147,7 +162,7 @@ function mergeSpecs(
   route: RouterRoute,
   ...specs: RegisterSchemaPathOptions["specs"][]
 ) {
-  return specs.reduce<OpenAPIV3_1.OperationObject>(
+  const merged = specs.reduce<OpenAPIV3_1.OperationObject>(
     (prev, spec) => {
       if (!spec || !prev) return prev;
 
@@ -198,6 +213,10 @@ function mergeSpecs(
       operationId: generateOperationId(route),
     },
   );
+
+  setSpecComponents(merged, specs.flatMap(getSpecComponents));
+
+  return merged;
 }
 
 export function registerSchemaPath(
@@ -382,4 +401,99 @@ export function removeExcludedPaths(
   }
 
   return newPaths;
+}
+
+const COMPONENTS_PREFIX = "#/components/";
+
+/**
+ * A component as `type/name`, the way a `$ref` names it after the prefix.
+ */
+const componentKey = (type: string, name: string) =>
+  `${type}/${name.replaceAll("~", "~0").replaceAll("/", "~1")}`;
+
+/**
+ * Every `$ref` to a component found in `value`, as `type/name`.
+ */
+const componentRefs = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.flatMap(componentRefs);
+  }
+  if (value == null || typeof value !== "object") {
+    return [];
+  }
+
+  return Object.entries(value).flatMap(([key, item]) => {
+    if (key !== "$ref" || typeof item !== "string") {
+      return componentRefs(item);
+    }
+
+    return item.startsWith(COMPONENTS_PREFIX)
+      ? [item.slice(COMPONENTS_PREFIX.length)]
+      : [];
+  });
+};
+
+/**
+ * `refs`, and every component they lead to through the components they point
+ * at. `reached` is passed along, so each component is visited once.
+ */
+const reachableRefs = (
+  refs: string[],
+  components: OpenAPIV3_1.ComponentsObject,
+  reached: Set<string>,
+): Set<string> =>
+  refs.reduce((seen, ref) => {
+    if (seen.has(ref)) {
+      return seen;
+    }
+
+    const [type, ...name] = ref.split("/");
+    const component = (
+      components as Record<string, Record<string, unknown> | undefined>
+    )[type]?.[name.join("/").replaceAll("~1", "/").replaceAll("~0", "~")];
+
+    return reachableRefs(componentRefs(component), components, seen.add(ref));
+  }, reached);
+
+/**
+ * Keeps the generated components that the documented operations brought in,
+ * and the ones `documentation` refers to, directly or through other
+ * components.
+ *
+ * Components are collected from every route while the paths are generated,
+ * including routes that are hidden or excluded afterwards. Without this, those
+ * routes would still publish the schemas only they use.
+ */
+export function documentedComponents(
+  components: OpenAPIV3_1.ComponentsObject,
+  paths: OpenAPIV3_1.PathsObject,
+  documentation: unknown,
+) {
+  const contributed = new Set(
+    Object.values(paths)
+      .flatMap((item) => (item == null ? [] : Object.values(item)))
+      .flatMap(getSpecComponents)
+      .flatMap((operationComponents) =>
+        Object.entries(operationComponents).flatMap(([type, entries]) =>
+          Object.keys(entries ?? {}).map((name) => componentKey(type, name)),
+        ),
+      ),
+  );
+  const kept = reachableRefs(
+    componentRefs(documentation),
+    components,
+    contributed,
+  );
+
+  return Object.fromEntries(
+    Object.entries(components).flatMap(([type, entries]) => {
+      const remaining = Object.entries(entries ?? {}).filter(([name]) =>
+        kept.has(componentKey(type, name)),
+      );
+
+      return remaining.length > 0
+        ? [[type, Object.fromEntries(remaining)]]
+        : [];
+    }),
+  ) as OpenAPIV3_1.ComponentsObject;
 }
