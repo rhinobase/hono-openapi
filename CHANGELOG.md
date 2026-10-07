@@ -1,4 +1,10 @@
 # Changelog
+## 1.3.4
+
+### Bug Fixes 🐛
+
+- (openapi) Drop components only hidden or excluded routes use by @MichaelDeBoey in [#255](https://github.com/rhinobase/hono-openapi/pull/255)
+
 ## 1.3.3
 
 ### Bug Fixes 🐛
