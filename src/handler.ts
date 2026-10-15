@@ -15,6 +15,7 @@ import type {
   GenerateSpecOptions,
   HandlerUniqueProperty,
   RegisterSchemaPathOptions,
+  ResolverReturnType,
   ResponsesWithResolver,
   SpecContext,
 } from "./types";
@@ -269,6 +270,22 @@ function getHiddenValue(options: {
   return false;
 }
 
+/**
+ * Whether a body validator rejects a request that has no body. Hono's validator
+ * validates `{}` when there is none, so that is what the schema is asked about.
+ * A schema that fails to answer is taken to need a body.
+ */
+const rejectsMissingBody = async (
+  middlewareHandler: Pick<ResolverReturnType, "validate">,
+) => {
+  try {
+    const result = await middlewareHandler.validate({});
+    return result.issues !== undefined;
+  } catch {
+    return true;
+  }
+};
+
 async function getSpec(
   middlewareHandler: HandlerUniqueProperty,
   defaultOptions?: Partial<DescribeRouteOptions>,
@@ -332,7 +349,9 @@ async function getSpec(
       !docs.requestBody.content
     ) {
       docs.requestBody = {
-        required: true,
+        ...((await rejectsMissingBody(middlewareHandler))
+          ? { required: true }
+          : {}),
         content,
       };
     } else {
