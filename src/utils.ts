@@ -101,7 +101,7 @@ const pathParameterNames = (path: string) =>
  */
 export const expandOptionalParameters = (route: RouterRoute) => {
   const paths = checkOptionalParameter(route.path);
-  if (!paths) return [{ route, omitted: [] as string[] }];
+  if (!paths) return [{ route, omitted: undefined }];
 
   const names = pathParameterNames(route.path);
 
@@ -121,14 +121,25 @@ export const expandOptionalParameters = (route: RouterRoute) => {
  */
 export const withOmittedParameters = (
   specs: RegisterSchemaPathOptions["specs"],
-  omitted: string[],
+  omitted: string[] | undefined,
 ): RegisterSchemaPathOptions["specs"] => {
-  if (!omitted.length || typeof specs?.operationId !== "string") return specs;
+  if (!omitted || !specs) return specs;
 
-  return {
+  const expanded = {
     ...specs,
-    operationId: `${specs.operationId}Without${omitted.map(toPascalCase).join("And")}`,
+    ...(omitted.length && typeof specs.operationId === "string"
+      ? {
+          operationId: `${specs.operationId}Without${omitted.map(toPascalCase).join("And")}`,
+        }
+      : {}),
   };
+  // The components a spec brought in are kept beside it rather than on it, so
+  // the copy has to take them over, or pruning drops the ones only this path
+  // still refers to.
+  setSpecComponents(expanded, getSpecComponents(specs));
+  expandedOperations.add(expanded);
+
+  return expanded;
 };
 
 type Parameter = OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.ParameterObject;
@@ -161,6 +172,16 @@ export const setSpecComponents = (
 
 export const getSpecComponents = (spec: unknown) =>
   (spec != null && typeof spec === "object" && specComponents.get(spec)) || [];
+
+/**
+ * The operations of a route with optional parameters, one per path it is
+ * expanded to, kept beside them like their components. Only these have their
+ * path parameters matched to their path template.
+ */
+const expandedOperations = new WeakSet<object>();
+
+const isExpandedOperation = (spec: unknown) =>
+  spec != null && typeof spec === "object" && expandedOperations.has(spec);
 
 const specsByPathContext = new Map<
   string,
@@ -292,6 +313,7 @@ function mergeSpecs(
   }
 
   setSpecComponents(merged, specs.flatMap(getSpecComponents));
+  if (specs.some(isExpandedOperation)) expandedOperations.add(merged);
 
   return merged;
 }
@@ -391,6 +413,19 @@ const withFreeSuffix = (
     ? withFreeSuffix(operationId, isUsed, suffix + 1)
     : `${operationId}${suffix}`;
 
+/** The parameter component a local `$ref` points at, with its name. */
+const parameterComponent = (
+  ref: OpenAPIV3_1.ReferenceObject,
+  ctx: SpecContext,
+) => {
+  const prefix = "#/components/parameters/";
+  if (!ref.$ref.startsWith(prefix)) return undefined;
+
+  const name = ref.$ref.slice(prefix.length);
+  const parameter = ctx.components.parameters?.[name];
+  return parameter && { name, parameter };
+};
+
 export function removeExcludedPaths(
   paths: OpenAPIV3_1.PathsObject,
   ctx: SpecContext,
@@ -441,7 +476,7 @@ export function removeExcludedPaths(
       const hasValidation = schema[VALIDATION_MARKER] === true;
       delete schema[VALIDATION_MARKER];
 
-      if (schema.parameters) {
+      if (schema.parameters && isExpandedOperation(schema)) {
         // A path parameter only exists on a path that has it, and is always
         // required there. A route with optional parameters (`/notes/:id?`)
         // gets a path item without them, which its `param` validator still
@@ -453,8 +488,22 @@ export function removeExcludedPaths(
 
         schema.parameters = schema.parameters.flatMap(
           (x: OpenAPIV3_1.ParameterObject | OpenAPIV3_1.ReferenceObject) => {
-            if ("$ref" in x || x.in !== "path") return [x];
-            return names.includes(x.name) ? [{ ...x, required: true }] : [];
+            const component =
+              "$ref" in x ? parameterComponent(x, ctx) : undefined;
+            const parameter = component?.parameter ?? x;
+            if ("$ref" in parameter || parameter.in !== "path") return [x];
+            if (!names.includes(parameter.name)) return [];
+            if (!component) return [{ ...parameter, required: true }];
+
+            // OpenAPI requires every path parameter to be required, so the
+            // component is marked required for all paths that refer to it.
+            if (!parameter.required) {
+              ctx.components.parameters = {
+                ...ctx.components.parameters,
+                [component.name]: { ...parameter, required: true },
+              };
+            }
+            return [x];
           },
         );
       }

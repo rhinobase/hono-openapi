@@ -2,23 +2,33 @@ import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import z from "zod/v4";
 import { generateSpecs } from "../handler.js";
-import { describeRoute, validator } from "../middlewares.js";
+import { describeRoute, resolver, validator } from "../middlewares.js";
+
+type Parameter = {
+  $ref?: string;
+  in?: string;
+  name?: string;
+  required?: boolean;
+};
 
 const operations = async (app: Hono) => {
   const specs = await generateSpecs(app);
+  const resolve = (parameter: Parameter): Parameter =>
+    parameter.$ref
+      ? ((specs.components?.parameters?.[
+          parameter.$ref.replace("#/components/parameters/", "")
+        ] as Parameter | undefined) ?? parameter)
+      : parameter;
+
   return Object.fromEntries(
     Object.entries(specs.paths).map(([path, item]) => [
       path,
       {
         operationId: item?.get?.operationId,
-        pathParameters: (
-          (item?.get?.parameters ?? []) as { in: string; name: string }[]
-        )
+        pathParameters: ((item?.get?.parameters ?? []) as Parameter[])
+          .map(resolve)
           .filter((parameter) => parameter.in === "path")
-          .map(({ name, ...parameter }) => ({
-            name,
-            required: (parameter as { required?: boolean }).required,
-          })),
+          .map(({ name, required }) => ({ name, required })),
       },
     ]),
   );
@@ -94,5 +104,54 @@ describe("optional path parameters", () => {
         pathParameters: [{ name: "id", required: true }],
       },
     });
+  });
+
+  it("keeps a named path parameter only on the path that has it", async () => {
+    const app = new Hono().get(
+      "/notes/:id?",
+      describeRoute({ description: "List notes, or get one by its ID" }),
+      validator(
+        "param",
+        z.object({ id: z.string().optional() }).meta({ ref: "NoteId" }),
+      ),
+      (c) => c.json(c.req.valid("param")),
+    );
+
+    expect(await operations(app)).toEqual({
+      "/notes": { operationId: "getNotes", pathParameters: [] },
+      "/notes/{id}": {
+        operationId: "getNotesById",
+        pathParameters: [{ name: "id", required: true }],
+      },
+    });
+  });
+
+  it("keeps the components the path without the parameter refers to", async () => {
+    const Note = z.object({ title: z.string() }).meta({ ref: "Note" });
+    const app = new Hono().get(
+      "/notes/:id?",
+      describeRoute({
+        operationId: "findNotes",
+        responses: {
+          200: {
+            description: "The notes",
+            content: { "application/json": { schema: resolver(Note) } },
+          },
+        },
+      }),
+      (c) => c.json({ title: "Groceries" }),
+    );
+
+    const specs = await generateSpecs(app, { exclude: ["/notes/{id}"] });
+
+    expect(Object.keys(specs.paths)).toEqual(["/notes"]);
+    expect(
+      (
+        specs.paths["/notes"]?.get?.responses?.[200] as {
+          content: Record<string, { schema: unknown }>;
+        }
+      ).content["application/json"].schema,
+    ).toEqual({ $ref: "#/components/schemas/Note" });
+    expect(specs.components?.schemas?.Note).toBeDefined();
   });
 });
