@@ -834,8 +834,10 @@ const REFERENCE_MAPS = new Set([
   "requestBodies",
   "headers",
   "content",
+  "encoding",
   "links",
   "callbacks",
+  "pathItems",
   "properties",
   "patternProperties",
   "$defs",
@@ -1011,10 +1013,19 @@ const splitOutputComponents = (
   const shared = new Set(
     outputs.filter((output) => Object.hasOwn(schemas, inputName(output))),
   );
+  const outputRefs = new Map(
+    [...shared].map(
+      (output) =>
+        [
+          output,
+          componentRefs(schemas[output]).map((ref) =>
+            decodeName(ref.slice("schemas/".length)),
+          ),
+        ] as const,
+    ),
+  );
   const refersTo = (output: string, split: ReadonlySet<string>) =>
-    componentRefs(schemas[output]).some((ref) =>
-      split.has(decodeName(ref.slice("schemas/".length))),
-    );
+    outputRefs.get(output)?.some((name) => split.has(name));
   const split = new Set(
     [...shared].filter(
       (output) =>

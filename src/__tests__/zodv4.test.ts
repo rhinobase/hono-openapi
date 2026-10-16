@@ -10,6 +10,48 @@ import {
 } from "../middlewares.js";
 
 describe("zod v4", () => {
+  it.each(["example", "default", "value", "notes"])(
+    "renames schema references in encoding headers for the field %s",
+    async (field) => {
+      const Note = z
+        .object({ pinned: z.boolean().default(false) })
+        .meta({ ref: "Note" });
+      const app = new Hono().post(
+        "/notes",
+        describeRoute({
+          responses: {
+            200: {
+              description: "OK",
+              content: {
+                "multipart/form-data": {
+                  schema: resolver(z.object({ [field]: Note })),
+                  encoding: {
+                    [field]: {
+                      headers: {
+                        "X-Note": {
+                          schema: { $ref: "#/components/schemas/Note" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        }),
+        validator("json", Note),
+        (c) => c.json(c.req.valid("json")),
+      );
+
+      const specs = await generateSpecs(app);
+      expect(
+        specs.paths["/notes"]?.post?.responses?.[200]?.content?.[
+          "multipart/form-data"
+        ]?.encoding?.[field]?.headers?.["X-Note"],
+      ).toMatchObject({ schema: { $ref: "#/components/schemas/NoteOutput" } });
+    },
+  );
+
   it("preserves literal values when response components are renamed", async () => {
     const example = {
       $ref: "#/components/schemas/Note",
