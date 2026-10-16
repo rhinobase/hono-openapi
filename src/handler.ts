@@ -21,6 +21,7 @@ import type {
 import {
   ALLOWED_METHODS,
   type AllowedMethods,
+  componentRefs,
   documentedComponents,
   registerSchemaPath,
   removeExcludedPaths,
@@ -149,13 +150,17 @@ export async function generateSpecs<
 
   // Components are collected from every route, including the ones hidden or
   // excluded above, so only keep those the rest of the document uses.
-  const components = mergeComponentsObjects(
-    documentation.components as OpenAPIV3_1.ComponentsObject,
-    resolvedDocumentation?.components,
-    documentedComponents(ctx.components, documentedPaths, [
-      documentation,
+  const { components, paths: outputPaths } = splitOutputComponents(
+    mergeComponentsObjects(
+      documentation.components as OpenAPIV3_1.ComponentsObject,
       resolvedDocumentation?.components,
-    ]),
+      documentedComponents(
+        ctx.components,
+        documentedPaths,
+        withOutputRefs([documentation, resolvedDocumentation?.components], ctx),
+      ),
+    ),
+    documentedPaths,
   );
 
   return {
@@ -171,7 +176,7 @@ export async function generateSpecs<
       ...documentation.info,
     },
     paths: {
-      ...documentedPaths,
+      ...outputPaths,
       ...documentation.paths,
     },
     components,
@@ -671,7 +676,7 @@ async function resolveResponseSchemas(responses: ResponsesWithResolver) {
     components = mergeComponentsObjects(components, resolved.components);
   }
 
-  return { responses: resolvedResponses, components };
+  return markAsOutput(resolvedResponses, components);
 }
 
 /**
@@ -736,3 +741,277 @@ function mergeComponentsObjects(
     components[0] ?? {},
   );
 }
+
+const SCHEMA_REF = "#/components/schemas/";
+
+/**
+ * Responses describe what a route sends, which can differ from what the same
+ * named schema accepts in a request body: a `.default()` makes a field
+ * optional in one and always present in the other. Components produced for a
+ * response are kept apart under this marked name until
+ * `splitOutputComponents` knows whether a request uses the same name with
+ * another shape, so neither replaces the other while routes are collected.
+ */
+const OUTPUT_MARK = "\u0000output";
+
+const isOutput = (name: string) => name.endsWith(OUTPUT_MARK);
+
+const inputName = (output: string) => output.slice(0, -OUTPUT_MARK.length);
+
+const decodeName = (name: string) =>
+  name.replaceAll("~1", "/").replaceAll("~0", "~");
+
+const encodeName = (name: string) =>
+  name.replaceAll("~", "~0").replaceAll("/", "~1");
+
+/** `ref` pointing at the name `rename` gives the schema component it refers to. */
+const renameRef = (
+  ref: string,
+  rename: (name: string) => string | undefined,
+) => {
+  if (!ref.startsWith(SCHEMA_REF)) {
+    return ref;
+  }
+
+  const renamed = rename(decodeName(ref.slice(SCHEMA_REF.length)));
+  return renamed === undefined ? ref : `${SCHEMA_REF}${encodeName(renamed)}`;
+};
+
+/**
+ * A discriminator mapping target pointing at the renamed component. OpenAPI
+ * allows a reference or a bare component name there; any other reference,
+ * such as an external URL, is left as it is.
+ */
+const renameMappingTarget = (
+  target: string,
+  rename: (name: string) => string | undefined,
+) => {
+  if (target.startsWith(SCHEMA_REF)) {
+    return renameRef(target, rename);
+  }
+  if (target.includes("/") || target.includes("#")) {
+    return target;
+  }
+
+  return rename(target) ?? target;
+};
+
+const isDiscriminator = (
+  value: unknown,
+): value is OpenAPIV3_1.DiscriminatorObject =>
+  value != null &&
+  typeof value === "object" &&
+  typeof (value as { propertyName?: unknown }).propertyName === "string";
+
+/**
+ * `value` with every reference to a schema component that `rename` gives a
+ * new name pointing at that name instead: each `$ref`, and each target of a
+ * discriminator's `mapping`, which holds component references as plain
+ * strings and would otherwise keep selecting the old component.
+ */
+const renameSchemaRefs = <T>(
+  value: T,
+  rename: (name: string) => string | undefined,
+): T => {
+  if (Array.isArray(value)) {
+    return value.map((item) => renameSchemaRefs(item, rename)) as T;
+  }
+  if (value == null || typeof value !== "object") {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => {
+      if (key === "$ref" && typeof item === "string") {
+        return [key, renameRef(item, rename)];
+      }
+      if (key === "discriminator" && isDiscriminator(item) && item.mapping) {
+        return [
+          key,
+          {
+            ...item,
+            mapping: Object.fromEntries(
+              Object.entries(item.mapping).map(
+                ([discriminatorValue, target]) => [
+                  discriminatorValue,
+                  renameMappingTarget(target, rename),
+                ],
+              ),
+            ),
+          },
+        ];
+      }
+
+      return [key, renameSchemaRefs(item, rename)];
+    }),
+  ) as T;
+};
+
+const markAsOutput = (
+  responses: OpenAPIV3_1.ResponsesObject,
+  components: OpenAPIV3_1.ComponentsObject,
+) => {
+  const schemas = components.schemas ?? {};
+  const mark = (name: string) =>
+    Object.hasOwn(schemas, name) ? `${name}${OUTPUT_MARK}` : undefined;
+
+  return {
+    responses: renameSchemaRefs(responses, mark),
+    components: {
+      ...components,
+      ...(components.schemas && {
+        schemas: Object.fromEntries(
+          Object.entries(schemas).map(([name, schema]) => [
+            `${name}${OUTPUT_MARK}`,
+            renameSchemaRefs(schema, mark),
+          ]),
+        ),
+      }),
+    },
+  };
+};
+
+/**
+ * `documentation` plus a reference to the marked name of every schema it
+ * refers to that only a response produced. Documentation names components by
+ * their own name, which they only get back in `splitOutputComponents`, so
+ * without this they'd be dropped as unused before then.
+ */
+const withOutputRefs = (documentation: unknown, ctx: SpecContext) => [
+  documentation,
+  componentRefs(documentation)
+    .filter((ref) => ref.startsWith("schemas/"))
+    .map((ref) => decodeName(ref.slice("schemas/".length)))
+    .filter(
+      (name) =>
+        !Object.hasOwn(ctx.components.schemas ?? {}, name) &&
+        Object.hasOwn(ctx.components.schemas ?? {}, `${name}${OUTPUT_MARK}`),
+    )
+    .map((name) => ({
+      $ref: `${SCHEMA_REF}${encodeName(`${name}${OUTPUT_MARK}`)}`,
+    })),
+];
+
+/** JSON with object keys sorted, so two schemas compare by their content. */
+const canonical = (value: unknown) =>
+  JSON.stringify(value, (_key, item) =>
+    item && typeof item === "object" && !Array.isArray(item)
+      ? Object.fromEntries(
+          Object.entries(item).toSorted(([a], [b]) => a.localeCompare(b)),
+        )
+      : item,
+  );
+
+/**
+ * The first of `name`, `name2`, `name3` and so on that isn't in `used`.
+ */
+const freeName = (name: string, used: ReadonlySet<string>, n = 1): string => {
+  const candidate = n === 1 ? name : `${name}${n}`;
+  return used.has(candidate) ? freeName(name, used, n + 1) : candidate;
+};
+
+/**
+ * `<name>Output` for each split response component, in order, each one free
+ * of the names taken so far.
+ */
+const assignOutputNames = (
+  outputs: string[],
+  taken: Iterable<string>,
+): [string, string][] => {
+  if (outputs.length === 0) {
+    return [];
+  }
+
+  const [output, ...rest] = outputs;
+  const name = freeName(`${inputName(output)}Output`, new Set(taken));
+  return [[output, name], ...assignOutputNames(rest, [...taken, name])];
+};
+
+/**
+ * Gives every response component its final name, once the documented routes
+ * are known:
+ *
+ * - When no request body uses its name, it takes the name as is.
+ * - When one does with the same shape, both share one component.
+ * - When the shapes differ, the response gets its own `<name>Output`, the
+ *   suffix `zod-openapi` uses for the same case, so the request body and the
+ *   response each describe what they accept and send. A response component
+ *   that refers to a split one is split too, since the request's copy refers
+ *   to the request's shape.
+ *
+ * Deciding this after hidden and excluded routes are removed keeps a hidden
+ * route from splitting a component for the routes that remain, and deciding it
+ * once for all routes keeps the result independent of their order.
+ */
+const splitOutputComponents = (
+  components: OpenAPIV3_1.ComponentsObject,
+  paths: OpenAPIV3_1.PathsObject,
+) => {
+  const schemas = components.schemas ?? {};
+  const outputs = Object.keys(schemas).filter(isOutput);
+
+  if (outputs.length === 0) {
+    return { components, paths };
+  }
+
+  const asInput = (name: string) =>
+    isOutput(name) ? inputName(name) : undefined;
+  const shared = outputs.filter((output) =>
+    Object.hasOwn(schemas, inputName(output)),
+  );
+  const refersTo = (output: string, split: ReadonlySet<string>) =>
+    componentRefs(schemas[output]).some((ref) =>
+      split.has(decodeName(ref.slice("schemas/".length))),
+    );
+  const spread = (split: ReadonlySet<string>): ReadonlySet<string> => {
+    const next = shared.filter(
+      (output) => split.has(output) || refersTo(output, split),
+    );
+    return next.length === split.size ? split : spread(new Set(next));
+  };
+  const split = spread(
+    new Set(
+      shared.filter(
+        (output) =>
+          canonical(renameSchemaRefs(schemas[output], asInput)) !==
+          canonical(schemas[inputName(output)]),
+      ),
+    ),
+  );
+
+  // Names already taken: request components, and response components no
+  // request shares, which keep their own name.
+  const taken = [
+    ...Object.keys(schemas).filter((name) => !isOutput(name)),
+    ...outputs.filter((output) => !shared.includes(output)).map(inputName),
+  ];
+  const outputNames = new Map(assignOutputNames([...split].toSorted(), taken));
+
+  const rename = (name: string) =>
+    isOutput(name) ? (outputNames.get(name) ?? inputName(name)) : undefined;
+
+  return {
+    components: {
+      ...renameSchemaRefs(components, rename),
+      schemas: Object.fromEntries(
+        Object.entries(schemas).flatMap(([name, schema]) => {
+          const renamed = renameSchemaRefs(schema, rename);
+          if (!isOutput(name)) {
+            return [[name, renamed]];
+          }
+
+          const output = outputNames.get(name);
+          if (output) {
+            return [[output, renamed]];
+          }
+
+          // The same shape as the request's, or no request uses the name.
+          return Object.hasOwn(schemas, inputName(name))
+            ? []
+            : [[inputName(name), renamed]];
+        }),
+      ),
+    } as OpenAPIV3_1.ComponentsObject,
+    paths: renameSchemaRefs(paths, rename),
+  };
+};

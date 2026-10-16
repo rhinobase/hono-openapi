@@ -502,7 +502,7 @@ const componentKey = (type: string, name: string) =>
 /**
  * Every `$ref` to a component found in `value`, as `type/name`.
  */
-const componentRefs = (value: unknown): string[] => {
+export const componentRefs = (value: unknown): string[] => {
   if (Array.isArray(value)) {
     return value.flatMap(componentRefs);
   }
