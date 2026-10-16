@@ -421,6 +421,11 @@ function generateParameters(
       def.schema = { ...def.schema, description: undefined };
     }
 
+    if (def.schema && "deprecated" in def.schema && def.schema.deprecated) {
+      def.deprecated = true;
+      def.schema = { ...def.schema, deprecated: undefined };
+    }
+
     parameters.push(def);
   }
 
