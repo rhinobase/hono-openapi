@@ -226,13 +226,21 @@ async function generatePaths<
       routeMethod
     ] && { ...ctx.options.defaultOptions[routeMethod] };
 
-    const { schema: routeSpecs, components = {} } = await getSpec(
+    const {
+      schema: routeSpecs,
+      components = {},
+      unreferencedComponents,
+    } = await getSpec(
       middlewareHandler,
       defaultOptionsForThisMethod,
       ctx.components.parameters,
     );
 
-    ctx.components = mergeComponentsObjects(ctx.components, components);
+    ctx.components = mergeComponentsObjects(
+      ctx.components,
+      components,
+      unreferencedComponents,
+    );
     setSpecComponents(routeSpecs, [components]);
 
     registerSchemaPath(
@@ -301,11 +309,12 @@ async function getSpec(
       components = mergeComponentsObjects(components, resolved.components);
     }
 
-    return { schema: tmp, components };
+    return { schema: tmp, components, unreferencedComponents: undefined };
   }
 
   const result = await middlewareHandler.toOpenAPISchema();
   liftSchemaDefs(result);
+  let unreferencedComponents: OpenAPIV3_1.ComponentsObject | undefined;
   const docs: DescribeRouteOptions & Record<string, unknown> = {
     ...defaultOptions,
     // Mark this operation as validator-derived so a default 400 validation
@@ -381,6 +390,11 @@ async function getSpec(
           // A reference cannot name multiple parameters or different locations.
           // Inline conflicting parameters without overwriting an earlier ref.
           parameters = generatedParameters;
+
+          // The schema is still published when something else refers to it,
+          // but this operation doesn't, so it doesn't count as brought in by it.
+          unreferencedComponents = { schemas: { [pos]: schema } };
+          delete result.components.schemas[pos];
         }
       }
     } else {
@@ -394,7 +408,11 @@ async function getSpec(
     docs.parameters = parameters;
   }
 
-  return { schema: docs, components: result.components };
+  return {
+    schema: docs,
+    components: result.components,
+    unreferencedComponents,
+  };
 }
 
 function generateParameters(
