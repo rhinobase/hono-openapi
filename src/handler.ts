@@ -543,11 +543,12 @@ type ParameterProperties = Map<string, ParameterProperty>;
 // described more than once gets an `allOf`, required when any part requires it.
 const intersect = (
   entries: [string, ParameterProperty][],
-): ParameterProperties =>
-  entries.reduce((properties, [key, property]) => {
+): ParameterProperties => {
+  const properties: ParameterProperties = new Map();
+  for (const [key, property] of entries) {
     const existing = properties.get(key);
 
-    return new Map(properties).set(
+    properties.set(
       key,
       existing
         ? {
@@ -556,7 +557,9 @@ const intersect = (
           }
         : property,
     );
-  }, new Map<string, ParameterProperty>());
+  }
+  return properties;
+};
 
 // A union accepts the properties of any of its variants, so it documents
 // each of them, required only when every variant requires it.
@@ -813,6 +816,36 @@ const isDiscriminator = (
   typeof value === "object" &&
   typeof (value as { propertyName?: unknown }).propertyName === "string";
 
+// These fields hold payload data, whose `$ref` keys aren't document references.
+const LITERAL_FIELDS = new Set([
+  "example",
+  "examples",
+  "default",
+  "enum",
+  "const",
+  "value",
+]);
+
+// Keys inside these maps are names, even when they're e.g. `example` or `default`.
+const REFERENCE_MAPS = new Set([
+  "schemas",
+  "parameters",
+  "responses",
+  "requestBodies",
+  "headers",
+  "content",
+  "encoding",
+  "links",
+  "callbacks",
+  "pathItems",
+  "properties",
+  "patternProperties",
+  "$defs",
+  "definitions",
+  "dependentSchemas",
+  "dependencies",
+]);
+
 /**
  * `value` with every reference to a schema component that `rename` gives a
  * new name pointing at that name instead: each `$ref`, and each target of a
@@ -822,6 +855,7 @@ const isDiscriminator = (
 const renameSchemaRefs = <T>(
   value: T,
   rename: (name: string) => string | undefined,
+  isMap = false,
 ): T => {
   if (Array.isArray(value)) {
     return value.map((item) => renameSchemaRefs(item, rename)) as T;
@@ -832,6 +866,12 @@ const renameSchemaRefs = <T>(
 
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => {
+      if (isMap) {
+        return [key, renameSchemaRefs(item, rename)];
+      }
+      if (LITERAL_FIELDS.has(key) || key.startsWith("x-")) {
+        return [key, item];
+      }
       if (key === "$ref" && typeof item === "string") {
         return [key, renameRef(item, rename)];
       }
@@ -852,7 +892,7 @@ const renameSchemaRefs = <T>(
         ];
       }
 
-      return [key, renameSchemaRefs(item, rename)];
+      return [key, renameSchemaRefs(item, rename, REFERENCE_MAPS.has(key))];
     }),
   ) as T;
 };
@@ -866,7 +906,7 @@ const markAsOutput = (
     Object.hasOwn(schemas, name) ? `${name}${OUTPUT_MARK}` : undefined;
 
   return {
-    responses: renameSchemaRefs(responses, mark),
+    responses: renameSchemaRefs(responses, mark, true),
     components: {
       ...components,
       ...(components.schemas && {
@@ -915,9 +955,12 @@ const canonical = (value: unknown) =>
 /**
  * The first of `name`, `name2`, `name3` and so on that isn't in `used`.
  */
-const freeName = (name: string, used: ReadonlySet<string>, n = 1): string => {
-  const candidate = n === 1 ? name : `${name}${n}`;
-  return used.has(candidate) ? freeName(name, used, n + 1) : candidate;
+const freeName = (name: string, used: ReadonlySet<string>): string => {
+  let candidate = name;
+  for (let suffix = 2; used.has(candidate); suffix++) {
+    candidate = `${name}${suffix}`;
+  }
+  return candidate;
 };
 
 /**
@@ -927,14 +970,15 @@ const freeName = (name: string, used: ReadonlySet<string>, n = 1): string => {
 const assignOutputNames = (
   outputs: string[],
   taken: Iterable<string>,
-): [string, string][] => {
-  if (outputs.length === 0) {
-    return [];
+): Map<string, string> => {
+  const used = new Set(taken);
+  const names = new Map<string, string>();
+  for (const output of outputs) {
+    const name = freeName(`${inputName(output)}Output`, used);
+    used.add(name);
+    names.set(output, name);
   }
-
-  const [output, ...rest] = outputs;
-  const name = freeName(`${inputName(output)}Output`, new Set(taken));
-  return [[output, name], ...assignOutputNames(rest, [...taken, name])];
+  return names;
 };
 
 /**
@@ -957,7 +1001,7 @@ const splitOutputComponents = (
   components: OpenAPIV3_1.ComponentsObject,
   paths: OpenAPIV3_1.PathsObject,
 ) => {
-  const schemas = components.schemas ?? {};
+  const { schemas = {}, ...otherComponents } = components;
   const outputs = Object.keys(schemas).filter(isOutput);
 
   if (outputs.length === 0) {
@@ -966,43 +1010,53 @@ const splitOutputComponents = (
 
   const asInput = (name: string) =>
     isOutput(name) ? inputName(name) : undefined;
-  const shared = outputs.filter((output) =>
-    Object.hasOwn(schemas, inputName(output)),
+  const shared = new Set(
+    outputs.filter((output) => Object.hasOwn(schemas, inputName(output))),
   );
-  const refersTo = (output: string, split: ReadonlySet<string>) =>
-    componentRefs(schemas[output]).some((ref) =>
-      split.has(decodeName(ref.slice("schemas/".length))),
-    );
-  const spread = (split: ReadonlySet<string>): ReadonlySet<string> => {
-    const next = shared.filter(
-      (output) => split.has(output) || refersTo(output, split),
-    );
-    return next.length === split.size ? split : spread(new Set(next));
-  };
-  const split = spread(
-    new Set(
-      shared.filter(
-        (output) =>
-          canonical(renameSchemaRefs(schemas[output], asInput)) !==
-          canonical(schemas[inputName(output)]),
-      ),
+  const outputRefs = new Map(
+    [...shared].map(
+      (output) =>
+        [
+          output,
+          componentRefs(schemas[output]).map((ref) =>
+            decodeName(ref.slice("schemas/".length)),
+          ),
+        ] as const,
     ),
   );
+  const refersTo = (output: string, split: ReadonlySet<string>) =>
+    outputRefs.get(output)?.some((name) => split.has(name));
+  const split = new Set(
+    [...shared].filter(
+      (output) =>
+        canonical(renameSchemaRefs(schemas[output], asInput)) !==
+        canonical(schemas[inputName(output)]),
+    ),
+  );
+  let previousSize: number;
+  do {
+    previousSize = split.size;
+    for (const output of shared) {
+      if (!split.has(output) && refersTo(output, split)) {
+        split.add(output);
+      }
+    }
+  } while (split.size !== previousSize);
 
   // Names already taken: request components, and response components no
   // request shares, which keep their own name.
   const taken = [
     ...Object.keys(schemas).filter((name) => !isOutput(name)),
-    ...outputs.filter((output) => !shared.includes(output)).map(inputName),
+    ...outputs.filter((output) => !shared.has(output)).map(inputName),
   ];
-  const outputNames = new Map(assignOutputNames([...split].toSorted(), taken));
+  const outputNames = assignOutputNames([...split].toSorted(), taken);
 
   const rename = (name: string) =>
     isOutput(name) ? (outputNames.get(name) ?? inputName(name)) : undefined;
 
   return {
     components: {
-      ...renameSchemaRefs(components, rename),
+      ...renameSchemaRefs(otherComponents, rename),
       schemas: Object.fromEntries(
         Object.entries(schemas).flatMap(([name, schema]) => {
           const renamed = renameSchemaRefs(schema, rename);
@@ -1022,6 +1076,6 @@ const splitOutputComponents = (
         }),
       ),
     } as OpenAPIV3_1.ComponentsObject,
-    paths: renameSchemaRefs(paths, rename),
+    paths: renameSchemaRefs(paths, rename, true),
   };
 };

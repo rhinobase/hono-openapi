@@ -413,11 +413,11 @@ export const uniqueOperationIds = (paths: OpenAPIV3_1.PathsObject) => {
 const withFreeSuffix = (
   operationId: string,
   isUsed: (id: string) => boolean,
-  suffix = 2,
-): string =>
-  isUsed(`${operationId}${suffix}`)
-    ? withFreeSuffix(operationId, isUsed, suffix + 1)
-    : `${operationId}${suffix}`;
+): string => {
+  let suffix = 2;
+  while (isUsed(`${operationId}${suffix}`)) suffix++;
+  return `${operationId}${suffix}`;
+};
 
 /**
  * The parameter component a local `$ref` points at, with its name, looked up
