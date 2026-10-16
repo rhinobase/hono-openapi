@@ -648,9 +648,12 @@ const resolveHeaders = async (
 ) => {
   const resolved = await Promise.all(
     Object.entries(headers).map(async ([name, header]) => {
+      // A boolean schema (`true`, `false`) is valid JSON Schema and can't hold a
+      // resolver, so only an object is looked into.
       if (
         "$ref" in header ||
-        !header.schema ||
+        typeof header.schema !== "object" ||
+        header.schema === null ||
         !("toOpenAPISchema" in header.schema)
       ) {
         return { components: undefined, entry: [name, header] };

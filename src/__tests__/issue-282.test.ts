@@ -170,6 +170,66 @@ describe("resolver() in header schemas", () => {
     });
   });
 
+  it("leaves a header with a boolean schema as it is", async () => {
+    // `true` and `false` are valid JSON Schema, which the OpenAPI types don't describe.
+    const headers = {
+      "X-Anything": { schema: true },
+      "X-Nothing": { schema: false },
+    } as never;
+    const app = new Hono().post(
+      "/notes",
+      describeRoute({
+        responses: {
+          200: {
+            content: {
+              "multipart/mixed": {
+                encoding: { part: { headers } },
+                schema: resolver(z.object({ part: z.string() })),
+              },
+            },
+            description: "OK",
+            headers,
+          },
+        },
+      }),
+      (c) => c.json({}),
+    );
+
+    const { operation } = await operationOf(app);
+
+    expect(operation?.responses?.[200]).toMatchObject({
+      content: {
+        "multipart/mixed": { encoding: { part: { headers } } },
+      },
+      headers,
+    });
+  });
+
+  it("leaves an encoding header with a boolean schema in a request body as it is", async () => {
+    const headers = { "X-Anything": { schema: true } } as never;
+    const app = new Hono().post(
+      "/notes",
+      describeRoute({
+        requestBody: {
+          content: {
+            "multipart/form-data": {
+              encoding: { file: { headers } },
+              schema: resolver(z.object({ file: z.string() })),
+            },
+          },
+        },
+        responses: { 204: { description: "No Content" } },
+      }),
+      (c) => c.body(null, 204),
+    );
+
+    const { operation } = await operationOf(app);
+
+    expect(operation?.requestBody).toMatchObject({
+      content: { "multipart/form-data": { encoding: { file: { headers } } } },
+    });
+  });
+
   it("converts a header of a response documented as a component", async () => {
     const specs = await generateSpecs(new Hono(), {
       documentation: {
