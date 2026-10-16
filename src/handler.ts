@@ -452,7 +452,9 @@ const referencedSchema = (
   schemas?: OpenAPIV3_1.ComponentsObject["schemas"],
 ) => {
   const prefix = "#/components/schemas/";
-  if (!$ref.startsWith(prefix)) return undefined;
+  if (!$ref.startsWith(prefix)) {
+    return undefined;
+  }
 
   const name = $ref
     .slice(prefix.length)
