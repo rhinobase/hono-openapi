@@ -101,7 +101,9 @@ const pathParameterNames = (path: string) =>
  */
 export const expandOptionalParameters = (route: RouterRoute) => {
   const paths = checkOptionalParameter(route.path);
-  if (!paths) return [{ route, omitted: undefined }];
+  if (!paths) {
+    return [{ route, omitted: undefined }];
+  }
 
   const names = pathParameterNames(route.path);
 
@@ -123,7 +125,9 @@ export const withOmittedParameters = (
   specs: RegisterSchemaPathOptions["specs"],
   omitted: string[] | undefined,
 ): RegisterSchemaPathOptions["specs"] => {
-  if (!omitted || !specs) return specs;
+  if (!omitted || !specs) {
+    return specs;
+  }
 
   const expanded = {
     ...specs,
@@ -313,7 +317,9 @@ function mergeSpecs(
   }
 
   setSpecComponents(merged, specs.flatMap(getSpecComponents));
-  if (specs.some(isExpandedOperation)) expandedOperations.add(merged);
+  if (specs.some(isExpandedOperation)) {
+    expandedOperations.add(merged);
+  }
 
   return merged;
 }
@@ -419,7 +425,9 @@ const parameterComponent = (
   ctx: SpecContext,
 ) => {
   const prefix = "#/components/parameters/";
-  if (!ref.$ref.startsWith(prefix)) return undefined;
+  if (!ref.$ref.startsWith(prefix)) {
+    return undefined;
+  }
 
   const name = ref.$ref.slice(prefix.length);
   const parameter = ctx.components.parameters?.[name];
@@ -491,9 +499,15 @@ export function removeExcludedPaths(
             const component =
               "$ref" in x ? parameterComponent(x, ctx) : undefined;
             const parameter = component?.parameter ?? x;
-            if ("$ref" in parameter || parameter.in !== "path") return [x];
-            if (!names.includes(parameter.name)) return [];
-            if (!component) return [{ ...parameter, required: true }];
+            if ("$ref" in parameter || parameter.in !== "path") {
+              return [x];
+            }
+            if (!names.includes(parameter.name)) {
+              return [];
+            }
+            if (!component) {
+              return [{ ...parameter, required: true }];
+            }
 
             // OpenAPI requires every path parameter to be required, so the
             // component is marked required for all paths that refer to it.
