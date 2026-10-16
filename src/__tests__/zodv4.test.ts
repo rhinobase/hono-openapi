@@ -10,6 +10,149 @@ import {
 } from "../middlewares.js";
 
 describe("zod v4", () => {
+  it("preserves literal values when response components are renamed", async () => {
+    const example = {
+      $ref: "#/components/schemas/Note",
+      pinned: false,
+    };
+    const Note = z
+      .object({ $ref: z.string(), pinned: z.boolean().default(false) })
+      .meta({
+        ref: "Note",
+        example,
+        examples: [example],
+        default: example,
+        enum: [example],
+        const: example,
+        "x-payload": example,
+      });
+    const media = {
+      schema: resolver(Note),
+      example,
+      examples: { sample: { value: example } },
+      "x-payload": example,
+    };
+    const app = new Hono().post(
+      "/notes",
+      describeRoute({
+        responses: {
+          200: { description: "OK", content: { "application/json": media } },
+        },
+      }),
+      validator("json", Note),
+      (c) => c.json(c.req.valid("json")),
+    );
+
+    const specs = await generateSpecs(app);
+    const content =
+      specs.paths["/notes"]?.post?.responses?.[200]?.content?.[
+        "application/json"
+      ];
+
+    expect(content).toMatchObject({
+      schema: { $ref: "#/components/schemas/NoteOutput" },
+      example,
+      examples: { sample: { value: example } },
+      "x-payload": example,
+    });
+    expect(specs.components?.schemas?.NoteOutput).toMatchObject({
+      example,
+      examples: [example],
+      default: example,
+      enum: [example],
+      const: example,
+      "x-payload": example,
+    });
+  });
+
+  it("renames references under property and component names that match literal keywords", async () => {
+    const Field = z.string().meta({ ref: "example" });
+    const Note = z
+      .object({
+        example: Field,
+        examples: Field,
+        default: Field,
+        enum: Field,
+        const: Field,
+        value: Field,
+        "x-field": Field,
+        pinned: z.boolean().default(false),
+      })
+      .meta({ ref: "Note" });
+    const app = new Hono().post(
+      "/notes",
+      describeRoute({
+        responses: {
+          default: {
+            description: "OK",
+            content: { "application/json": { schema: resolver(Note) } },
+          },
+        },
+      }),
+      validator("json", Note),
+      (c) => c.json(c.req.valid("json")),
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(
+      specs.paths["/notes"]?.post?.responses?.default?.content?.[
+        "application/json"
+      ]?.schema,
+    ).toEqual({ $ref: "#/components/schemas/NoteOutput" });
+    expect(specs.components?.schemas?.NoteOutput?.properties).toMatchObject({
+      example: { $ref: "#/components/schemas/example" },
+      examples: { $ref: "#/components/schemas/example" },
+      default: { $ref: "#/components/schemas/example" },
+      enum: { $ref: "#/components/schemas/example" },
+      const: { $ref: "#/components/schemas/example" },
+      value: { $ref: "#/components/schemas/example" },
+      "x-field": { $ref: "#/components/schemas/example" },
+    });
+    expect(specs.components?.schemas?.example).toEqual({ type: "string" });
+  });
+
+  it("chooses the next free name for a split response component", async () => {
+    const Note = z
+      .object({ pinned: z.boolean().default(false) })
+      .meta({ ref: "Note" });
+    const app = new Hono().post(
+      "/notes",
+      describeRoute({
+        responses: {
+          200: {
+            description: "OK",
+            content: { "application/json": { schema: resolver(Note) } },
+          },
+        },
+      }),
+      validator("json", Note),
+      (c) => c.json(c.req.valid("json")),
+    );
+
+    const specs = await generateSpecs(app, {
+      documentation: {
+        components: {
+          schemas: {
+            NoteOutput: { type: "string" },
+            NoteOutput2: { type: "number" },
+          },
+        },
+      },
+    });
+
+    expect(
+      specs.paths["/notes"]?.post?.responses?.[200]?.content?.[
+        "application/json"
+      ]?.schema,
+    ).toEqual({ $ref: "#/components/schemas/NoteOutput3" });
+    expect(specs.components?.schemas?.NoteOutput).toEqual({ type: "string" });
+    expect(specs.components?.schemas?.NoteOutput2).toEqual({ type: "number" });
+    expect(specs.components?.schemas?.NoteOutput3?.required).toEqual([
+      "pinned",
+    ]);
+  });
+
   it("basic", async () => {
     const app = new Hono().get(
       "/",

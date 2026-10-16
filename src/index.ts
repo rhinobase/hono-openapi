@@ -7,4 +7,15 @@ export {
   validator,
 } from "./middlewares.js";
 export type * from "./types.js";
-export * from "./utils.js";
+export {
+  ALLOWED_METHODS,
+  type AllowedMethods,
+  clearSpecsContext,
+  documentedComponents,
+  getSpecComponents,
+  registerSchemaPath,
+  removeExcludedPaths,
+  setSpecComponents,
+  uniqueSymbol,
+  VALIDATION_MARKER,
+} from "./utils.js";
