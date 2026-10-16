@@ -143,6 +143,7 @@ export function clearSpecsContext() {
 function mergeRequestBodies(
   previous: OpenAPIV3_1.OperationObject["requestBody"],
   current: OpenAPIV3_1.OperationObject["requestBody"],
+  fromValidator = false,
 ) {
   if (!previous || !current || "$ref" in previous || "$ref" in current) {
     return current;
@@ -151,6 +152,10 @@ function mergeRequestBodies(
   return {
     ...previous,
     ...current,
+    // A validator only infers `required`, so a value the route described wins.
+    ...(fromValidator && previous.required !== undefined
+      ? { required: previous.required }
+      : {}),
     content: {
       ...previous.content,
       ...current.content,
@@ -194,6 +199,7 @@ function mergeSpecs(
               prev.requestBody = mergeRequestBodies(
                 prev.requestBody,
                 value as OpenAPIV3_1.OperationObject["requestBody"],
+                (spec as Record<string, unknown>)[VALIDATION_MARKER] === true,
               );
             } else {
               prev[key] = {
