@@ -581,9 +581,9 @@ export function removeExcludedPaths(
         }
       }
 
-      if (!schema.responses) {
+      if (!schema.responses || Object.keys(schema.responses).length === 0) {
         schema.responses = {
-          200: {},
+          200: { description: "Successful response" },
         };
       }
 

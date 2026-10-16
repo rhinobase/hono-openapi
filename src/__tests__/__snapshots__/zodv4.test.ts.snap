@@ -125,6 +125,9 @@ exports[`zod v4 > with global validator 1`] = `
           },
         ],
         "responses": {
+          "200": {
+            "description": "Successful response",
+          },
           "400": {
             "content": {
               "application/json": {
