@@ -426,53 +426,104 @@ function generateParameters(
   return parameters;
 }
 
-function collectParameterProperties(
+type SchemaOrReference = OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.SchemaObject;
+type ParameterProperty = { required: boolean; schema: SchemaOrReference };
+type ParameterProperties = Map<string, ParameterProperty>;
+
+// An intersection needs every description of a field it combines, so a field
+// described more than once gets an `allOf`, required when any part requires it.
+const intersect = (
+  entries: [string, ParameterProperty][],
+): ParameterProperties =>
+  entries.reduce((properties, [key, property]) => {
+    const existing = properties.get(key);
+
+    return new Map(properties).set(
+      key,
+      existing
+        ? {
+            required: existing.required || property.required,
+            schema: { allOf: [existing.schema, property.schema] },
+          }
+        : property,
+    );
+  }, new Map<string, ParameterProperty>());
+
+// A union accepts the properties of any of its variants, so it documents
+// each of them, required only when every variant requires it.
+const unite = (variants: ParameterProperties[]): ParameterProperties => {
+  const keys = new Set(variants.flatMap((variant) => [...variant.keys()]));
+
+  return new Map(
+    [...keys].map((key) => {
+      const found = variants.map((variant) => variant.get(key));
+      const [first, ...others] = new Map(
+        found
+          .filter((property) => property !== undefined)
+          .map(({ schema }) => [JSON.stringify(schema), schema]),
+      ).values();
+
+      return [
+        key,
+        {
+          required: found.every((property) => property?.required),
+          schema: others.length ? { anyOf: [first, ...others] } : first,
+        },
+      ];
+    }),
+  );
+};
+
+const collectParameterProperties = (
   schema: OpenAPIV3_1.SchemaObject,
   schemas?: OpenAPIV3_1.ComponentsObject["schemas"],
-) {
-  const properties = new Map<
-    string,
-    {
-      schema: OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.SchemaObject;
-      required: boolean;
-    }
-  >();
+): ParameterProperties => {
+  // `resolving` holds the components being expanded, so a schema that refers
+  // back to itself stops instead of recursing forever.
+  const collectMember = (
+    member: SchemaOrReference,
+    resolving: ReadonlySet<string>,
+  ): ParameterProperties => {
+    if (!("$ref" in member)) return collect(member, resolving);
 
-  const resolvingRefs = new Set<string>();
-  const collect = (current: OpenAPIV3_1.SchemaObject) => {
-    for (const [key, value] of Object.entries(current.properties ?? {})) {
-      const existing = properties.get(key);
-      properties.set(key, {
-        schema: existing ? { allOf: [existing.schema, value] } : value,
-        required:
-          Boolean(current.required?.includes(key)) || existing?.required,
-      });
-    }
+    const prefix = "#/components/schemas/";
+    if (!member.$ref.startsWith(prefix)) return new Map();
 
-    for (const member of current.allOf ?? []) {
-      if ("$ref" in member) {
-        const prefix = "#/components/schemas/";
-        if (!member.$ref.startsWith(prefix)) continue;
+    const name = member.$ref
+      .slice(prefix.length)
+      .replaceAll("~1", "/")
+      .replaceAll("~0", "~");
+    const referencedSchema = schemas?.[name];
+    if (!referencedSchema || resolving.has(name)) return new Map();
 
-        const name = member.$ref
-          .slice(prefix.length)
-          .replaceAll("~1", "/")
-          .replaceAll("~0", "~");
-        const referencedSchema = schemas?.[name];
-        if (referencedSchema && !resolvingRefs.has(name)) {
-          resolvingRefs.add(name);
-          collect(referencedSchema);
-          resolvingRefs.delete(name);
-        }
-      } else {
-        collect(member);
-      }
-    }
+    return collect(referencedSchema, new Set(resolving).add(name));
   };
 
-  collect(schema);
-  return properties;
-}
+  const collect = (
+    current: OpenAPIV3_1.SchemaObject,
+    resolving: ReadonlySet<string>,
+  ): ParameterProperties =>
+    intersect([
+      ...Object.entries(current.properties ?? {}).map(
+        ([key, value]): [string, ParameterProperty] => [
+          key,
+          { required: Boolean(current.required?.includes(key)), schema: value },
+        ],
+      ),
+      ...(current.allOf ?? []).flatMap((member) => [
+        ...collectMember(member, resolving),
+      ]),
+      ...[current.anyOf, current.oneOf]
+        .filter((variants) => variants?.length)
+        .flatMap((variants = []) => [
+          ...unite(
+            variants.map((variant) => collectMember(variant, resolving)),
+          ),
+        ]),
+    ]);
+
+  return collect(schema, new Set());
+};
 
 /**
  * Resolve any resolver() objects in a responses map, returning the
