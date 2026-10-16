@@ -154,4 +154,30 @@ describe("optional path parameters", () => {
     ).toEqual({ $ref: "#/components/schemas/Note" });
     expect(specs.components?.schemas?.Note).toBeDefined();
   });
+
+  it("keeps a documented path parameter only on the path that has it", async () => {
+    const NoteId = {
+      in: "path",
+      name: "id",
+      required: true,
+      schema: { type: "string" },
+    } as const;
+    const app = new Hono().get(
+      "/notes/:id?",
+      describeRoute({
+        parameters: [{ $ref: "#/components/parameters/NoteId" }],
+      }),
+      (c) => c.json({ id: c.req.param("id") ?? null }),
+    );
+
+    const specs = await generateSpecs(app, {
+      documentation: { components: { parameters: { NoteId } } },
+    });
+
+    expect(specs.paths["/notes"]?.get?.parameters ?? []).toEqual([]);
+    expect(specs.paths["/notes/{id}"]?.get?.parameters).toEqual([
+      { $ref: "#/components/parameters/NoteId" },
+    ]);
+    expect(specs.components?.parameters?.NoteId).toEqual(NoteId);
+  });
 });

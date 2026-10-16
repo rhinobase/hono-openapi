@@ -419,7 +419,12 @@ const withFreeSuffix = (
     ? withFreeSuffix(operationId, isUsed, suffix + 1)
     : `${operationId}${suffix}`;
 
-/** The parameter component a local `$ref` points at, with its name. */
+/**
+ * The parameter component a local `$ref` points at, with its name, looked up
+ * among the generated components first and then the ones `documentation`
+ * supplies. `generated` tells the two apart, since only a generated component
+ * may be changed.
+ */
 const parameterComponent = (
   ref: OpenAPIV3_1.ReferenceObject,
   ctx: SpecContext,
@@ -430,8 +435,13 @@ const parameterComponent = (
   }
 
   const name = ref.$ref.slice(prefix.length);
-  const parameter = ctx.components.parameters?.[name];
-  return parameter && { name, parameter };
+  const generated = ctx.components.parameters?.[name];
+  if (generated) {
+    return { generated: true, name, parameter: generated };
+  }
+
+  const documented = ctx.options.documentation?.components?.parameters?.[name];
+  return documented && { generated: false, name, parameter: documented };
 };
 
 export function removeExcludedPaths(
@@ -509,9 +519,11 @@ export function removeExcludedPaths(
               return [{ ...parameter, required: true }];
             }
 
-            // OpenAPI requires every path parameter to be required, so the
-            // component is marked required for all paths that refer to it.
-            if (!parameter.required) {
+            // OpenAPI requires every path parameter to be required, so a
+            // generated component is marked required for all paths that refer
+            // to it. A component from `documentation` is the user's own and is
+            // published as they wrote it.
+            if (component.generated && !parameter.required) {
               ctx.components.parameters = {
                 ...ctx.components.parameters,
                 [component.name]: { ...parameter, required: true },
@@ -544,14 +556,11 @@ export function removeExcludedPaths(
           const index = schema.parameters.findIndex(
             (x: OpenAPIV3_1.ParameterObject | OpenAPIV3_1.ReferenceObject) => {
               if ("$ref" in x) {
-                const pos = x.$ref.split("/").pop();
-                if (pos) {
-                  const param = ctx.components.parameters?.[pos];
+                const param = parameterComponent(x, ctx)?.parameter;
 
-                  // TODO: Need to figure out a way to handle this better
-                  if (param && !("$ref" in param)) {
-                    return param.in === "path" && param.name === paramName;
-                  }
+                // TODO: Need to figure out a way to handle this better
+                if (param && !("$ref" in param)) {
+                  return param.in === "path" && param.name === paramName;
                 }
 
                 return false;
