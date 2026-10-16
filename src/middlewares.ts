@@ -26,6 +26,7 @@ import type {
   DescribeRouteOptions,
   PromiseOr,
   ResolverReturnType,
+  SchemaDirection,
 } from "./types";
 import { uniqueSymbol } from "./utils";
 
@@ -89,8 +90,11 @@ export function resolver<Schema extends StandardSchemaV1>(
       toJsonSchema(schema, { ...userDefinedOptions, ...customOptions }) as
         | JSONSchema7
         | Promise<JSONSchema7>,
-    toOpenAPISchema: (customOptions?: Record<string, unknown>) =>
-      toOpenAPISchema(schema, {
+    toOpenAPISchema: (
+      customOptions?: Record<string, unknown>,
+      direction?: SchemaDirection,
+    ) => {
+      const context: Record<string, unknown> = {
         ...userDefinedOptions,
         ...customOptions,
         ...(vendor === "arktype"
@@ -99,9 +103,46 @@ export function resolver<Schema extends StandardSchemaV1>(
         ...(vendor === "zod"
           ? injectZodV4DateOverride(schema, userDefinedOptions, customOptions)
           : undefined),
-      }),
+      };
+
+      const directionOptions =
+        direction === "output" ? outputOptions(schema) : undefined;
+
+      return toOpenAPISchema(
+        schema,
+        directionOptions
+          ? {
+              ...context,
+              // Options the caller passed win over this default
+              options: {
+                ...directionOptions,
+                ...(context.options as Record<string, unknown> | undefined),
+              },
+            }
+          : context,
+      );
+    },
   };
 }
+
+/**
+ * The vendor options that convert a schema as what it produces, for the
+ * vendors whose converters support it. `@standard-community/standard-openapi`
+ * converts Zod schemas as input by default.
+ */
+const outputOptions = (
+  schema: StandardSchemaV1,
+): Record<string, unknown> | undefined => {
+  switch (schema["~standard"].vendor) {
+    case "zod":
+      // Zod v4 converts through `z.toJSONSchema()`, Zod v3 through `zod-openapi`
+      return "_zod" in schema ? { io: "output" } : { schemaType: "output" };
+    case "valibot":
+      return { typeMode: "output" };
+    default:
+      return undefined;
+  }
+};
 
 /**
  * Build the `options` override for an ArkType schema's `toOpenAPISchema`

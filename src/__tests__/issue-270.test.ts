@@ -87,7 +87,7 @@ describe("issue-270", () => {
   it("keeps one component when the request and response shapes are the same", async () => {
     const app = new Hono().post(
       "/notes",
-      returns(Note),
+      returns(Note, { options: { io: "input" } }),
       validator("json", Note),
       (c) => c.json(Note.parse(c.req.valid("json"))),
     );
