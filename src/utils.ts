@@ -80,6 +80,13 @@ const generateOperationId = (route: RouterRoute) => {
   return operationId;
 };
 
+/**
+ * The operation ID each operation got from its method and path, for the
+ * operations nothing else gave an ID. `uniqueOperationIds` may rename these,
+ * but never an ID set through `describeRoute` or `defaultOptions`.
+ */
+const generatedOperationIds = new WeakMap<object, string>();
+
 type Parameter = OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.ParameterObject;
 
 const paramKey = (param: Parameter) =>
@@ -167,12 +174,28 @@ function mergeSpecs(
   route: RouterRoute,
   ...specs: RegisterSchemaPathOptions["specs"][]
 ) {
+  const generatedOperationId = generateOperationId(route);
+  // An ID a spec only got from its own route's path isn't one to carry over
+  // to another route, so only the others count as set.
+  const hasOperationId = specs.some(
+    (spec) =>
+      spec?.operationId != null &&
+      generatedOperationIds.get(spec) !== spec.operationId,
+  );
+
   const merged = specs.reduce<OpenAPIV3_1.OperationObject>(
     (prev, spec) => {
       if (!spec || !prev) return prev;
 
       for (const [key, value] of Object.entries(spec)) {
         if (value == null) continue;
+
+        if (
+          key === "operationId" &&
+          generatedOperationIds.get(spec) === value
+        ) {
+          continue;
+        }
 
         if (
           key in prev &&
@@ -216,9 +239,13 @@ function mergeSpecs(
       return prev;
     },
     {
-      operationId: generateOperationId(route),
+      operationId: generatedOperationId,
     },
   );
+
+  if (!hasOperationId) {
+    generatedOperationIds.set(merged, generatedOperationId);
+  }
 
   setSpecComponents(merged, specs.flatMap(getSpecComponents));
 
@@ -264,6 +291,61 @@ export function registerSchemaPath(
     }
   }
 }
+
+/**
+ * Gives every operation whose ID was generated from its path an ID no other
+ * operation in `paths` has. Different paths can generate the same ID, such as
+ * `/notes/{id}` and `/notes/by-id`. The first operation keeps it, in route
+ * order, and later ones get a numeric suffix (`getNotesById2`), so an ID
+ * that's unique already never changes. IDs set explicitly are left as they
+ * are, and generated IDs avoid them.
+ */
+export const uniqueOperationIds = (paths: OpenAPIV3_1.PathsObject) => {
+  // Only the HTTP method slots of a Path Item hold operations; its other keys
+  // (`parameters`, `servers`, `summary`, …) don't, so they're not read.
+  const methods = ALLOWED_METHODS.map(
+    (method) => method.toLowerCase() as OpenAPIV3_1.HttpMethods,
+  );
+  const operations = Object.values(paths).flatMap((item) =>
+    methods.flatMap((method) => {
+      const operation = item?.[method];
+      return typeof operation?.operationId === "string" ? [operation] : [];
+    }),
+  );
+  const isGenerated = (operation: OpenAPIV3_1.OperationObject) =>
+    generatedOperationIds.get(operation) === operation.operationId;
+
+  // Every ID in use before renaming, so a suffixed ID doesn't take one that a
+  // later operation has already.
+  const reserved = new Set(operations.map(({ operationId }) => operationId));
+  const explicit = operations.filter((operation) => !isGenerated(operation));
+
+  operations.filter(isGenerated).reduce(
+    (taken, operation) => {
+      const operationId = operation.operationId as string;
+
+      if (taken.has(operationId)) {
+        operation.operationId = withFreeSuffix(
+          operationId,
+          (id) => taken.has(id) || reserved.has(id),
+        );
+      }
+
+      return taken.add(operation.operationId as string);
+    },
+    new Set(explicit.map(({ operationId }) => operationId)),
+  );
+};
+
+/** `operationId` with the lowest numeric suffix from 2 up that isn't used. */
+const withFreeSuffix = (
+  operationId: string,
+  isUsed: (id: string) => boolean,
+  suffix = 2,
+): string =>
+  isUsed(`${operationId}${suffix}`)
+    ? withFreeSuffix(operationId, isUsed, suffix + 1)
+    : `${operationId}${suffix}`;
 
 export function removeExcludedPaths(
   paths: OpenAPIV3_1.PathsObject,
