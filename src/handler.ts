@@ -196,6 +196,10 @@ async function generatePaths<
   // Conversion awaits vendor adapters, so concurrent generations must not
   // share middleware metadata while traversing their routes.
   const pathContext = new Map<string, RegisterSchemaPathOptions["specs"]>();
+  // Each middleware of a route documents the same operation, and a later one's
+  // spec is merged over the earlier ones'. The defaults go in once, under the
+  // first, so they can't override what an earlier `describeRoute` set.
+  const defaulted = new Set<string>();
 
   for (const route of hono.routes) {
     const middlewareHandler = findTargetHandler(route.handler)[uniqueSymbol] as
@@ -235,9 +239,12 @@ async function generatePaths<
       }
     }
 
-    const defaultOptionsForThisMethod = ctx.options.defaultOptions?.[
-      routeMethod
-    ] && { ...ctx.options.defaultOptions[routeMethod] };
+    const operation = `${routeMethod} ${route.path}`;
+    const defaultOptionsForThisMethod = !defaulted.has(operation) &&
+      ctx.options.defaultOptions?.[routeMethod] && {
+        ...ctx.options.defaultOptions[routeMethod],
+      };
+    defaulted.add(operation);
 
     const {
       schema: routeSpecs,
