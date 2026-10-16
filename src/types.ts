@@ -31,12 +31,41 @@ export type HandlerUniqueProperty =
     };
 
 /**
- * A media type object that accepts resolver() output in addition to standard schema types.
+ * A header object that accepts resolver() output in its schema.
+ */
+type HeaderObjectWithResolver = Omit<OpenAPIV3_1.HeaderObject, "schema"> & {
+  schema?:
+    | OpenAPIV3_1.ReferenceObject
+    | OpenAPIV3_1.SchemaObject
+    | ResolverReturnType;
+};
+
+/**
+ * A headers map that accepts resolver() output in its headers' schemas.
+ */
+export type HeadersWithResolver = {
+  [header: string]: HeaderObjectWithResolver | OpenAPIV3_1.ReferenceObject;
+};
+
+/**
+ * An encoding object whose headers accept resolver() output in their schemas.
+ */
+type EncodingObjectWithResolver = Omit<
+  OpenAPIV3_1.EncodingObject,
+  "headers"
+> & {
+  headers?: HeadersWithResolver;
+};
+
+/**
+ * A media type object that accepts resolver() output in addition to standard schema types,
+ * in its schema and in its encoding's headers.
  */
 type MediaTypeObjectWithResolver = Omit<
   OpenAPIV3_1.MediaTypeObject,
-  "schema"
+  "encoding" | "schema"
 > & {
+  encoding?: { [property: string]: EncodingObjectWithResolver };
   schema?:
     | OpenAPIV3_1.ReferenceObject
     | OpenAPIV3_1.SchemaObject
@@ -51,8 +80,9 @@ export type ContentWithResolver = {
  * A response object that accepts resolver() output in schema positions.
  */
 type ResponseObjectWithResolver =
-  | (Omit<OpenAPIV3_1.ResponseObject, "content"> & {
+  | (Omit<OpenAPIV3_1.ResponseObject, "content" | "headers"> & {
       content?: ContentWithResolver;
+      headers?: HeadersWithResolver;
     })
   | OpenAPIV3_1.ReferenceObject;
 
