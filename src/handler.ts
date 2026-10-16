@@ -15,7 +15,6 @@ import type {
   GenerateSpecOptions,
   HandlerUniqueProperty,
   RegisterSchemaPathOptions,
-  ResolverReturnType,
   ResponsesWithResolver,
   SpecContext,
 } from "./types";
@@ -271,19 +270,39 @@ function getHiddenValue(options: {
 }
 
 /**
- * Whether a body validator rejects a request that has no body. Hono's validator
- * validates `{}` when there is none, so that is what the schema is asked about.
- * A schema that fails to answer is taken to need a body.
+ * Keywords that can make an object schema reject `{}` in ways the schema's own
+ * `required` list doesn't show.
  */
-const rejectsMissingBody = async (
-  middlewareHandler: Pick<ResolverReturnType, "validate">,
+const COMBINING_KEYWORDS = ["allOf", "anyOf", "oneOf", "not", "if"] as const;
+
+/**
+ * Whether a body validator needs a request body, read from the schema it
+ * documents. Hono's validator validates `{}` when no body is sent, so an object
+ * schema without required properties lets a route answer a request without one.
+ * The validator itself is never run: the document is generated without calling
+ * application code, so anything the schema can't show, such as a combination of
+ * schemas, is taken to need a body. A refinement doesn't show in the schema at
+ * all, so a route whose refinement rejects `{}` describes its body as `required`
+ * with `describeRoute`.
+ */
+const needsBody = (
+  schema: OpenAPIV3_1.SchemaObject | OpenAPIV3_1.ReferenceObject,
+  components?: OpenAPIV3_1.ComponentsObject,
 ) => {
-  try {
-    const result = await middlewareHandler.validate({});
-    return result.issues !== undefined;
-  } catch {
-    return true;
-  }
+  const resolved =
+    "$ref" in schema
+      ? components?.schemas?.[schema.$ref.split("/").at(-1) ?? ""]
+      : schema;
+
+  if (!resolved || "$ref" in resolved) return true;
+
+  const types = [resolved.type].flat();
+  return (
+    !types.includes("object") ||
+    COMBINING_KEYWORDS.some((keyword) => keyword in resolved) ||
+    (resolved.required?.length ?? 0) > 0 ||
+    (resolved.minProperties ?? 0) > 0
+  );
 };
 
 async function getSpec(
@@ -349,7 +368,7 @@ async function getSpec(
       !docs.requestBody.content
     ) {
       docs.requestBody = {
-        ...((await rejectsMissingBody(middlewareHandler))
+        ...(needsBody(result.schema, result.components)
           ? { required: true }
           : {}),
         content,
