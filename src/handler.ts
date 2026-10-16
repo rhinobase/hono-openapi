@@ -22,12 +22,14 @@ import {
   ALLOWED_METHODS,
   type AllowedMethods,
   documentedComponents,
+  expandOptionalParameters,
   registerSchemaPath,
   removeExcludedPaths,
   setSpecComponents,
   uniqueOperationIds,
   uniqueSymbol,
   VALIDATION_MARKER,
+  withOmittedParameters,
 } from "./utils";
 
 const DEFAULT_OPTIONS: Partial<GenerateSpecOptions> = {
@@ -197,12 +199,14 @@ async function generatePaths<
     if (!middlewareHandler) {
       // Include empty paths, if enabled
       if (ctx.options.includeEmptyPaths) {
-        registerSchemaPath(
-          {
-            route,
-            paths,
-          },
-          pathContext,
+        expandOptionalParameters(route).forEach((expanded) =>
+          registerSchemaPath(
+            {
+              route: expanded.route,
+              paths,
+            },
+            pathContext,
+          ),
         );
       }
 
@@ -245,13 +249,15 @@ async function generatePaths<
     );
     setSpecComponents(routeSpecs, [components]);
 
-    registerSchemaPath(
-      {
-        route,
-        specs: routeSpecs,
-        paths,
-      },
-      pathContext,
+    expandOptionalParameters(route).forEach((expanded) =>
+      registerSchemaPath(
+        {
+          route: expanded.route,
+          specs: withOmittedParameters(routeSpecs, expanded.omitted),
+          paths,
+        },
+        pathContext,
+      ),
     );
   }
 

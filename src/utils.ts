@@ -1,4 +1,5 @@
 import type { RouterRoute } from "hono/types";
+import { checkOptionalParameter } from "hono/utils/url";
 import type { OpenAPIV3_1 } from "openapi-types";
 import type { RegisterSchemaPathOptions, SpecContext } from "./types";
 
@@ -86,6 +87,49 @@ const generateOperationId = (route: RouterRoute) => {
  * but never an ID set through `describeRoute` or `defaultOptions`.
  */
 const generatedOperationIds = new WeakMap<object, string>();
+
+const pathParameterNames = (path: string) =>
+  path
+    .split("/")
+    .filter((segment) => segment.startsWith(":"))
+    .map((segment) => toOpenAPIPathSegment(segment).slice(1, -1));
+
+/**
+ * Hono serves a route whose path ends in optional parameters (`/notes/:id?`)
+ * with and without them. OpenAPI path parameters are always required, so
+ * each of those paths needs its own path item.
+ */
+export const expandOptionalParameters = (route: RouterRoute) => {
+  const paths = checkOptionalParameter(route.path);
+  if (!paths) return [{ route, omitted: [] as string[] }];
+
+  const names = pathParameterNames(route.path);
+
+  return paths.map((path) => {
+    const kept = pathParameterNames(path);
+    return {
+      route: { ...route, path },
+      omitted: names.filter((name) => !kept.includes(name)),
+    };
+  });
+};
+
+/**
+ * An `operationId` written in `describeRoute` is kept on the path with every
+ * parameter; a path without some of them gets it suffixed with the ones it
+ * leaves out, so the IDs stay unique.
+ */
+export const withOmittedParameters = (
+  specs: RegisterSchemaPathOptions["specs"],
+  omitted: string[],
+): RegisterSchemaPathOptions["specs"] => {
+  if (!omitted.length || typeof specs?.operationId !== "string") return specs;
+
+  return {
+    ...specs,
+    operationId: `${specs.operationId}Without${omitted.map(toPascalCase).join("And")}`,
+  };
+};
 
 type Parameter = OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.ParameterObject;
 
@@ -396,6 +440,24 @@ export function removeExcludedPaths(
       // auto-generated path params) must NOT trigger it.
       const hasValidation = schema[VALIDATION_MARKER] === true;
       delete schema[VALIDATION_MARKER];
+
+      if (schema.parameters) {
+        // A path parameter only exists on a path that has it, and is always
+        // required there. A route with optional parameters (`/notes/:id?`)
+        // gets a path item without them, which its `param` validator still
+        // describes.
+        const names = key
+          .split("/")
+          .filter((x) => x.startsWith("{"))
+          .map((x) => x.slice(1, -1));
+
+        schema.parameters = schema.parameters.flatMap(
+          (x: OpenAPIV3_1.ParameterObject | OpenAPIV3_1.ReferenceObject) => {
+            if ("$ref" in x || x.in !== "path") return [x];
+            return names.includes(x.name) ? [{ ...x, required: true }] : [];
+          },
+        );
+      }
 
       if (key.includes("{")) {
         // Clone the parameters array to avoid mutating shared references
