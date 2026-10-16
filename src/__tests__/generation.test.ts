@@ -13,7 +13,6 @@ import {
 
 describe("request body media", () => {
   it.each([
-    { target: "form", media: undefined, expected: "multipart/form-data" },
     {
       target: "form",
       media: "application/x-www-form-urlencoded",
@@ -79,6 +78,7 @@ describe("request body media", () => {
 
     expect(Object.keys(body.content).sort()).toEqual([
       "application/json",
+      "application/x-www-form-urlencoded",
       "multipart/form-data",
     ]);
     expect(body.content["application/json"].schema).toMatchObject({

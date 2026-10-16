@@ -317,11 +317,15 @@ async function getSpec(
     middlewareHandler.target === "form" ||
     middlewareHandler.target === "json"
   ) {
-    const media =
-      middlewareHandler.options?.media ??
-      (middlewareHandler.target === "json"
-        ? "application/json"
-        : "multipart/form-data");
+    // Hono's `form` validator accepts both form encodings.
+    const mediaTypes = middlewareHandler.options?.media
+      ? [middlewareHandler.options.media]
+      : middlewareHandler.target === "json"
+        ? ["application/json"]
+        : ["application/x-www-form-urlencoded", "multipart/form-data"];
+    const content = Object.fromEntries(
+      mediaTypes.map((media) => [media, { schema: result.schema }]),
+    );
     if (
       !docs.requestBody ||
       !("content" in docs.requestBody) ||
@@ -329,15 +333,12 @@ async function getSpec(
     ) {
       docs.requestBody = {
         required: true,
-        content: {
-          [media]: {
-            schema: result.schema,
-          },
-        },
+        content,
       };
     } else {
-      docs.requestBody.content[media] = {
-        schema: result.schema,
+      docs.requestBody = {
+        ...docs.requestBody,
+        content: { ...docs.requestBody.content, ...content },
       };
     }
   } else {
