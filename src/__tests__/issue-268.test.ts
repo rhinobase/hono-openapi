@@ -16,6 +16,15 @@ const listNotes = () =>
     (c) => c.json([]),
   );
 
+const pagingResponse = {
+  description: "The paging",
+  content: {
+    "application/json": {
+      schema: { $ref: "#/components/schemas/Paging" },
+    },
+  },
+};
+
 describe("named query schemas inlined as parameters", () => {
   it("inlines the fields without publishing the schema", async () => {
     const specs = await generateSpecs(listNotes());
@@ -50,6 +59,46 @@ describe("named query schemas inlined as parameters", () => {
       ]?.schema,
     ).toEqual({ $ref: "#/components/schemas/Paging" });
     expect(specs.components?.schemas?.Paging).toBeDefined();
+  });
+
+  it("keeps the schema when the same route's response refers to it by hand", async () => {
+    const app = new Hono().get(
+      "/notes",
+      describeRoute({ responses: { 200: pagingResponse } }),
+      validator("query", Paging),
+      (c) => c.json({ page: "1" }),
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs.components?.schemas?.Paging).toMatchObject({
+      properties: { page: { type: "string" }, size: { type: "string" } },
+    });
+  });
+
+  it("keeps the schema when another route's response refers to it by hand", async () => {
+    const app = listNotes().get(
+      "/paging",
+      describeRoute({ responses: { 200: pagingResponse } }),
+      (c) => c.json({ page: "1" }),
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs.components?.schemas?.Paging).toBeDefined();
+  });
+
+  it("drops the schema when only a hidden route refers to it", async () => {
+    const app = listNotes().get(
+      "/paging",
+      describeRoute({ hide: true, responses: { 200: pagingResponse } }),
+      (c) => c.json({ page: "1" }),
+    );
+
+    const specs = await generateSpecs(app);
+
+    expect(specs.paths["/paging"]).toBeUndefined();
+    expect(specs.components?.schemas?.Paging).toBeUndefined();
   });
 
   it("keeps the schema when documentation refers to it", async () => {

@@ -463,8 +463,9 @@ const reachableRefs = (
 
 /**
  * Keeps the generated components that the documented operations brought in,
- * and the ones `documentation` refers to, directly or through other
- * components.
+ * and the ones those operations or `documentation` refer to, directly or
+ * through other components. An operation can refer to a component it didn't
+ * bring in itself, such as a `$ref` written by hand in `describeRoute`.
  *
  * Components are collected from every route while the paths are generated,
  * including routes that are hidden or excluded afterwards. Without this, those
@@ -486,7 +487,7 @@ export function documentedComponents(
       ),
   );
   const kept = reachableRefs(
-    componentRefs(documentation),
+    [...componentRefs(paths), ...componentRefs(documentation)],
     components,
     contributed,
   );
