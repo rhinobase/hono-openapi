@@ -301,14 +301,16 @@ export function registerSchemaPath(
  * are, and generated IDs avoid them.
  */
 export const uniqueOperationIds = (paths: OpenAPIV3_1.PathsObject) => {
+  // Only the HTTP method slots of a Path Item hold operations; its other keys
+  // (`parameters`, `servers`, `summary`, …) don't, so they're not read.
+  const methods = ALLOWED_METHODS.map(
+    (method) => method.toLowerCase() as OpenAPIV3_1.HttpMethods,
+  );
   const operations = Object.values(paths).flatMap((item) =>
-    Object.values(item ?? {}).filter(
-      (operation): operation is OpenAPIV3_1.OperationObject =>
-        operation != null &&
-        typeof operation === "object" &&
-        !Array.isArray(operation) &&
-        typeof operation.operationId === "string",
-    ),
+    methods.flatMap((method) => {
+      const operation = item?.[method];
+      return typeof operation?.operationId === "string" ? [operation] : [];
+    }),
   );
   const isGenerated = (operation: OpenAPIV3_1.OperationObject) =>
     generatedOperationIds.get(operation) === operation.operationId;
