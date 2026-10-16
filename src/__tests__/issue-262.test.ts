@@ -114,3 +114,57 @@ describe("response schemas", () => {
     expect(response?.required).toEqual(["title"]);
   });
 });
+
+describe("a named schema used for both a request body and a response", () => {
+  const Note = z
+    .object({ pinned: z.boolean().default(false), title: z.string() })
+    .meta({ ref: "Note" });
+
+  // The validator and `describeRoute` can come in either order; the request
+  // body must keep describing what the validator accepts in both.
+  const orders = {
+    "validator first": (app: Hono) =>
+      app.post(
+        "/notes",
+        validator("json", Note),
+        describeRoute({ responses: json(Note) }),
+        (c) => c.json(c.req.valid("json")),
+      ),
+    "describeRoute first": (app: Hono) =>
+      app.post(
+        "/notes",
+        describeRoute({ responses: json(Note) }),
+        validator("json", Note),
+        (c) => c.json(c.req.valid("json")),
+      ),
+  };
+
+  it.each(Object.entries(orders))(
+    "keeps the request body on its input shape with the %s",
+    async (_, register) => {
+      const specs = await generateSpecs(register(new Hono()));
+      const operation = specs.paths["/notes"]?.post as {
+        requestBody: { content: Record<string, { schema: { $ref: string } }> };
+        responses: Record<
+          string,
+          { content: Record<string, { schema: { $ref: string } }> }
+        >;
+      };
+      const component = ($ref: string) =>
+        specs.components?.schemas?.[$ref.split("/").at(-1) ?? ""] as Schema & {
+          additionalProperties?: boolean;
+        };
+
+      const request = component(
+        operation.requestBody.content["application/json"].schema.$ref,
+      );
+      const response = component(
+        operation.responses["200"].content["application/json"].schema.$ref,
+      );
+
+      expect(request.required).toEqual(["title"]);
+      expect(request.additionalProperties).toBeUndefined();
+      expect(response.required).toEqual(["pinned", "title"]);
+    },
+  );
+});
