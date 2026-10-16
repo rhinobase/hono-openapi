@@ -14,6 +14,7 @@ import type {
   DescribeRouteOptions,
   GenerateSpecOptions,
   HandlerUniqueProperty,
+  HeadersWithResolver,
   RegisterSchemaPathOptions,
   ResponsesWithResolver,
   SchemaDirection,
@@ -638,6 +639,79 @@ const collectParameterProperties = (
 };
 
 /**
+ * The headers with their resolver() schemas converted in `direction`, and the
+ * components the conversions produced.
+ */
+const resolveHeaders = async (
+  headers: HeadersWithResolver,
+  direction?: SchemaDirection,
+) => {
+  const resolved = await Promise.all(
+    Object.entries(headers).map(async ([name, header]) => {
+      if (
+        "$ref" in header ||
+        !header.schema ||
+        !("toOpenAPISchema" in header.schema)
+      ) {
+        return { components: undefined, entry: [name, header] };
+      }
+
+      const result = await header.schema.toOpenAPISchema(undefined, direction);
+      liftSchemaDefs(result);
+      return {
+        components: result.components,
+        entry: [name, { ...header, schema: result.schema }],
+      };
+    }),
+  );
+
+  return {
+    components: mergeComponentsObjects(
+      {},
+      ...resolved.map(({ components }) => components),
+    ),
+    headers: Object.fromEntries(resolved.map(({ entry }) => entry)) as Record<
+      string,
+      OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.HeaderObject
+    >,
+  };
+};
+
+/**
+ * A media type's encoding with the resolver() schemas in its headers converted
+ * in `direction`, the direction of the body it describes, and the components
+ * the conversions produced.
+ */
+const resolveEncoding = async (
+  encoding: NonNullable<ContentWithResolver[string]["encoding"]>,
+  direction?: SchemaDirection,
+) => {
+  const resolved = await Promise.all(
+    Object.entries(encoding).map(async ([property, entry]) => {
+      if (!entry.headers) {
+        return { components: undefined, entry: [property, entry] };
+      }
+
+      const { components, headers } = await resolveHeaders(
+        entry.headers,
+        direction,
+      );
+      return { components, entry: [property, { ...entry, headers }] };
+    }),
+  );
+
+  return {
+    components: mergeComponentsObjects(
+      {},
+      ...resolved.map(({ components }) => components),
+    ),
+    encoding: Object.fromEntries(
+      resolved.map(({ entry }) => entry),
+    ) as OpenAPIV3_1.MediaTypeObject["encoding"],
+  };
+};
+
+/**
  * Resolve any resolver() objects in a responses map, returning the
  * cleaned responses and any components produced during resolution.
  */
@@ -651,18 +725,26 @@ async function resolveContentSchemas(
   for (const [contentKey, raw] of Object.entries(content)) {
     if (!raw) continue;
 
-    if (raw.schema && "toOpenAPISchema" in raw.schema) {
-      const result = await raw.schema.toOpenAPISchema(undefined, direction);
+    const encoding = raw.encoding
+      ? await resolveEncoding(raw.encoding, direction)
+      : undefined;
+    const media = encoding ? { ...raw, encoding: encoding.encoding } : raw;
+    if (encoding) {
+      components = mergeComponentsObjects(components, encoding.components);
+    }
+
+    if (media.schema && "toOpenAPISchema" in media.schema) {
+      const result = await media.schema.toOpenAPISchema(undefined, direction);
       liftSchemaDefs(result);
       resolvedContent[contentKey] = {
-        ...raw,
+        ...media,
         schema: result.schema,
-      };
+      } as OpenAPIV3_1.MediaTypeObject;
       if (result.components) {
         components = mergeComponentsObjects(components, result.components);
       }
     } else {
-      resolvedContent[contentKey] = raw as OpenAPIV3_1.MediaTypeObject;
+      resolvedContent[contentKey] = media as OpenAPIV3_1.MediaTypeObject;
     }
   }
 
@@ -674,19 +756,35 @@ async function resolveResponseSchemas(responses: ResponsesWithResolver) {
   const resolvedResponses: OpenAPIV3_1.ResponsesObject = {};
 
   for (const [key, response] of Object.entries(responses)) {
-    if (!response || !("content" in response) || !response.content) {
+    if (
+      !response ||
+      "$ref" in response ||
+      (!response.content && !response.headers)
+    ) {
       resolvedResponses[key] = response as
         | OpenAPIV3_1.ReferenceObject
         | OpenAPIV3_1.ResponseObject;
       continue;
     }
 
-    const resolved = await resolveContentSchemas(response.content, "output");
+    // A response's headers come with the response, so they're converted as
+    // output, like its content.
+    const content = response.content
+      ? await resolveContentSchemas(response.content, "output")
+      : undefined;
+    const headers = response.headers
+      ? await resolveHeaders(response.headers, "output")
+      : undefined;
     resolvedResponses[key] = {
       ...response,
-      content: resolved.content,
-    };
-    components = mergeComponentsObjects(components, resolved.components);
+      ...(content && { content: content.content }),
+      ...(headers && { headers: headers.headers }),
+    } as OpenAPIV3_1.ResponseObject;
+    components = mergeComponentsObjects(
+      components,
+      content?.components,
+      headers?.components,
+    );
   }
 
   return markAsOutput(resolvedResponses, components);
