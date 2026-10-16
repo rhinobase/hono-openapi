@@ -294,7 +294,9 @@ const needsBody = (
       ? components?.schemas?.[schema.$ref.split("/").at(-1) ?? ""]
       : schema;
 
-  if (!resolved || "$ref" in resolved) return true;
+  if (!resolved || "$ref" in resolved) {
+    return true;
+  }
 
   const types = [resolved.type].flat();
   return (
