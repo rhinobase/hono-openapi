@@ -25,6 +25,7 @@ import {
   registerSchemaPath,
   removeExcludedPaths,
   setSpecComponents,
+  uniqueOperationIds,
   uniqueSymbol,
   VALIDATION_MARKER,
 } from "./utils";
@@ -144,6 +145,7 @@ export async function generateSpecs<
   }
 
   const documentedPaths = removeExcludedPaths(paths, ctx);
+  uniqueOperationIds({ ...documentedPaths, ...documentation.paths });
 
   // Components are collected from every route, including the ones hidden or
   // excluded above, so only keep those the rest of the document uses.
