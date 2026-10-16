@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
+import z3 from "zod";
+import "zod-openapi/extend";
 import z from "zod/v4";
 import { generateSpecs } from "../handler.js";
 import { describeRoute, resolver, validator } from "../middlewares.js";
@@ -117,5 +119,58 @@ describe("issue-270", () => {
     expect(
       schemaRef(specs.paths["/notes/{id}"]?.get?.responses?.[200]?.content),
     ).toBe("#/components/schemas/Note");
+  });
+});
+
+describe("discriminated unions", () => {
+  const Cat = z3
+    .object({ kind: z3.literal("cat"), lives: z3.number().default(9) })
+    .openapi({ ref: "Cat" });
+  const Dog = z3
+    .object({ kind: z3.literal("dog"), good: z3.boolean().default(true) })
+    .openapi({ ref: "Dog" });
+  const Pet = z3.discriminatedUnion("kind", [Cat, Dog]).openapi({ ref: "Pet" });
+
+  it("maps a split union's discriminator to its output variants", async () => {
+    const app = new Hono().post(
+      "/pets",
+      describeRoute({
+        responses: {
+          200: {
+            description: "The pet",
+            content: {
+              "application/json": {
+                schema: resolver(Pet, { options: { schemaType: "output" } }),
+              },
+            },
+          },
+        },
+      }),
+      validator("json", Pet),
+      (c) => c.json(c.req.valid("json")),
+    );
+
+    const { components } = await generateSpecs(app);
+
+    expect(components?.schemas?.PetOutput).toMatchObject({
+      discriminator: {
+        mapping: {
+          cat: "#/components/schemas/CatOutput",
+          dog: "#/components/schemas/DogOutput",
+        },
+      },
+      oneOf: [
+        { $ref: "#/components/schemas/CatOutput" },
+        { $ref: "#/components/schemas/DogOutput" },
+      ],
+    });
+    expect(components?.schemas?.Pet).toMatchObject({
+      discriminator: {
+        mapping: {
+          cat: "#/components/schemas/Cat",
+          dog: "#/components/schemas/Dog",
+        },
+      },
+    });
   });
 });

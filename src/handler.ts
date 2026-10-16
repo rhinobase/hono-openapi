@@ -764,9 +764,50 @@ const decodeName = (name: string) =>
 const encodeName = (name: string) =>
   name.replaceAll("~", "~0").replaceAll("/", "~1");
 
+/** `ref` pointing at the name `rename` gives the schema component it refers to. */
+const renameRef = (
+  ref: string,
+  rename: (name: string) => string | undefined,
+) => {
+  if (!ref.startsWith(SCHEMA_REF)) {
+    return ref;
+  }
+
+  const renamed = rename(decodeName(ref.slice(SCHEMA_REF.length)));
+  return renamed === undefined ? ref : `${SCHEMA_REF}${encodeName(renamed)}`;
+};
+
 /**
- * `value` with every `$ref` to a schema component that `rename` gives a new
- * name pointing at that name instead.
+ * A discriminator mapping target pointing at the renamed component. OpenAPI
+ * allows a reference or a bare component name there; any other reference,
+ * such as an external URL, is left as it is.
+ */
+const renameMappingTarget = (
+  target: string,
+  rename: (name: string) => string | undefined,
+) => {
+  if (target.startsWith(SCHEMA_REF)) {
+    return renameRef(target, rename);
+  }
+  if (target.includes("/") || target.includes("#")) {
+    return target;
+  }
+
+  return rename(target) ?? target;
+};
+
+const isDiscriminator = (
+  value: unknown,
+): value is OpenAPIV3_1.DiscriminatorObject =>
+  value != null &&
+  typeof value === "object" &&
+  typeof (value as { propertyName?: unknown }).propertyName === "string";
+
+/**
+ * `value` with every reference to a schema component that `rename` gives a
+ * new name pointing at that name instead: each `$ref`, and each target of a
+ * discriminator's `mapping`, which holds component references as plain
+ * strings and would otherwise keep selecting the old component.
  */
 const renameSchemaRefs = <T>(
   value: T,
@@ -781,19 +822,27 @@ const renameSchemaRefs = <T>(
 
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => {
-      if (
-        key !== "$ref" ||
-        typeof item !== "string" ||
-        !item.startsWith(SCHEMA_REF)
-      ) {
-        return [key, renameSchemaRefs(item, rename)];
+      if (key === "$ref" && typeof item === "string") {
+        return [key, renameRef(item, rename)];
+      }
+      if (key === "discriminator" && isDiscriminator(item) && item.mapping) {
+        return [
+          key,
+          {
+            ...item,
+            mapping: Object.fromEntries(
+              Object.entries(item.mapping).map(
+                ([discriminatorValue, target]) => [
+                  discriminatorValue,
+                  renameMappingTarget(target, rename),
+                ],
+              ),
+            ),
+          },
+        ];
       }
 
-      const renamed = rename(decodeName(item.slice(SCHEMA_REF.length)));
-      return [
-        key,
-        renamed === undefined ? item : `${SCHEMA_REF}${encodeName(renamed)}`,
-      ];
+      return [key, renameSchemaRefs(item, rename)];
     }),
   ) as T;
 };
