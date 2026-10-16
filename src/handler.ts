@@ -426,11 +426,40 @@ function generateParameters(
       def.schema = { ...def.schema, deprecated: undefined };
     }
 
+    // A field that refers to a named schema carries that schema's annotations
+    // only on the component, which other fields and bodies share, so they are
+    // read from it without being moved off it.
+    const referenced =
+      def.schema && "$ref" in def.schema
+        ? referencedSchema(def.schema.$ref, schemas)
+        : undefined;
+    if (referenced?.description && !def.description) {
+      def.description = referenced.description;
+    }
+    if (referenced?.deprecated) {
+      def.deprecated = true;
+    }
+
     parameters.push(def);
   }
 
   return parameters;
 }
+
+/** The component a local `#/components/schemas/…` reference points at. */
+const referencedSchema = (
+  $ref: string,
+  schemas?: OpenAPIV3_1.ComponentsObject["schemas"],
+) => {
+  const prefix = "#/components/schemas/";
+  if (!$ref.startsWith(prefix)) return undefined;
+
+  const name = $ref
+    .slice(prefix.length)
+    .replaceAll("~1", "/")
+    .replaceAll("~0", "~");
+  return schemas?.[name];
+};
 
 type SchemaOrReference = OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.SchemaObject;
 type ParameterProperty = { required: boolean; schema: SchemaOrReference };

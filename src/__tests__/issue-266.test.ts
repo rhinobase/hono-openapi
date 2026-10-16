@@ -62,4 +62,36 @@ describe("parameter deprecated", () => {
       schema: { type: "string" },
     });
   });
+
+  it("marks the parameter of a field that refers to a deprecated schema", async () => {
+    const OldKey = z.string().meta({
+      deprecated: true,
+      description: "Use `key` instead",
+      id: "OldKey",
+    });
+    const app = new Hono().get(
+      "/pets",
+      validator(
+        "query",
+        z.object({ key: z.string().optional(), old: OldKey.optional() }),
+      ),
+      (c) => c.json([]),
+    );
+
+    const specs = JSON.parse(JSON.stringify(await generateSpecs(app)));
+    const [key, old] = specs.paths["/pets"].get.parameters;
+
+    expect(old).toEqual({
+      deprecated: true,
+      description: "Use `key` instead",
+      in: "query",
+      name: "old",
+      schema: { $ref: "#/components/schemas/OldKey" },
+    });
+    expect(key.deprecated).toBeUndefined();
+    expect(specs.components.schemas.OldKey).toMatchObject({
+      deprecated: true,
+      description: "Use `key` instead",
+    });
+  });
 });
