@@ -7,6 +7,12 @@ import type { AllowedMethods } from "./utils.js";
 
 export type PromiseOr<T> = T | Promise<T>;
 
+/**
+ * Whether a schema describes what a route accepts (`input`) or what it
+ * sends (`output`). They differ for schemas with defaults or transforms.
+ */
+export type SchemaDirection = "input" | "output";
+
 export type ResolverReturnType = ReturnType<typeof resolver> & {
   options?: {
     /**

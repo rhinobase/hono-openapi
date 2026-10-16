@@ -16,6 +16,7 @@ import type {
   HandlerUniqueProperty,
   RegisterSchemaPathOptions,
   ResponsesWithResolver,
+  SchemaDirection,
   SpecContext,
 } from "./types";
 import {
@@ -631,7 +632,10 @@ const collectParameterProperties = (
  * Resolve any resolver() objects in a responses map, returning the
  * cleaned responses and any components produced during resolution.
  */
-async function resolveContentSchemas(content: ContentWithResolver) {
+async function resolveContentSchemas(
+  content: ContentWithResolver,
+  direction?: SchemaDirection,
+) {
   let components: OpenAPIV3_1.ComponentsObject = {};
   const resolvedContent: Record<string, OpenAPIV3_1.MediaTypeObject> = {};
 
@@ -639,7 +643,7 @@ async function resolveContentSchemas(content: ContentWithResolver) {
     if (!raw) continue;
 
     if (raw.schema && "toOpenAPISchema" in raw.schema) {
-      const result = await raw.schema.toOpenAPISchema();
+      const result = await raw.schema.toOpenAPISchema(undefined, direction);
       liftSchemaDefs(result);
       resolvedContent[contentKey] = {
         ...raw,
@@ -668,7 +672,7 @@ async function resolveResponseSchemas(responses: ResponsesWithResolver) {
       continue;
     }
 
-    const resolved = await resolveContentSchemas(response.content);
+    const resolved = await resolveContentSchemas(response.content, "output");
     resolvedResponses[key] = {
       ...response,
       content: resolved.content,
