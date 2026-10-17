@@ -10,7 +10,8 @@ const execFileAsync = promisify(execFile);
 const projectRoot = fileURLToPath(new URL("../..", import.meta.url));
 const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 
-describe("package installation", () => {
+// Building, packing, and registry downloads can exceed the default five seconds.
+describe("package installation", { timeout: 60_000 }, () => {
   it("imports after a consumer installs it without auto-installed peers", async () => {
     const tempDirectory = await mkdtemp(
       join(tmpdir(), "hono-openapi-package-"),
