@@ -87,6 +87,9 @@ const generateOperationId = (route: RouterRoute) => {
  * but never an ID set through `describeRoute` or `defaultOptions`.
  */
 const generatedOperationIds = new WeakMap<object, string>();
+// Optional-path suffixes keep their preferred ID during merging, but may be
+// renamed to avoid IDs explicitly assigned to other operations.
+const derivedOperationIds = new WeakMap<object, string>();
 
 const pathParameterNames = (path: string) =>
   path
@@ -140,6 +143,9 @@ export const withOmittedParameters = (
   // The components a spec brought in are kept beside it rather than on it, so
   // the copy has to take them over, or pruning drops the ones only this path
   // still refers to.
+  if (omitted.length && typeof expanded.operationId === "string") {
+    derivedOperationIds.set(expanded, expanded.operationId);
+  }
   setSpecComponents(expanded, getSpecComponents(specs));
   expandedOperations.add(expanded);
 
@@ -246,7 +252,7 @@ function mergeSpecs(
   const generatedOperationId = generateOperationId(route);
   // An ID a spec only got from its own route's path isn't one to carry over
   // to another route, so only the others count as set.
-  const hasOperationId = specs.some(
+  const operationIdSpec = specs.findLast(
     (spec) =>
       spec?.operationId != null &&
       generatedOperationIds.get(spec) !== spec.operationId,
@@ -312,8 +318,10 @@ function mergeSpecs(
     },
   );
 
-  if (!hasOperationId) {
+  if (!operationIdSpec) {
     generatedOperationIds.set(merged, generatedOperationId);
+  } else if (derivedOperationIds.get(operationIdSpec) === merged.operationId) {
+    derivedOperationIds.set(merged, merged.operationId as string);
   }
 
   setSpecComponents(merged, specs.flatMap(getSpecComponents));
@@ -365,7 +373,8 @@ export function registerSchemaPath(
 }
 
 /**
- * Gives every operation whose ID was generated from its path an ID no other
+ * Gives every operation whose ID was generated from its path or optional
+ * parameter suffix an ID no other
  * operation in `paths` has. Different paths can generate the same ID, such as
  * `/notes/{id}` and `/notes/by-id`. The first operation keeps it, in route
  * order, and later ones get a numeric suffix (`getNotesById2`), so an ID
@@ -385,7 +394,8 @@ export const uniqueOperationIds = (paths: OpenAPIV3_1.PathsObject) => {
     }),
   );
   const isGenerated = (operation: OpenAPIV3_1.OperationObject) =>
-    generatedOperationIds.get(operation) === operation.operationId;
+    generatedOperationIds.get(operation) === operation.operationId ||
+    derivedOperationIds.get(operation) === operation.operationId;
 
   // Every ID in use before renaming, so a suffixed ID doesn't take one that a
   // later operation has already.
