@@ -1,6 +1,7 @@
 import type { RouterRoute } from "hono/types";
 import { checkOptionalParameter } from "hono/utils/url";
 import type { OpenAPIV3_1 } from "openapi-types";
+import { componentRefs, decodeName, encodeName } from "./references";
 import type { RegisterSchemaPathOptions, SpecContext } from "./types";
 
 /**
@@ -625,35 +626,11 @@ export function removeExcludedPaths(
   return newPaths;
 }
 
-const COMPONENTS_PREFIX = "#/components/";
-
 /**
  * A component as `type/name`, the way a `$ref` names it after the prefix.
  */
 const componentKey = (type: string, name: string) =>
-  `${type}/${name.replaceAll("~", "~0").replaceAll("/", "~1")}`;
-
-/**
- * Every `$ref` to a component found in `value`, as `type/name`.
- */
-export const componentRefs = (value: unknown): string[] => {
-  if (Array.isArray(value)) {
-    return value.flatMap(componentRefs);
-  }
-  if (value == null || typeof value !== "object") {
-    return [];
-  }
-
-  return Object.entries(value).flatMap(([key, item]) => {
-    if (key !== "$ref" || typeof item !== "string") {
-      return componentRefs(item);
-    }
-
-    return item.startsWith(COMPONENTS_PREFIX)
-      ? [item.slice(COMPONENTS_PREFIX.length)]
-      : [];
-  });
-};
+  `${type}/${encodeName(name)}`;
 
 /**
  * `refs`, and every component they lead to through the components they point
@@ -672,7 +649,7 @@ const reachableRefs = (
     const [type, ...name] = ref.split("/");
     const component = (
       components as Record<string, Record<string, unknown> | undefined>
-    )[type]?.[name.join("/").replaceAll("~1", "/").replaceAll("~0", "~")];
+    )[type]?.[decodeName(name.join("/"))];
 
     return reachableRefs(componentRefs(component), components, seen.add(ref));
   }, reached);

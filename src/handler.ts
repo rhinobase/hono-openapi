@@ -9,6 +9,13 @@ import type {
 } from "hono/types";
 import { findTargetHandler } from "hono/utils/handler";
 import type { OpenAPIV3_1 } from "openapi-types";
+import {
+  componentRefs,
+  decodeName,
+  encodeName,
+  renameSchemaRefs,
+  SCHEMA_REF,
+} from "./references";
 import type {
   ContentWithResolver,
   DescribeRouteOptions,
@@ -23,7 +30,6 @@ import type {
 import {
   ALLOWED_METHODS,
   type AllowedMethods,
-  componentRefs,
   documentedComponents,
   expandOptionalParameters,
   registerSchemaPath,
@@ -856,8 +862,6 @@ function mergeComponentsObjects(
   );
 }
 
-const SCHEMA_REF = "#/components/schemas/";
-
 /**
  * Responses describe what a route sends, which can differ from what the same
  * named schema accepts in a request body: a `.default()` makes a field
@@ -871,132 +875,6 @@ const OUTPUT_MARK = "\u0000output";
 const isOutput = (name: string) => name.endsWith(OUTPUT_MARK);
 
 const inputName = (output: string) => output.slice(0, -OUTPUT_MARK.length);
-
-const decodeName = (name: string) =>
-  name.replaceAll("~1", "/").replaceAll("~0", "~");
-
-const encodeName = (name: string) =>
-  name.replaceAll("~", "~0").replaceAll("/", "~1");
-
-/** `ref` pointing at the name `rename` gives the schema component it refers to. */
-const renameRef = (
-  ref: string,
-  rename: (name: string) => string | undefined,
-) => {
-  if (!ref.startsWith(SCHEMA_REF)) {
-    return ref;
-  }
-
-  const renamed = rename(decodeName(ref.slice(SCHEMA_REF.length)));
-  return renamed === undefined ? ref : `${SCHEMA_REF}${encodeName(renamed)}`;
-};
-
-/**
- * A discriminator mapping target pointing at the renamed component. OpenAPI
- * allows a reference or a bare component name there; any other reference,
- * such as an external URL, is left as it is.
- */
-const renameMappingTarget = (
-  target: string,
-  rename: (name: string) => string | undefined,
-) => {
-  if (target.startsWith(SCHEMA_REF)) {
-    return renameRef(target, rename);
-  }
-  if (target.includes("/") || target.includes("#")) {
-    return target;
-  }
-
-  return rename(target) ?? target;
-};
-
-const isDiscriminator = (
-  value: unknown,
-): value is OpenAPIV3_1.DiscriminatorObject =>
-  value != null &&
-  typeof value === "object" &&
-  typeof (value as { propertyName?: unknown }).propertyName === "string";
-
-// These fields hold payload data, whose `$ref` keys aren't document references.
-const LITERAL_FIELDS = new Set([
-  "example",
-  "examples",
-  "default",
-  "enum",
-  "const",
-  "value",
-]);
-
-// Keys inside these maps are names, even when they're e.g. `example` or `default`.
-const REFERENCE_MAPS = new Set([
-  "schemas",
-  "parameters",
-  "responses",
-  "requestBodies",
-  "headers",
-  "content",
-  "encoding",
-  "links",
-  "callbacks",
-  "pathItems",
-  "properties",
-  "patternProperties",
-  "$defs",
-  "definitions",
-  "dependentSchemas",
-  "dependencies",
-]);
-
-/**
- * `value` with every reference to a schema component that `rename` gives a
- * new name pointing at that name instead: each `$ref`, and each target of a
- * discriminator's `mapping`, which holds component references as plain
- * strings and would otherwise keep selecting the old component.
- */
-const renameSchemaRefs = <T>(
-  value: T,
-  rename: (name: string) => string | undefined,
-  isMap = false,
-): T => {
-  if (Array.isArray(value)) {
-    return value.map((item) => renameSchemaRefs(item, rename)) as T;
-  }
-  if (value == null || typeof value !== "object") {
-    return value;
-  }
-
-  return Object.fromEntries(
-    Object.entries(value).map(([key, item]) => {
-      if (isMap) {
-        return [key, renameSchemaRefs(item, rename)];
-      }
-      if (LITERAL_FIELDS.has(key) || key.startsWith("x-")) {
-        return [key, item];
-      }
-      if (key === "$ref" && typeof item === "string") {
-        return [key, renameRef(item, rename)];
-      }
-      if (key === "discriminator" && isDiscriminator(item) && item.mapping) {
-        return [
-          key,
-          {
-            ...item,
-            mapping: Object.fromEntries(
-              Object.entries(item.mapping).map(
-                ([discriminatorValue, target]) => [
-                  discriminatorValue,
-                  renameMappingTarget(target, rename),
-                ],
-              ),
-            ),
-          },
-        ];
-      }
-
-      return [key, renameSchemaRefs(item, rename, REFERENCE_MAPS.has(key))];
-    }),
-  ) as T;
-};
 
 const markAsOutput = (
   responses: OpenAPIV3_1.ResponsesObject,
@@ -1119,9 +997,9 @@ const splitOutputComponents = (
       (output) =>
         [
           output,
-          componentRefs(schemas[output]).map((ref) =>
-            decodeName(ref.slice("schemas/".length)),
-          ),
+          componentRefs(schemas[output])
+            .filter((ref) => ref.startsWith("schemas/"))
+            .map((ref) => decodeName(ref.slice("schemas/".length))),
         ] as const,
     ),
   );
