@@ -123,4 +123,46 @@ describe("generated operation IDs", () => {
     expect(others).toEqual([first, first]);
     expect(await operationIds(app)).toEqual(first);
   });
+
+  it("keeps derived optional IDs clear of explicit IDs and reserved suffixes", async () => {
+    const app = new Hono()
+      .get("/notes/:id?", describeRoute({ operationId: "getNote" }), (c) =>
+        c.json({}),
+      )
+      .get(
+        "/all-notes",
+        describeRoute({ operationId: "getNoteWithoutId" }),
+        (c) => c.json([]),
+      )
+      .get(
+        "/other-notes",
+        describeRoute({ operationId: "getNoteWithoutId2" }),
+        (c) => c.json([]),
+      );
+
+    const expected = {
+      "/notes": "getNoteWithoutId3",
+      "/notes/{id}": "getNote",
+      "/all-notes": "getNoteWithoutId",
+      "/other-notes": "getNoteWithoutId2",
+    };
+    expect(await operationIds(app)).toEqual(expected);
+    expect(await operationIds(app)).toEqual(expected);
+  });
+
+  it("disambiguates the same derived ID from different optional routes", async () => {
+    const app = new Hono()
+      .get("/notes/:id?", describeRoute({ operationId: "getNote" }), (c) =>
+        c.json({}),
+      )
+      .get(
+        "/notes-without-id/:id?",
+        describeRoute({ operationId: "getNote" }),
+        (c) => c.json({}),
+      );
+
+    const ids = await operationIds(app);
+    expect(ids["/notes"]).toBe("getNoteWithoutId");
+    expect(ids["/notes-without-id"]).toBe("getNoteWithoutId2");
+  });
 });
