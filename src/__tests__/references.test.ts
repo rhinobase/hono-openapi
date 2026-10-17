@@ -151,3 +151,48 @@ it("collects Example Object references without treating their values as referenc
     }),
   ).toEqual(["schemas/Actual", "examples/Sample", "schemas/Property"]);
 });
+
+it.each(["default", "value", "example", "x-event", "newPet"])(
+  "retains schemas referenced by the webhook named %s",
+  async (name) => {
+    const Pet = z.object({ name: z.string() }).meta({ ref: "Pet" });
+    const app = new Hono().post(
+      "/hidden",
+      describeRoute({ hide: true }),
+      validator("json", Pet),
+      (c) => c.json({}),
+    );
+    const doc = await generateSpecs(app, {
+      documentation: {
+        webhooks: {
+          [name]: {
+            post: {
+              requestBody: {
+                content: {
+                  "application/json": {
+                    schema: { $ref: "#/components/schemas/Pet" },
+                  },
+                },
+              },
+              responses: { 200: { description: "OK" } },
+            },
+          },
+        },
+      },
+    });
+    expect(doc.components?.schemas?.Pet).toMatchObject({
+      properties: { name: { type: "string" } },
+    });
+    expect(doc.webhooks?.[name]).toMatchObject({
+      post: {
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/Pet" },
+            },
+          },
+        },
+      },
+    });
+  },
+);

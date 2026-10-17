@@ -60,6 +60,7 @@ const LITERAL_FIELDS = new Set([
 // Keys inside these maps are names, even when they're e.g. `example` or `default`.
 const REFERENCE_MAPS = new Set([
   "paths",
+  "webhooks",
   "examples",
   "schemas",
   "parameters",
