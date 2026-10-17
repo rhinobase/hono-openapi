@@ -359,23 +359,10 @@ async function getSpec(
       },
     };
 
-    let components: OpenAPIV3_1.ComponentsObject = {};
-    if (tmp.responses) {
-      const resolved = await resolveResponseSchemas(tmp.responses);
-      tmp.responses = resolved.responses;
-      components = resolved.components;
-    }
-
-    if (tmp.requestBody && "content" in tmp.requestBody) {
-      const resolved = await resolveContentSchemas(tmp.requestBody.content);
-      tmp.requestBody = {
-        ...tmp.requestBody,
-        content: resolved.content,
-      };
-      components = mergeComponentsObjects(components, resolved.components);
-    }
-
-    return { schema: tmp, components, unreferencedComponents: undefined };
+    return {
+      ...(await resolveSpecSchemas(tmp)),
+      unreferencedComponents: undefined,
+    };
   }
 
   const result = await middlewareHandler.toOpenAPISchema();
@@ -476,11 +463,31 @@ async function getSpec(
     docs.parameters = parameters;
   }
 
+  const resolved = await resolveSpecSchemas(docs);
   return {
-    schema: docs,
-    components: result.components,
+    schema: resolved.schema,
+    components: mergeComponentsObjects(result.components, resolved.components),
     unreferencedComponents,
   };
+}
+
+/** Resolve described and default schemas regardless of which middleware supplied them. */
+async function resolveSpecSchemas(spec: DescribeRouteOptions) {
+  const schema = { ...spec };
+  let components: OpenAPIV3_1.ComponentsObject = {};
+  if (schema.responses) {
+    const resolved = await resolveResponseSchemas(schema.responses);
+    schema.responses = resolved.responses;
+    components = resolved.components;
+  }
+
+  if (schema.requestBody && "content" in schema.requestBody) {
+    const resolved = await resolveContentSchemas(schema.requestBody.content);
+    schema.requestBody = { ...schema.requestBody, content: resolved.content };
+    components = mergeComponentsObjects(components, resolved.components);
+  }
+
+  return { schema, components };
 }
 
 function generateParameters(
@@ -749,7 +756,11 @@ async function resolveContentSchemas(
       components = mergeComponentsObjects(components, encoding.components);
     }
 
-    if (media.schema && "toOpenAPISchema" in media.schema) {
+    if (
+      media.schema != null &&
+      typeof media.schema === "object" &&
+      "toOpenAPISchema" in media.schema
+    ) {
       const result = await media.schema.toOpenAPISchema(undefined, direction);
       liftSchemaDefs(result);
       resolvedContent[contentKey] = {
