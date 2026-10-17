@@ -374,8 +374,8 @@ export function registerSchemaPath(
 
 /**
  * Gives every operation whose ID was generated from its path or optional
- * parameter suffix an ID no other
- * operation in `paths` has. Different paths can generate the same ID, such as
+ * parameter suffix an ID no other operation in `paths` has. Different paths
+ * can generate the same ID, such as
  * `/notes/{id}` and `/notes/by-id`. The first operation keeps it, in route
  * order, and later ones get a numeric suffix (`getNotesById2`), so an ID
  * that's unique already never changes. IDs set explicitly are left as they
