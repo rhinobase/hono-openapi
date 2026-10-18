@@ -49,8 +49,8 @@
   },
   "dependencies": {
     "@hono/standard-validator": "^0.4.0",
-    "@standard-community/standard-json": "^0.3.5",
-    "@standard-community/standard-openapi": "^0.2.9",
+    "@standard-community/standard-json": "^0.3.7",
+    "@standard-community/standard-openapi": "^0.2.11",
     "@standard-schema/spec": "^1.0.0",
     "@types/json-schema": "^7.0.15",
     "openapi-types": "^12.1.3"
