@@ -223,6 +223,19 @@ export type GenerateSpecOptions = {
    * @default true
    */
   defaultValidationErrorResponse: boolean | OpenAPIV3_1.ResponseObject;
+
+  /**
+   * Write a response's `<name>Output` component as
+   * `allOf: [<name>, patch]` when it only adds required fields, points at
+   * other output components or disallows additional properties, so the input
+   * and output forms don't repeat what they share. A union of output
+   * components, a property whose schema differs otherwise, or a reference to
+   * an output component that changes more than that, however deep, keeps the
+   * whole component.
+   *
+   * @default false
+   */
+  composeOutputComponents: boolean;
 };
 
 type OperationId = string | ((route: RouterRoute) => string);

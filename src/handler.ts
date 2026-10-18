@@ -190,6 +190,7 @@ export async function generateSpecs<
         ?.schemas ?? {},
     ),
     ctx.options.ignoreClosedOutputs,
+    ctx.options.composeOutputComponents,
   );
 
   const document = {
@@ -1000,6 +1001,102 @@ const assignOutputNames = (
   return names;
 };
 
+const isSchemaObject = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+/** Whether two schemas say the same, whatever the order of their keys. */
+const sameSchema = (a: unknown, b: unknown) => canonical(a) === canonical(b);
+
+/**
+ * What a response's output form adds to the input form it was split from,
+ * when it can be laid over that input form in an `allOf`: fields that are
+ * always present, properties that only point at other output forms, and
+ * `additionalProperties: false`. `output` refers to the other components by
+ * their final names, and `inputForm` is the output form with its references
+ * pointed back at the input forms.
+ *
+ * Anything else has no patch, and the output form stays whole:
+ *
+ * - A union differs in its variants, and an `allOf` keeps the input form's
+ *   variants and discriminator next to any it adds.
+ * - A property whose schema differs in another way, such as through a
+ *   transform, may not hold a value the input form's property accepts, and
+ *   then the `allOf` holds none.
+ * - A reference to an output form outside `properties` would be lost, as the
+ *   patch only lays properties over the input form.
+ *
+ * The output forms a patch points at must hold only values their input forms
+ * accept too, which `splitOutputComponents` checks.
+ *
+ * `additionalProperties: false` only sees the properties of its own
+ * subschema, so a patch that sets it lists every property, the unchanged ones
+ * as `{}`.
+ */
+const outputPatch = (
+  input: unknown,
+  output: unknown,
+  inputForm: unknown,
+): Record<string, unknown> | undefined => {
+  if (
+    !isSchemaObject(input) ||
+    !isSchemaObject(output) ||
+    !isSchemaObject(inputForm)
+  ) {
+    return undefined;
+  }
+
+  const changed = [
+    ...new Set([...Object.keys(input), ...Object.keys(output)]),
+  ].filter((key) => !sameSchema(input[key], output[key]));
+  const closes =
+    output.additionalProperties === false &&
+    input.additionalProperties === undefined;
+  if (
+    changed.some(
+      (key) =>
+        key !== "required" &&
+        !(key === "additionalProperties" && closes) &&
+        !(
+          key === "properties" &&
+          sameSchema(input.properties, inputForm.properties)
+        ),
+    )
+  ) {
+    return undefined;
+  }
+
+  const before = Array.isArray(input.required) ? input.required : [];
+  const after = Array.isArray(output.required) ? output.required : [];
+  if (before.some((field) => !after.includes(field))) {
+    return undefined;
+  }
+
+  const properties = isSchemaObject(output.properties) ? output.properties : {};
+  const inputProperties = isSchemaObject(input.properties)
+    ? input.properties
+    : {};
+  const pointing = Object.entries(properties).filter(
+    ([property, schema]) => !sameSchema(schema, inputProperties[property]),
+  );
+  const required = after.filter((field) => !before.includes(field));
+  const patch = {
+    ...(closes
+      ? {
+          additionalProperties: false,
+          properties: Object.fromEntries(
+            Object.entries(properties).map(([property, schema]) => [
+              property,
+              pointing.some(([name]) => name === property) ? schema : {},
+            ]),
+          ),
+        }
+      : pointing.length > 0 && { properties: Object.fromEntries(pointing) }),
+    ...(required.length > 0 && { required }),
+  };
+
+  return Object.keys(patch).length > 0 ? patch : undefined;
+};
+
 /**
  * The input schemas a request uses: the ones `values` refer to, directly or
  * through other input schemas, plus the `declared` ones. Response components
@@ -1040,7 +1137,9 @@ const usedInputs = (
  *   suffix `zod-openapi` uses for the same case, so the request body and the
  *   response each describe what they accept and send. A response component
  *   that refers to a split one is split too, since the request's copy refers
- *   to the request's shape.
+ *   to the request's shape. With `compose`, and where `outputPatch` allows,
+ *   it's written as `allOf: [input form, patch]`, so the two don't repeat
+ *   what they share, such as an enum.
  *
  * Deciding this after hidden and excluded routes are removed keeps a hidden
  * route from splitting a component for the routes that remain, and deciding it
@@ -1052,6 +1151,7 @@ const splitOutputComponents = (
   documentation: unknown,
   declared: Iterable<string>,
   ignoreClosedOutputs = false,
+  compose = false,
 ): {
   components: NonNullable<OpenAPIDocument["components"]>;
   paths: OpenAPIPaths;
@@ -1106,11 +1206,12 @@ const splitOutputComponents = (
       ),
     );
   };
-  const split = new Set(
+  const changed = new Set(
     [...shared].filter(
       (output) => comparable(output) !== canonical(schemas[inputName(output)]),
     ),
   );
+  const split = new Set(changed);
   let previousSize: number;
   do {
     previousSize = split.size;
@@ -1132,6 +1233,40 @@ const splitOutputComponents = (
   const rename = (name: string) =>
     isOutput(name) ? (outputNames.get(name) ?? inputName(name)) : undefined;
 
+  const patches = new Map(
+    compose
+      ? [...split].flatMap((output) => {
+          const patch = outputPatch(
+            schemas[inputName(output)],
+            renameSchemaRefs(schemas[output], rename),
+            renameSchemaRefs(schemas[output], asInput),
+          );
+          return patch ? [[output, patch] as const] : [];
+        })
+      : [],
+  );
+  // An `allOf` over the input form only holds what an output form sends when
+  // no output form it refers to sends what its own input form rejects, such
+  // as the number a transform further down makes of a string. One with a
+  // patch or one split only for referring to others qualifies, as long as
+  // every output form it refers to does too. Dropping the others until none
+  // is left, rather than adding, keeps one that refers to itself.
+  const subsets = new Set(
+    [...split].filter((output) => patches.has(output) || !changed.has(output)),
+  );
+  do {
+    previousSize = subsets.size;
+    for (const output of subsets) {
+      if (
+        outputRefs
+          .get(output)
+          ?.some((name) => split.has(name) && !subsets.has(name))
+      ) {
+        subsets.delete(output);
+      }
+    }
+  } while (subsets.size !== previousSize);
+
   return {
     components: {
       ...renameSchemaRefs(otherComponents, rename),
@@ -1148,7 +1283,20 @@ const splitOutputComponents = (
 
           const output = outputNames.get(name);
           if (output) {
-            return [[output, renamed]];
+            const patch = subsets.has(name) && patches.get(name);
+            return [
+              [
+                output,
+                patch
+                  ? {
+                      allOf: [
+                        { $ref: `${SCHEMA_REF}${encodeName(inputName(name))}` },
+                        patch,
+                      ],
+                    }
+                  : renamed,
+              ],
+            ];
           }
 
           // The same shape as the request's, or no request uses the name.
