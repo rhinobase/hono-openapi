@@ -1,4 +1,10 @@
 # Changelog
+## 1.5.0
+
+### Bug Fixes 🐛
+
+- (deps) Require the released Standard schema fixes by @MathurAditya724 in [#293](https://github.com/rhinobase/hono-openapi/pull/293)
+
 ## 1.4.0
 
 ### New Features ✨
