@@ -131,18 +131,26 @@ export async function generateSpecs<
   };
   const paths = await generatePaths(hono, ctx);
 
-  // Hide routes
+  // Hide routes, unless the document should include them. Either way `hide`
+  // only tells this generator what to leave out, so it isn't part of the
+  // operation the document describes.
   for (const path in paths) {
     for (const method in paths[path]) {
-      const isHidden = getHiddenValue({
-        valueOrFunc: paths[path][method]?.hide,
-        method,
-        path,
-        c,
-      });
+      const operation = paths[path][method];
+      if (!operation) {
+        continue;
+      }
+
+      const isHidden =
+        !ctx.options.includeHiddenRoutes &&
+        getHiddenValue({ valueOrFunc: operation.hide, method, path, c });
 
       if (isHidden) {
         paths[path][method] = undefined;
+      } else {
+        // Removed in place: later steps keep track of an operation by the
+        // object itself, such as the operation IDs generated for it.
+        delete operation.hide;
       }
     }
   }
