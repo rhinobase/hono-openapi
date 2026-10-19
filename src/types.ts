@@ -203,6 +203,19 @@ export type GenerateSpecOptions = {
   defaultOptions: Partial<Record<AllowedMethods | "ALL", DescribeRouteOptions>>;
 
   /**
+   * Let a response share a request's component when its form only adds
+   * `additionalProperties: false`, as `zod` 4 writes for the output of an
+   * object that strips unknown keys, instead of giving it its own
+   * `<name>Output`. The shared form still describes what the response sends,
+   * but no longer says it has no other properties. A closure whose removal
+   * wouldn't only widen what the response accepts, such as one under a `not`,
+   * in an `if` or in a `oneOf`, still gets its own `<name>Output`.
+   *
+   * @default false
+   */
+  ignoreClosedOutputs: boolean;
+
+  /**
    * Automatically include a 400 validation error response for routes
    * that use `validator()`. Set to `false` to disable, `true` to use
    * the built-in schema, or provide a custom `ResponseObject`.

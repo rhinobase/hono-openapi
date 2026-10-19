@@ -15,6 +15,8 @@ import {
   encodeName,
   renameSchemaRefs,
   SCHEMA_REF,
+  schemaPolarities,
+  withoutAddedClosures,
 } from "./references";
 import type {
   ContentWithResolver,
@@ -187,6 +189,7 @@ export async function generateSpecs<
       (documentation.components as OpenAPIV3_1.ComponentsObject | undefined)
         ?.schemas ?? {},
     ),
+    ctx.options.ignoreClosedOutputs,
   );
 
   const document = {
@@ -1048,6 +1051,7 @@ const splitOutputComponents = (
   paths: OpenAPIPaths,
   documentation: unknown,
   declared: Iterable<string>,
+  ignoreClosedOutputs = false,
 ): {
   components: NonNullable<OpenAPIDocument["components"]>;
   paths: OpenAPIPaths;
@@ -1082,11 +1086,29 @@ const splitOutputComponents = (
   );
   const refersTo = (output: string, split: ReadonlySet<string>) =>
     outputRefs.get(output)?.some((name) => split.has(name));
+  // Leaving out an `additionalProperties: false` a response adds only widens
+  // what it's documented to accept where widening that schema widens the
+  // response, so only there can the response share the request's component.
+  const polarities =
+    ignoreClosedOutputs && schemaPolarities(schemas, [paths, otherComponents]);
+  const comparable = (output: string) => {
+    const schema = renameSchemaRefs(schemas[output], asInput);
+    if (!polarities) {
+      return canonical(schema);
+    }
+
+    const used = [...(polarities.get(output) ?? [1])];
+    return canonical(
+      withoutAddedClosures(
+        schema,
+        schemas[inputName(output)],
+        used.length === 1 ? used[0] : 0,
+      ),
+    );
+  };
   const split = new Set(
     [...shared].filter(
-      (output) =>
-        canonical(renameSchemaRefs(schemas[output], asInput)) !==
-        canonical(schemas[inputName(output)]),
+      (output) => comparable(output) !== canonical(schemas[inputName(output)]),
     ),
   );
   let previousSize: number;
