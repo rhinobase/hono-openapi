@@ -16,6 +16,7 @@ import {
   renameSchemaRefs,
   SCHEMA_REF,
   schemaPolarities,
+  schemaRefs,
   withoutAddedClosures,
 } from "./references";
 import type {
@@ -1251,8 +1252,19 @@ const splitOutputComponents = (
   // patch or one split only for referring to others qualifies, as long as
   // every output form it refers to does too. Dropping the others until none
   // is left, rather than adding, keeps one that refers to itself.
+  //
+  // A narrower output form only narrows the schema referring to it where
+  // narrowing a subschema can't widen the schema around it. Under `not`,
+  // `oneOf`, an `if` or a capped `contains`, it can, so an output form with
+  // such a reference to another one stays whole.
   const subsets = new Set(
-    [...split].filter((output) => patches.has(output) || !changed.has(output)),
+    [...split].filter(
+      (output) =>
+        (patches.has(output) || !changed.has(output)) &&
+        schemaRefs(schemas[output], 1).every(
+          ([name, polarity]) => polarity === 1 || !split.has(name),
+        ),
+    ),
   );
   do {
     previousSize = subsets.size;

@@ -1,10 +1,18 @@
+import type { StandardSchemaV1 } from "@standard-schema/spec";
+import Ajv2020 from "ajv/dist/2020.js";
 import { Hono } from "hono";
+import type { OpenAPIV3_1 } from "openapi-types";
 import { describe, expect, it } from "vitest";
 import z3 from "zod";
 import "zod-openapi/extend";
 import z from "zod/v4";
 import { generateSpecs } from "../handler.js";
-import { describeRoute, resolver, validator } from "../middlewares.js";
+import {
+  describeRoute,
+  loadVendor,
+  resolver,
+  validator,
+} from "../middlewares.js";
 
 /** The components of a document where `schema` is a request and a response. */
 const componentsFor = async (
@@ -294,4 +302,122 @@ describe("an output form that refers to one that only adds to its input form", (
       ],
     });
   });
+});
+
+type Schemas = Record<string, OpenAPIV3_1.SchemaObject>;
+
+/**
+ * The components of a document where a schema with these request and response
+ * forms is a request and a response. The first component of each is the one
+ * the route refers to.
+ */
+const componentsForForms = async (
+  vendor: string,
+  input: Schemas,
+  output: Schemas,
+) => {
+  const schema: StandardSchemaV1 = {
+    "~standard": { validate: (value) => ({ value }), vendor, version: 1 },
+  };
+  loadVendor(vendor, {
+    toOpenAPISchema: (_schema, context) => {
+      const components = context.options?.output === true ? output : input;
+      context.components.schemas = components;
+      return { $ref: `#/components/schemas/${Object.keys(components)[0]}` };
+    },
+  });
+  const app = new Hono().post(
+    "/notes",
+    describeRoute({
+      responses: {
+        200: {
+          content: {
+            "application/json": {
+              schema: resolver(schema, { options: { output: true } }),
+            },
+          },
+          description: "OK",
+        },
+      },
+    }),
+    validator("json", schema),
+    (c) => c.json({}),
+  );
+  return (
+    (await generateSpecs(app, { composeOutputComponents: true })).components
+      ?.schemas ?? {}
+  );
+};
+
+/** Whether `value` is valid against the component `name` of `schemas`. */
+const isValid = (schemas: Schemas, name: string, value: unknown) =>
+  new Ajv2020({ strict: false }).validate(
+    { $ref: `#/components/schemas/${name}`, components: { schemas } },
+    value,
+  );
+
+const tagRef = { $ref: "#/components/schemas/Tag" };
+const tag = { properties: { n: { type: "number" } }, type: "object" } as const;
+
+// `Note` refers to `Tag` in `value`, and both forms of `Note` and `Tag` only
+// add required fields to their input forms.
+const noteForms = (value: OpenAPIV3_1.SchemaObject) => {
+  const note = {
+    properties: { tag: { type: "string" }, value },
+    type: "object",
+  } as const;
+  return [
+    { Note: note, Tag: tag },
+    {
+      Note: { ...note, required: ["tag"] },
+      Tag: { ...tag, required: ["n"] },
+    },
+  ] as const;
+};
+
+describe("an output form that refers to a narrower one", () => {
+  it("is written over its input form where that only narrows it", async () => {
+    const value = { n: 12 };
+    const schemas = await componentsForForms(
+      "narrower output form in a property",
+      ...noteForms(tagRef),
+    );
+
+    expect(schemas.NoteOutput).toMatchObject({
+      allOf: [{ $ref: "#/components/schemas/Note" }, expect.any(Object)],
+    });
+    expect(isValid(schemas, "NoteOutput", { tag: "ok", value })).toBe(true);
+    expect(isValid(schemas, "NoteOutput", { tag: "ok", value: {} })).toBe(
+      false,
+    );
+  });
+
+  it.each<[string, OpenAPIV3_1.SchemaObject, unknown]>([
+    ["under `not`", { not: tagRef }, {}],
+    [
+      "in an `if`",
+      // biome-ignore lint/suspicious/noThenProperty: a JSON Schema keyword
+      { else: { required: ["m"] }, if: tagRef, then: { required: ["n"] } },
+      { m: 1 },
+    ],
+    ["in a `oneOf`", { oneOf: [tagRef, { type: "object" }] }, {}],
+    [
+      "in a `contains` with a `maxContains`",
+      { contains: tagRef, maxContains: 1, type: "array" },
+      [{ n: 1 }, {}],
+    ],
+  ])(
+    "stays whole when it refers to it %s",
+    async (description, value, payload) => {
+      const schemas = await componentsForForms(
+        `narrower output form ${description}`,
+        ...noteForms(value),
+      );
+
+      expect(schemas.NoteOutput).not.toHaveProperty("allOf");
+      expect(
+        isValid(schemas, "NoteOutput", { tag: "ok", value: payload }),
+      ).toBe(true);
+    },
+  );
 });
