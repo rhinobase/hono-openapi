@@ -5,6 +5,7 @@ import type {
   BlankSchema,
   Input,
   MiddlewareHandler,
+  RouterRoute,
   Schema,
 } from "hono/types";
 import { findTargetHandler } from "hono/utils/handler";
@@ -94,16 +95,50 @@ export function openAPIRouteHandler<
   hono: Hono<E, S, P>,
   options?: Partial<GenerateSpecOptions>,
 ): MiddlewareHandler<E, P, I> {
-  let specs: OpenAPIDocument;
+  // The promise is kept rather than the document, so requests that arrive
+  // while it's generated wait for it instead of generating their own.
+  let specs: Promise<OpenAPIDocument> | undefined;
 
   return async (c) => {
-    if (specs) return c.json(specs);
+    // A `hide` function decides per request, so its document can't be reused
+    // for another one. Routes can be added after this handler is, so they're
+    // only looked at once a request comes in.
+    if (!specs && hidesPerRequest(hono.routes, options)) {
+      return c.json(await generateSpecs(hono, options, c));
+    }
 
-    specs = await generateSpecs(hono, options, c);
+    specs ??= generateSpecs(hono, options, c).catch((error) => {
+      // A failed generation is tried again by the next request.
+      specs = undefined;
+      throw error;
+    });
 
-    return c.json(specs);
+    return c.json(await specs);
   };
 }
+
+/**
+ * Whether a route or `defaultOptions` hides operations with a function, which
+ * `generateSpecs` calls with the request's context. With `includeHiddenRoutes`,
+ * nothing is hidden, so no such function is called.
+ */
+const hidesPerRequest = (
+  routes: RouterRoute[],
+  options?: Partial<GenerateSpecOptions>,
+) =>
+  !options?.includeHiddenRoutes &&
+  [
+    ...routes.map((route) => {
+      const middlewareHandler = findTargetHandler(route.handler)[
+        uniqueSymbol
+      ] as HandlerUniqueProperty | undefined;
+
+      return middlewareHandler && "spec" in middlewareHandler
+        ? middlewareHandler.spec
+        : undefined;
+    }),
+    ...Object.values(options?.defaultOptions ?? {}),
+  ].some((spec) => typeof spec?.hide === "function");
 
 /**
  * Generate OpenAPI specs for the given Hono instance
