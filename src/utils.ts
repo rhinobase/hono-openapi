@@ -369,6 +369,8 @@ export function registerSchemaPath(
     }
 
     if (paths[path]) {
+      // openapi-types intersects 3.0 and 3.1 operations in PathItemObject.
+      // @ts-expect-error -- Generated schemas use the 3.1 operation types.
       paths[path][method] = mergeSpecs(
         route,
         ...context,

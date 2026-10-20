@@ -42,6 +42,7 @@ describe("package installation", { timeout: 60_000 }, () => {
           type: "module",
           dependencies: {
             hono: "^4.11.2",
+            "openapi-types": "^12.1.3",
             "hono-openapi": `file:../package/${tarball}`,
           },
         }),
@@ -57,7 +58,7 @@ describe("package installation", { timeout: 60_000 }, () => {
         [
           "--input-type=module",
           "--eval",
-          "import('hono-openapi').then(({ generateSpecs }) => { if (!generateSpecs) process.exit(1) })",
+          "import { createRequire } from 'node:module'; const esm = await import('hono-openapi'); const cjs = createRequire(import.meta.url)('hono-openapi'); if (!esm.generateSpecs || !cjs.generateSpecs) process.exit(1)",
         ],
         { cwd: consumerDirectory },
       );
@@ -65,10 +66,10 @@ describe("package installation", { timeout: 60_000 }, () => {
       expect(stderr).toBe("");
 
       // Check the declarations consumers actually install, not source-only types.
-      await writeFile(
-        join(consumerDirectory, "query.ts"),
-        `import { Hono } from "hono";
+      const consumerSource = `import { Hono } from "hono";
 import { generateSpecs, describeRoute, type AllowedMethods } from "hono-openapi";
+import type { OpenAPIV3_1 } from "openapi-types";
+async function checkQueryTypes() {
 const method: AllowedMethods = "QUERY";
 const ok = { responses: { 200: { description: "OK" } } };
 const callback = { "{$request.body#/callbackUrl}": { query: ok } };
@@ -83,6 +84,11 @@ const specs = await generateSpecs(app, {
   }
 });
 const operationId: string | undefined = specs.paths["/search"]?.query?.operationId;
+// Generation always supplies these fields, including with no documentation options.
+const defaults = await generateSpecs(new Hono());
+const description: string = defaults.info.description;
+const schemas = defaults.components.schemas;
+const legacy: OpenAPIV3_1.Document = defaults;
 const item = specs.components?.pathItems?.Search;
 if (item && !("$ref" in item)) {
   const operationId: string | undefined = item.query?.operationId;
@@ -91,8 +97,10 @@ const webhook = specs.webhooks?.incoming;
 if (webhook && !("$ref" in webhook)) {
   const operationId: string | undefined = webhook.query?.operationId;
 }
-`,
-      );
+}
+`;
+      await writeFile(join(consumerDirectory, "query.ts"), consumerSource);
+      await writeFile(join(consumerDirectory, "query.cts"), consumerSource);
       await execFileAsync(
         process.execPath,
         [
@@ -107,6 +115,7 @@ if (webhook && !("$ref" in webhook)) {
           "--target",
           "ES2022",
           "query.ts",
+          "query.cts",
         ],
         { cwd: consumerDirectory },
       ).catch((error) => {

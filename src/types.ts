@@ -20,10 +20,7 @@ export type OpenAPIOperation = Omit<
   callbacks?: Record<string, OpenAPICallback | OpenAPIV3_1.ReferenceObject>;
 };
 
-export type OpenAPIPathItem = Omit<
-  OpenAPIV3_1.PathItemObject,
-  OpenAPIV3_1.HttpMethods
-> & {
+export type OpenAPIPathItem = OpenAPIV3_1.PathItemObject & {
   [method in Lowercase<AllowedMethods>]?: OpenAPIOperation;
 };
 

@@ -116,11 +116,7 @@ export async function generateSpecs<
   P extends string = string,
   I extends Input = BlankInput,
   S extends Schema = BlankSchema,
->(
-  hono: Hono<E, S, P>,
-  options = DEFAULT_OPTIONS,
-  c?: Context<E, P, I>,
-): Promise<OpenAPIDocument> {
+>(hono: Hono<E, S, P>, options = DEFAULT_OPTIONS, c?: Context<E, P, I>) {
   const ctx: SpecContext = {
     components: {},
     // @ts-expect-error
@@ -1052,7 +1048,10 @@ const splitOutputComponents = (
   paths: OpenAPIPaths,
   documentation: unknown,
   declared: Iterable<string>,
-) => {
+): {
+  components: NonNullable<OpenAPIDocument["components"]>;
+  paths: OpenAPIPaths;
+} => {
   const { schemas = {}, ...otherComponents } = components;
   const outputs = Object.keys(schemas).filter(isOutput);
 

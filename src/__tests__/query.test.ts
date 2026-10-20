@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import z from "zod/v4";
-import { generateSpecs } from "../handler.js";
+import { generateSpecs, openAPIRouteHandler } from "../handler.js";
 import { describeRoute, validator } from "../middlewares.js";
 import type { GenerateSpecOptions } from "../types.js";
 
@@ -52,6 +52,55 @@ describe("QUERY operations and the document version", () => {
       },
       responses: { 200: { description: "OK" } },
     });
+  });
+
+  it("validates QUERY bodies and documents the validation error", async () => {
+    const app = search();
+    const response = await app.request("/search", {
+      method: "QUERY",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ term: 42 }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ success: false });
+    const specs = await generateSpecs(app);
+    expect(specs.paths["/search"]?.query?.responses?.[400]).toMatchObject({
+      description: "Validation Error",
+    });
+  });
+
+  it("serves and caches the selected version through the HTTP handler", async () => {
+    const app = search();
+    app.get("/openapi", openAPIRouteHandler(app));
+
+    const first = await app.request("/openapi");
+    const second = await app.request("/openapi");
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    const document = await first.json();
+    expect(document.openapi).toBe("3.2.0");
+    expect(document.paths["/search"].query).toBeDefined();
+    expect(await second.json()).toEqual(document);
+  });
+
+  it("keeps GET on a shared path when QUERY is excluded", async () => {
+    const app = search().get("/search", describeRoute(ok), (c) => c.json({}));
+    const specs = await generateSpecs(app, { excludeMethods: ["QUERY"] });
+
+    expect(specs.openapi).toBe("3.1.0");
+    expect(specs.paths["/search"]?.get).toBeDefined();
+    expect(specs.paths["/search"]?.query).toBeUndefined();
+  });
+
+  it("detects QUERY added by documentation after route filtering", async () => {
+    const specs = await generateSpecs(search(), {
+      excludeMethods: ["QUERY"],
+      documentation: { paths: { "/search": { query: ok } } },
+    });
+
+    expect(specs.openapi).toBe("3.2.0");
+    expect(specs.paths["/search"]?.query).toEqual(ok);
   });
 
   it.each<Partial<GenerateSpecOptions>>([
