@@ -7,6 +7,45 @@ import type { AllowedMethods } from "./utils.js";
 
 export type PromiseOr<T> = T | Promise<T>;
 
+// Extend the 3.1 types only where QUERY adds an operation slot in 3.2.
+type OpenAPICallback = Record<
+  string,
+  OpenAPIPathItem | OpenAPIV3_1.ReferenceObject
+>;
+
+export type OpenAPIOperation = Omit<
+  OpenAPIV3_1.OperationObject,
+  "callbacks"
+> & {
+  callbacks?: Record<string, OpenAPICallback | OpenAPIV3_1.ReferenceObject>;
+};
+
+export type OpenAPIPathItem = Omit<
+  OpenAPIV3_1.PathItemObject,
+  OpenAPIV3_1.HttpMethods
+> & {
+  [method in Lowercase<AllowedMethods>]?: OpenAPIOperation;
+};
+
+export type OpenAPIPaths = Record<string, OpenAPIPathItem | undefined>;
+
+type OpenAPIComponents = Omit<
+  OpenAPIV3_1.ComponentsObject,
+  "callbacks" | "pathItems"
+> & {
+  callbacks?: Record<string, OpenAPICallback | OpenAPIV3_1.ReferenceObject>;
+  pathItems?: Record<string, OpenAPIPathItem | OpenAPIV3_1.ReferenceObject>;
+};
+
+export type OpenAPIDocument = Omit<
+  OpenAPIV3_1.Document,
+  "paths" | "webhooks" | "components"
+> & {
+  paths: OpenAPIPaths;
+  webhooks?: Record<string, OpenAPIPathItem | OpenAPIV3_1.ReferenceObject>;
+  components?: OpenAPIComponents;
+};
+
 /**
  * Whether a schema describes what a route accepts (`input`) or what it
  * sends (`output`). They differ for schemas with defaults or transforms.
@@ -103,21 +142,21 @@ export type ResponsesWithResolver = {
  * Extended document type that allows resolver() in documentation.components.responses
  */
 type DocumentWithResolver = Omit<
-  Partial<OpenAPIV3_1.Document>,
+  Partial<OpenAPIDocument>,
   | "x-express-openapi-additional-middleware"
   | "x-express-openapi-validation-strict"
   | "components"
 > & {
-  components?: Omit<OpenAPIV3_1.ComponentsObject, "responses"> & {
+  components?: Omit<OpenAPIComponents, "responses"> & {
     responses?: ResponsesWithResolver;
   };
 };
 
 export type GenerateSpecOptions = {
   /**
-   * Customize OpenAPI config, refers to Swagger 2.0 config
-   *
-   * @see https://swagger.io/specification/v2/
+   * Customize the OpenAPI document. The version defaults to 3.1.0, or 3.2.0
+   * when the final document contains QUERY operations. An explicit `openapi`
+   * version is preserved; versions below 3.2 are rejected when QUERY remains.
    */
   documentation: DocumentWithResolver;
 
@@ -179,7 +218,7 @@ export type GenerateSpecOptions = {
 type OperationId = string | ((route: RouterRoute) => string);
 
 export type DescribeRouteOptions = Omit<
-  OpenAPIV3_1.OperationObject,
+  OpenAPIOperation,
   "requestBody" | "responses" | "operationId"
 > & {
   operationId?: OperationId;
@@ -205,7 +244,7 @@ export type RegisterSchemaPathOptions = {
   specs?: DescribeRouteOptions & {
     operationId?: OperationId;
   };
-  paths: Partial<OpenAPIV3_1.PathsObject>;
+  paths: OpenAPIPaths;
 };
 
 type HaveDefaultValues =

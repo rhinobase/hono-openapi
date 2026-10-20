@@ -2,7 +2,13 @@ import type { RouterRoute } from "hono/types";
 import { checkOptionalParameter } from "hono/utils/url";
 import type { OpenAPIV3_1 } from "openapi-types";
 import { componentRefs, decodeName, encodeName } from "./references";
-import type { RegisterSchemaPathOptions, SpecContext } from "./types";
+import type {
+  OpenAPIOperation,
+  OpenAPIPathItem,
+  OpenAPIPaths,
+  RegisterSchemaPathOptions,
+  SpecContext,
+} from "./types";
 
 /**
  * The unique symbol for the middlewares, which makes it easier to identify them. Not meant to be used directly, unless you're creating a custom middleware.
@@ -27,6 +33,7 @@ export const ALLOWED_METHODS = [
   "HEAD",
   "PATCH",
   "TRACE",
+  "QUERY",
 ] as const;
 
 export type AllowedMethods = (typeof ALLOWED_METHODS)[number];
@@ -259,7 +266,7 @@ function mergeSpecs(
       generatedOperationIds.get(spec) !== spec.operationId,
   );
 
-  const merged = specs.reduce<OpenAPIV3_1.OperationObject>(
+  const merged = specs.reduce<OpenAPIOperation>(
     (prev, spec) => {
       if (!spec || !prev) return prev;
 
@@ -362,7 +369,6 @@ export function registerSchemaPath(
     }
 
     if (paths[path]) {
-      // @ts-expect-error
       paths[path][method] = mergeSpecs(
         route,
         ...context,
@@ -382,11 +388,11 @@ export function registerSchemaPath(
  * that's unique already never changes. IDs set explicitly are left as they
  * are, and generated IDs avoid them.
  */
-export const uniqueOperationIds = (paths: OpenAPIV3_1.PathsObject) => {
+export const uniqueOperationIds = (paths: OpenAPIPaths) => {
   // Only the HTTP method slots of a Path Item hold operations; its other keys
   // (`parameters`, `servers`, `summary`, …) don't, so they're not read.
   const methods = ALLOWED_METHODS.map(
-    (method) => method.toLowerCase() as OpenAPIV3_1.HttpMethods,
+    (method) => method.toLowerCase() as Lowercase<AllowedMethods>,
   );
   const operations = Object.values(paths).flatMap((item) =>
     methods.flatMap((method) => {
@@ -394,7 +400,7 @@ export const uniqueOperationIds = (paths: OpenAPIV3_1.PathsObject) => {
       return typeof operation?.operationId === "string" ? [operation] : [];
     }),
   );
-  const isGenerated = (operation: OpenAPIV3_1.OperationObject) =>
+  const isGenerated = (operation: OpenAPIOperation) =>
     generatedOperationIds.get(operation) === operation.operationId ||
     derivedOperationIds.get(operation) === operation.operationId;
 
@@ -455,12 +461,9 @@ const parameterComponent = (
   return documented && { generated: false, name, parameter: documented };
 };
 
-export function removeExcludedPaths(
-  paths: OpenAPIV3_1.PathsObject,
-  ctx: SpecContext,
-) {
+export function removeExcludedPaths(paths: OpenAPIPaths, ctx: SpecContext) {
   const { exclude, excludeStaticFile } = ctx.options;
-  const newPaths: OpenAPIV3_1.PathsObject = {};
+  const newPaths: OpenAPIPaths = {};
   const _exclude = Array.isArray(exclude) ? exclude : [exclude];
 
   for (const [key, value] of Object.entries(paths)) {
@@ -620,7 +623,7 @@ export function removeExcludedPaths(
     }
 
     // Build filtered value with only non-null methods
-    const filteredValue: OpenAPIV3_1.PathItemObject = {};
+    const filteredValue: OpenAPIPathItem = {};
     for (const method of Object.keys(value)) {
       if (value[method] != null) {
         filteredValue[method] = value[method];
@@ -676,7 +679,7 @@ const reachableRefs = (
  */
 export function documentedComponents(
   components: OpenAPIV3_1.ComponentsObject,
-  paths: OpenAPIV3_1.PathsObject,
+  paths: OpenAPIPaths,
   documentation: unknown,
 ) {
   const contributed = new Set(

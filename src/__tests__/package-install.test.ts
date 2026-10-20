@@ -12,7 +12,7 @@ const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 
 // Building, packing, and registry downloads can exceed the default five seconds.
 describe("package installation", { timeout: 60_000 }, () => {
-  it("imports after a consumer installs it without auto-installed peers", async () => {
+  it("imports and types QUERY after installation without auto-installed peers", async () => {
     const tempDirectory = await mkdtemp(
       join(tmpdir(), "hono-openapi-package-"),
     );
@@ -63,6 +63,55 @@ describe("package installation", { timeout: 60_000 }, () => {
       );
 
       expect(stderr).toBe("");
+
+      // Check the declarations consumers actually install, not source-only types.
+      await writeFile(
+        join(consumerDirectory, "query.ts"),
+        `import { Hono } from "hono";
+import { generateSpecs, describeRoute, type AllowedMethods } from "hono-openapi";
+const method: AllowedMethods = "QUERY";
+const ok = { responses: { 200: { description: "OK" } } };
+const callback = { "{$request.body#/callbackUrl}": { query: ok } };
+const app = new Hono().on(method, "/search", describeRoute({ ...ok, callbacks: { result: callback } }), c => c.json({}));
+const specs = await generateSpecs(app, {
+  excludeMethods: [method],
+  defaultOptions: { QUERY: ok },
+  documentation: {
+    paths: { "/manual": { query: ok, post: { ...ok, callbacks: { result: callback } } } },
+    webhooks: { incoming: { query: ok } },
+    components: { pathItems: { Search: { query: ok } }, callbacks: { Search: callback } }
+  }
+});
+const operationId: string | undefined = specs.paths["/search"]?.query?.operationId;
+const item = specs.components?.pathItems?.Search;
+if (item && !("$ref" in item)) {
+  const operationId: string | undefined = item.query?.operationId;
+}
+const webhook = specs.webhooks?.incoming;
+if (webhook && !("$ref" in webhook)) {
+  const operationId: string | undefined = webhook.query?.operationId;
+}
+`,
+      );
+      await execFileAsync(
+        process.execPath,
+        [
+          join(projectRoot, "node_modules/typescript/bin/tsc"),
+          "--noEmit",
+          "--strict",
+          "--skipLibCheck",
+          "--module",
+          "NodeNext",
+          "--moduleResolution",
+          "NodeNext",
+          "--target",
+          "ES2022",
+          "query.ts",
+        ],
+        { cwd: consumerDirectory },
+      ).catch((error) => {
+        throw new Error(error.stdout || error.message, { cause: error });
+      });
     } finally {
       await rm(tempDirectory, { force: true, recursive: true });
     }
