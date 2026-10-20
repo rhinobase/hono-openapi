@@ -171,6 +171,11 @@ export async function generateSpecs<
       ),
     ),
     documentedPaths,
+    [documentation, resolvedDocumentation?.components],
+    Object.keys(
+      (documentation.components as OpenAPIV3_1.ComponentsObject | undefined)
+        ?.schemas ?? {},
+    ),
   );
 
   return {
@@ -979,10 +984,40 @@ const assignOutputNames = (
 };
 
 /**
+ * The input schemas a request uses: the ones `values` refer to, directly or
+ * through other input schemas, plus the `declared` ones. Response components
+ * are only reached through their marked names, so they never count.
+ */
+const usedInputs = (
+  schemas: Record<string, unknown>,
+  values: unknown[],
+  declared: Iterable<string>,
+) => {
+  const schemaNames = (value: unknown) =>
+    componentRefs(value)
+      .filter((ref) => ref.startsWith("schemas/"))
+      .map((ref) => decodeName(ref.slice("schemas/".length)))
+      .filter((name) => !isOutput(name) && Object.hasOwn(schemas, name));
+
+  const used = new Set(declared);
+  const pending = values.flatMap(schemaNames);
+  for (let name = pending.pop(); name !== undefined; name = pending.pop()) {
+    if (!used.has(name)) {
+      used.add(name);
+      pending.push(...schemaNames(schemas[name]));
+    }
+  }
+  return used;
+};
+
+/**
  * Gives every response component its final name, once the documented routes
  * are known:
  *
- * - When no request body uses its name, it takes the name as is.
+ * - When no request body uses its name, it takes the name as is. A request
+ *   only uses a component it refers to: converting one can also bring in a
+ *   component nothing refers to, such as the schema `.strict()` was called on,
+ *   and that one gives way to the response's instead.
  * - When one does with the same shape, both share one component.
  * - When the shapes differ, the response gets its own `<name>Output`, the
  *   suffix `zod-openapi` uses for the same case, so the request body and the
@@ -997,6 +1032,8 @@ const assignOutputNames = (
 const splitOutputComponents = (
   components: OpenAPIV3_1.ComponentsObject,
   paths: OpenAPIV3_1.PathsObject,
+  documentation: unknown,
+  declared: Iterable<string>,
 ) => {
   const { schemas = {}, ...otherComponents } = components;
   const outputs = Object.keys(schemas).filter(isOutput);
@@ -1007,8 +1044,13 @@ const splitOutputComponents = (
 
   const asInput = (name: string) =>
     isOutput(name) ? inputName(name) : undefined;
+  const used = usedInputs(
+    schemas,
+    [paths, otherComponents, documentation],
+    declared,
+  );
   const shared = new Set(
-    outputs.filter((output) => Object.hasOwn(schemas, inputName(output))),
+    outputs.filter((output) => used.has(inputName(output))),
   );
   const outputRefs = new Map(
     [...shared].map(
@@ -1058,7 +1100,11 @@ const splitOutputComponents = (
         Object.entries(schemas).flatMap(([name, schema]) => {
           const renamed = renameSchemaRefs(schema, rename);
           if (!isOutput(name)) {
-            return [[name, renamed]];
+            // An input form no request uses gives way to the response's.
+            return Object.hasOwn(schemas, `${name}${OUTPUT_MARK}`) &&
+              !used.has(name)
+              ? []
+              : [[name, renamed]];
           }
 
           const output = outputNames.get(name);
@@ -1067,9 +1113,7 @@ const splitOutputComponents = (
           }
 
           // The same shape as the request's, or no request uses the name.
-          return Object.hasOwn(schemas, inputName(name))
-            ? []
-            : [[inputName(name), renamed]];
+          return shared.has(name) ? [] : [[inputName(name), renamed]];
         }),
       ),
     } as OpenAPIV3_1.ComponentsObject,
