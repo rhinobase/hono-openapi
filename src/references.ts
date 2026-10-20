@@ -129,6 +129,215 @@ const mapReferences = <T>(
   ) as T;
 };
 
+/**
+ * How widening a subschema changes what the schema around it accepts: it
+ * widens it (`1`), narrows it (`-1`), or can do either (`0`).
+ */
+export type Polarity = -1 | 0 | 1;
+
+// Widening a subschema under these widens the schema around it.
+const POSITIVE_KEYWORDS = new Set([
+  "additionalItems",
+  "additionalProperties",
+  "allOf",
+  "anyOf",
+  "dependencies",
+  "dependentSchemas",
+  "else",
+  "items",
+  "patternProperties",
+  "prefixItems",
+  "properties",
+  "propertyNames",
+  "then",
+  "unevaluatedItems",
+  "unevaluatedProperties",
+]);
+
+// These hold subschemas by name, so a name is never a keyword.
+const SUBSCHEMA_MAPS = new Set([
+  "$defs",
+  "definitions",
+  "dependencies",
+  "dependentSchemas",
+  "patternProperties",
+  "properties",
+]);
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value != null && typeof value === "object" && !Array.isArray(value);
+
+/**
+ * The polarity of the subschemas under `key` in a schema with `polarity`.
+ *
+ * - `not` reverses it.
+ * - `if` picks between `then` and `else`, and `oneOf` accepts only one match,
+ *   so widening either can make a value fail as well as pass.
+ * - `contains` widens, unless a `maxContains` caps how many items match it.
+ * - Local definitions are neutral: their polarity is that of the places
+ *   referring to them. So is any other keyword, which holds no subschema.
+ */
+const keywordPolarity = (
+  key: string,
+  schema: Record<string, unknown>,
+  polarity: Polarity,
+): Polarity => {
+  if (key === "not") {
+    return polarity === 0 ? 0 : (-polarity as Polarity);
+  }
+  if (key === "contains") {
+    return Object.hasOwn(schema, "maxContains") ? 0 : polarity;
+  }
+  return POSITIVE_KEYWORDS.has(key) ? polarity : 0;
+};
+
+/**
+ * `schema` with each subschema replaced by what `visit` returns for it, given
+ * its polarity and its path below `schema`. Payload data and extension values
+ * are left as they are.
+ */
+const mapSubschemas = (
+  schema: Record<string, unknown>,
+  polarity: Polarity,
+  visit: (
+    subschema: unknown,
+    polarity: Polarity,
+    path: PropertyKey[],
+  ) => unknown,
+) =>
+  Object.fromEntries(
+    Object.entries(schema).map(([key, value]) => {
+      if (
+        LITERAL_FIELDS.has(key) ||
+        key.startsWith("x-") ||
+        key === "examples"
+      ) {
+        return [key, value];
+      }
+      const inner = keywordPolarity(key, schema, polarity);
+      const visitAll = (item: unknown, path: PropertyKey[]) =>
+        Array.isArray(item)
+          ? item.map((entry, index) => visit(entry, inner, [...path, index]))
+          : visit(item, inner, path);
+      return [
+        key,
+        SUBSCHEMA_MAPS.has(key) && isRecord(value)
+          ? Object.fromEntries(
+              Object.entries(value).map(([name, item]) => [
+                name,
+                visitAll(item, [key, name]),
+              ]),
+            )
+          : visitAll(value, [key]),
+      ];
+    }),
+  );
+
+const at = (value: unknown, path: PropertyKey[]) =>
+  path.reduce<unknown>(
+    (item, key) =>
+      item != null && typeof item === "object"
+        ? (item as Record<PropertyKey, unknown>)[key]
+        : undefined,
+    value,
+  );
+
+/**
+ * `output` without the `additionalProperties: false` it adds to `input` where
+ * leaving it out widens what `output` accepts in a place with `polarity`.
+ */
+export const withoutAddedClosures = (
+  output: unknown,
+  input: unknown,
+  polarity: Polarity,
+): unknown => {
+  if (!isRecord(output) || polarity === 0) {
+    return output;
+  }
+
+  const { additionalProperties, ...rest } = output;
+  const opened =
+    polarity === 1 &&
+    additionalProperties === false &&
+    at(input, ["additionalProperties"]) !== false;
+  return mapSubschemas(opened ? rest : output, polarity, (item, inner, path) =>
+    withoutAddedClosures(item, at(input, path), inner),
+  );
+};
+
+/**
+ * The schema components `schema` refers to, each with the polarity of the
+ * reference.
+ */
+const schemaRefs = (
+  schema: unknown,
+  polarity: Polarity,
+): [string, Polarity][] => {
+  if (!isRecord(schema)) {
+    return [];
+  }
+
+  const refs: [string, Polarity][] =
+    typeof schema.$ref === "string" && schema.$ref.startsWith(SCHEMA_REF)
+      ? [[decodeName(schema.$ref.slice(SCHEMA_REF.length)), polarity]]
+      : [];
+  mapSubschemas(schema, polarity, (item, inner) => {
+    refs.push(...schemaRefs(item, inner));
+    return item;
+  });
+  return refs;
+};
+
+/**
+ * The schema components the schemas in `value`, an OpenAPI document or part of
+ * one, refer to, each with the polarity of the reference.
+ */
+const documentSchemaRefs = (
+  value: unknown,
+  isMap = false,
+): [string, Polarity][] => {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => documentSchemaRefs(item));
+  }
+  if (!isRecord(value)) {
+    return [];
+  }
+
+  return Object.entries(value).flatMap(([key, item]) => {
+    if (isMap) {
+      return documentSchemaRefs(item);
+    }
+    if (LITERAL_FIELDS.has(key) || key.startsWith("x-") || key === "examples") {
+      return [];
+    }
+    if (key === "schema") {
+      return schemaRefs(item, 1);
+    }
+    return documentSchemaRefs(item, REFERENCE_MAPS.has(key));
+  });
+};
+
+/**
+ * The polarities each of `schemas` is used with in `document`, directly or
+ * through other components.
+ */
+export const schemaPolarities = (
+  schemas: Record<string, unknown>,
+  document: unknown,
+) => {
+  const polarities = new Map<string, Set<Polarity>>();
+  const pending = documentSchemaRefs(document);
+  for (let ref = pending.pop(); ref !== undefined; ref = pending.pop()) {
+    const [name, polarity] = ref;
+    const used = polarities.get(name) ?? new Set();
+    if (Object.hasOwn(schemas, name) && !used.has(polarity)) {
+      polarities.set(name, used.add(polarity));
+      pending.push(...schemaRefs(schemas[name], polarity));
+    }
+  }
+  return polarities;
+};
+
 /** Rename schema references, including discriminator mapping targets. */
 export const renameSchemaRefs = <T>(
   value: T,
