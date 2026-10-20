@@ -22,6 +22,8 @@ import type {
   GenerateSpecOptions,
   HandlerUniqueProperty,
   HeadersWithResolver,
+  OpenAPIDocument,
+  OpenAPIPaths,
   RegisterSchemaPathOptions,
   ResponsesWithResolver,
   SchemaDirection,
@@ -40,6 +42,7 @@ import {
   VALIDATION_MARKER,
   withOmittedParameters,
 } from "./utils";
+import { resolveOpenAPIVersion } from "./version";
 
 const DEFAULT_OPTIONS: Partial<GenerateSpecOptions> = {
   documentation: {},
@@ -89,7 +92,7 @@ export function openAPIRouteHandler<
   hono: Hono<E, S, P>,
   options?: Partial<GenerateSpecOptions>,
 ): MiddlewareHandler<E, P, I> {
-  let specs: OpenAPIV3_1.Document;
+  let specs: OpenAPIDocument;
 
   return async (c) => {
     if (specs) return c.json(specs);
@@ -186,7 +189,7 @@ export async function generateSpecs<
     ),
   );
 
-  return {
+  const document = {
     openapi: "3.1.0",
     ...documentation,
     tags: documentation.tags?.filter(
@@ -203,15 +206,18 @@ export async function generateSpecs<
       ...documentation.paths,
     },
     components,
-  } satisfies OpenAPIV3_1.Document;
+  } satisfies OpenAPIDocument;
+
+  document.openapi = resolveOpenAPIVersion(document, documentation.openapi);
+  return document;
 }
 
 async function generatePaths<
   E extends Env = BlankEnv,
   P extends string = string,
   S extends Schema = BlankSchema,
->(hono: Hono<E, S, P>, ctx: SpecContext): Promise<OpenAPIV3_1.PathsObject> {
-  const paths: OpenAPIV3_1.PathsObject = {};
+>(hono: Hono<E, S, P>, ctx: SpecContext): Promise<OpenAPIPaths> {
+  const paths: OpenAPIPaths = {};
   // Conversion awaits vendor adapters, so concurrent generations must not
   // share middleware metadata while traversing their routes.
   const pathContext = new Map<string, RegisterSchemaPathOptions["specs"]>();
@@ -1039,10 +1045,13 @@ const usedInputs = (
  */
 const splitOutputComponents = (
   components: OpenAPIV3_1.ComponentsObject,
-  paths: OpenAPIV3_1.PathsObject,
+  paths: OpenAPIPaths,
   documentation: unknown,
   declared: Iterable<string>,
-) => {
+): {
+  components: NonNullable<OpenAPIDocument["components"]>;
+  paths: OpenAPIPaths;
+} => {
   const { schemas = {}, ...otherComponents } = components;
   const outputs = Object.keys(schemas).filter(isOutput);
 
