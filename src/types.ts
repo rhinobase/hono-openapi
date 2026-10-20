@@ -129,6 +129,15 @@ export type GenerateSpecOptions = {
   includeEmptyPaths: boolean;
 
   /**
+   * Document routes hidden with `hide` as if they weren't hidden, components
+   * included. This is useful for a second, internal document next to the
+   * public one, without changing any route's `hide`.
+   *
+   * @default false
+   */
+  includeHiddenRoutes: boolean;
+
+  /**
    * Determine if Swagger should exclude static files (by checking if the last path segment contains a period).
    *
    * @default true
