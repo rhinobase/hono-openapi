@@ -18,6 +18,11 @@ export type OpenAPIOperation = Omit<
   "callbacks"
 > & {
   callbacks?: Record<string, OpenAPICallback | OpenAPIV3_1.ReferenceObject>;
+  /**
+   * Specification extensions, such as `x-internal`, written to the operation as
+   * they are given.
+   */
+  [extension: `x-${string}`]: unknown;
 };
 
 export type OpenAPIPathItem = OpenAPIV3_1.PathItemObject & {
