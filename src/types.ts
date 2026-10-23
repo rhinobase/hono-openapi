@@ -141,17 +141,42 @@ export type ResponsesWithResolver = {
 };
 
 /**
+ * An operation that accepts resolver() output in its request body and responses.
+ */
+export type OperationWithResolver = Omit<
+  OpenAPIOperation,
+  "requestBody" | "responses"
+> & {
+  requestBody?: RequestBodyObjectWithResolver;
+  responses?: ResponsesWithResolver;
+};
+
+/**
+ * Webhooks whose operations accept resolver() output, as a route's do.
+ */
+export type WebhooksWithResolver = Record<
+  string,
+  | (Omit<OpenAPIPathItem, Lowercase<AllowedMethods>> & {
+      [method in Lowercase<AllowedMethods>]?: OperationWithResolver;
+    })
+  | OpenAPIV3_1.ReferenceObject
+>;
+
+/**
  * Extended document type that allows resolver() in documentation.components.responses
+ * and in the operations of documentation.webhooks
  */
 type DocumentWithResolver = Omit<
   Partial<OpenAPIDocument>,
   | "x-express-openapi-additional-middleware"
   | "x-express-openapi-validation-strict"
   | "components"
+  | "webhooks"
 > & {
   components?: Omit<OpenAPIComponents, "responses"> & {
     responses?: ResponsesWithResolver;
   };
+  webhooks?: WebhooksWithResolver;
 };
 
 export type GenerateSpecOptions = {

@@ -25,10 +25,14 @@ import type {
   HandlerUniqueProperty,
   HeadersWithResolver,
   OpenAPIDocument,
+  OpenAPIOperation,
+  OpenAPIPathItem,
   OpenAPIPaths,
+  OperationWithResolver,
   ResponsesWithResolver,
   SchemaDirection,
   SpecContext,
+  WebhooksWithResolver,
 } from "./types";
 import {
   ALLOWED_METHODS,
@@ -168,23 +172,48 @@ export async function generateSpecs<
     documentation.components.responses = resolvedDocumentation.responses;
   }
 
+  // Resolve any resolver() objects inside the operations of documentation.webhooks.
+  const resolvedWebhooks = documentation.webhooks
+    ? await resolveWebhookSchemas(documentation.webhooks)
+    : undefined;
+  if (resolvedWebhooks) {
+    documentation.webhooks = resolvedWebhooks.webhooks;
+  }
+
   const documentedPaths = removeExcludedPaths(paths, ctx);
   uniqueOperationIds({ ...documentedPaths, ...documentation.paths });
 
   // Components are collected from every route, including the ones hidden or
   // excluded above, so only keep those the rest of the document uses.
-  const { components, paths: outputPaths } = splitOutputComponents(
+  const {
+    components,
+    paths: outputPaths,
+    webhooks,
+  } = splitOutputComponents(
     mergeComponentsObjects(
       documentation.components as OpenAPIV3_1.ComponentsObject,
       resolvedDocumentation?.components,
+      resolvedWebhooks?.components,
       documentedComponents(
         ctx.components,
         documentedPaths,
-        withOutputRefs([documentation, resolvedDocumentation?.components], ctx),
+        withOutputRefs(
+          [
+            documentation,
+            resolvedDocumentation?.components,
+            resolvedWebhooks?.components,
+          ],
+          ctx,
+        ),
       ),
     ),
     documentedPaths,
-    [documentation, resolvedDocumentation?.components],
+    documentation.webhooks as OpenAPIDocument["webhooks"],
+    [
+      documentation,
+      resolvedDocumentation?.components,
+      resolvedWebhooks?.components,
+    ],
     Object.keys(
       (documentation.components as OpenAPIV3_1.ComponentsObject | undefined)
         ?.schemas ?? {},
@@ -208,6 +237,7 @@ export async function generateSpecs<
       ...outputPaths,
       ...documentation.paths,
     },
+    ...(webhooks && { webhooks }),
     components,
   } satisfies OpenAPIDocument;
 
@@ -800,7 +830,16 @@ async function resolveContentSchemas(
   return { content: resolvedContent, components };
 }
 
-async function resolveResponseSchemas(responses: ResponsesWithResolver) {
+/**
+ * Resolve any resolver() objects in a responses map. A route's responses are
+ * what it sends, so they're converted as output and their components marked
+ * as such; a webhook's are what the receiver answers with, so they're
+ * converted as input.
+ */
+async function resolveResponseSchemas(
+  responses: ResponsesWithResolver,
+  direction: SchemaDirection = "output",
+) {
   let components: OpenAPIV3_1.ComponentsObject = {};
   const resolvedResponses: OpenAPIV3_1.ResponsesObject = {};
 
@@ -816,13 +855,13 @@ async function resolveResponseSchemas(responses: ResponsesWithResolver) {
       continue;
     }
 
-    // A response's headers come with the response, so they're converted as
-    // output, like its content.
+    // A response's headers come with the response, so they're converted the
+    // same way as its content.
     const content = response.content
-      ? await resolveContentSchemas(response.content, "output")
+      ? await resolveContentSchemas(response.content, direction)
       : undefined;
     const headers = response.headers
-      ? await resolveHeaders(response.headers, "output")
+      ? await resolveHeaders(response.headers, direction)
       : undefined;
     resolvedResponses[key] = {
       ...response,
@@ -836,7 +875,75 @@ async function resolveResponseSchemas(responses: ResponsesWithResolver) {
     );
   }
 
-  return markAsOutput(resolvedResponses, components);
+  if (direction === "input") {
+    return { responses: resolvedResponses, components };
+  }
+  const marked = markAsOutput(resolvedResponses, components, true);
+  return { responses: marked.value, components: marked.components };
+}
+
+/**
+ * Resolve any resolver() objects in the operations of webhooks. A webhook's
+ * request body is what the API sends, so it's converted as output and its
+ * components are marked as a response's are; its responses are what the
+ * receiver answers with, so they're converted as input, as a request body is.
+ */
+async function resolveWebhookSchemas(webhooks: WebhooksWithResolver) {
+  let components: OpenAPIV3_1.ComponentsObject = {};
+  const resolvedWebhooks: NonNullable<OpenAPIDocument["webhooks"]> = {};
+
+  for (const [name, pathItem] of Object.entries(webhooks)) {
+    if ("$ref" in pathItem) {
+      resolvedWebhooks[name] = pathItem as OpenAPIV3_1.ReferenceObject;
+      continue;
+    }
+
+    const operations: [string, OpenAPIOperation][] = [];
+    for (const method of ALLOWED_METHODS) {
+      const key = method.toLowerCase() as Lowercase<AllowedMethods>;
+      const operation = pathItem[key];
+      if (operation) {
+        const resolved = await resolveWebhookOperation(operation);
+        operations.push([key, resolved.operation]);
+        components = mergeComponentsObjects(components, resolved.components);
+      }
+    }
+    resolvedWebhooks[name] = {
+      ...pathItem,
+      ...Object.fromEntries(operations),
+    } as OpenAPIPathItem;
+  }
+
+  return { webhooks: resolvedWebhooks, components };
+}
+
+async function resolveWebhookOperation({
+  requestBody,
+  responses,
+  ...operation
+}: OperationWithResolver) {
+  const body =
+    requestBody && "content" in requestBody
+      ? await resolveContentSchemas(requestBody.content, "output")
+      : undefined;
+  const markedBody =
+    body &&
+    markAsOutput({ ...requestBody, content: body.content }, body.components);
+  const resolvedResponses = responses
+    ? await resolveResponseSchemas(responses, "input")
+    : undefined;
+
+  return {
+    operation: {
+      ...operation,
+      ...(requestBody && { requestBody: markedBody?.value ?? requestBody }),
+      ...(resolvedResponses && { responses: resolvedResponses.responses }),
+    } as OpenAPIOperation,
+    components: mergeComponentsObjects(
+      markedBody?.components ?? {},
+      resolvedResponses?.components,
+    ),
+  };
 }
 
 /**
@@ -918,16 +1025,17 @@ const isOutput = (name: string) => name.endsWith(OUTPUT_MARK);
 
 const inputName = (output: string) => output.slice(0, -OUTPUT_MARK.length);
 
-const markAsOutput = (
-  responses: OpenAPIV3_1.ResponsesObject,
+const markAsOutput = <T>(
+  value: T,
   components: OpenAPIV3_1.ComponentsObject,
+  isMap = false,
 ) => {
   const schemas = components.schemas ?? {};
   const mark = (name: string) =>
     Object.hasOwn(schemas, name) ? `${name}${OUTPUT_MARK}` : undefined;
 
   return {
-    responses: renameSchemaRefs(responses, mark, true),
+    value: renameSchemaRefs(value, mark, isMap),
     components: {
       ...components,
       ...(components.schemas && {
@@ -1051,18 +1159,20 @@ const usedInputs = (
 const splitOutputComponents = (
   components: OpenAPIV3_1.ComponentsObject,
   paths: OpenAPIPaths,
+  webhooks: OpenAPIDocument["webhooks"],
   documentation: unknown,
   declared: Iterable<string>,
   ignoreClosedOutputs = false,
 ): {
   components: NonNullable<OpenAPIDocument["components"]>;
   paths: OpenAPIPaths;
+  webhooks: OpenAPIDocument["webhooks"];
 } => {
   const { schemas = {}, ...otherComponents } = components;
   const outputs = Object.keys(schemas).filter(isOutput);
 
   if (outputs.length === 0) {
-    return { components, paths };
+    return { components, paths, webhooks };
   }
 
   const asInput = (name: string) =>
@@ -1159,5 +1269,6 @@ const splitOutputComponents = (
       ),
     } as OpenAPIV3_1.ComponentsObject,
     paths: renameSchemaRefs(paths, rename, true),
+    webhooks: renameSchemaRefs(webhooks, rename, true),
   };
 };

@@ -10,6 +10,7 @@ export default defineConfig({
       // separate cleanup.
       include: [
         "src/__tests__/issue-312-types.test.ts",
+        "src/__tests__/issue-314-types.test.ts",
         "src/__tests__/rpc-types.test.ts",
       ],
       tsconfig: "./tsconfig.typecheck.json",
