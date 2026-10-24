@@ -8,7 +8,10 @@ export default defineConfig({
       // typecheck currently surfaces pre-existing strict-mode errors in the
       // OpenAPI generation code and other test files; widening this is a
       // separate cleanup.
-      include: ["src/__tests__/rpc-types.test.ts"],
+      include: [
+        "src/__tests__/issue-312-types.test.ts",
+        "src/__tests__/rpc-types.test.ts",
+      ],
       tsconfig: "./tsconfig.typecheck.json",
     },
   },
