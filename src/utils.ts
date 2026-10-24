@@ -201,6 +201,10 @@ const expandedOperations = new WeakSet<object>();
 const isExpandedOperation = (spec: unknown) =>
   spec != null && typeof spec === "object" && expandedOperations.has(spec);
 
+// Keep handler specs separate from inherited context so each registration can
+// use the current context without merging it back into itself.
+const operationHandlerSpecs = new WeakMap<object, OpenAPIOperation[]>();
+
 const specsByPathContext = new Map<
   string,
   RegisterSchemaPathOptions["specs"]
@@ -369,14 +373,20 @@ export function registerSchemaPath(
     }
 
     if (paths[path]) {
+      const previous = paths[path][method];
+      const handlers = [
+        ...(previous
+          ? (operationHandlerSpecs.get(previous) ?? [previous])
+          : []),
+        // Resolve callbacks once while retaining each handler's provenance.
+        mergeSpecs(route, specs),
+      ];
+      const operation = mergeSpecs(route, ...context, ...handlers);
+      operationHandlerSpecs.set(operation, handlers);
+
       // openapi-types intersects 3.0 and 3.1 operations in PathItemObject.
       // @ts-expect-error -- Generated schemas use the 3.1 operation types.
-      paths[path][method] = mergeSpecs(
-        route,
-        ...context,
-        paths[path]?.[method],
-        specs,
-      );
+      paths[path][method] = operation;
     }
   }
 }
