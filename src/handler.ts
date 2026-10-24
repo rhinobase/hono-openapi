@@ -898,7 +898,9 @@ function mergeComponentsObjects(
 
       return prev;
     },
-    components[0] ?? {},
+    // A copy, so the first object, `documentation.components`, still holds
+    // only what the caller declared once its schemas are read afterwards.
+    { ...components[0] },
   );
 }
 
