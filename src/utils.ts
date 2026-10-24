@@ -201,10 +201,45 @@ const expandedOperations = new WeakSet<object>();
 const isExpandedOperation = (spec: unknown) =>
   spec != null && typeof spec === "object" && expandedOperations.has(spec);
 
+type HandlerSpec = {
+  spec: OpenAPIOperation;
+  previous?: HandlerSpec;
+};
+
+// An unchanged context can merge incrementally. Keep an immutable handler
+// history for context changes without copying it on every registration.
+const operationHandlerSpecs = new WeakMap<
+  object,
+  {
+    context: RegisterSchemaPathOptions["specs"][];
+    history: HandlerSpec;
+  }
+>();
+
+const collectHandlerSpecs = (history: HandlerSpec) => {
+  const specs: OpenAPIOperation[] = [];
+  let current: HandlerSpec | undefined = history;
+  while (current) {
+    specs.push(current.spec);
+    current = current.previous;
+  }
+  return specs.reverse();
+};
+
 const specsByPathContext = new Map<
   string,
   RegisterSchemaPathOptions["specs"]
 >();
+
+// Generation replaces context entries rather than mutating them. Caller-owned
+// maps passed to the public registerSchemaPath helper have no such guarantee.
+const managedPathContexts = new WeakSet<object>();
+
+export const createSpecsContext = () => {
+  const context = new Map<string, RegisterSchemaPathOptions["specs"]>();
+  managedPathContexts.add(context);
+  return context;
+};
 
 function getPathContext(path: string, pathContext: typeof specsByPathContext) {
   const context: RegisterSchemaPathOptions["specs"][] = [];
@@ -369,14 +404,26 @@ export function registerSchemaPath(
     }
 
     if (paths[path]) {
+      const previous = paths[path][method];
+      const state = previous && operationHandlerSpecs.get(previous);
+      const history: HandlerSpec = {
+        // Resolve callbacks once while retaining each handler's provenance.
+        spec: mergeSpecs(route, specs),
+        previous: state?.history ?? (previous ? { spec: previous } : undefined),
+      };
+      const sameContext =
+        state &&
+        (context.length === 0 || managedPathContexts.has(pathContext)) &&
+        state.context.length === context.length &&
+        state.context.every((spec, index) => spec === context[index]);
+      const operation = sameContext
+        ? mergeSpecs(route, previous, history.spec)
+        : mergeSpecs(route, ...context, ...collectHandlerSpecs(history));
+      operationHandlerSpecs.set(operation, { context, history });
+
       // openapi-types intersects 3.0 and 3.1 operations in PathItemObject.
       // @ts-expect-error -- Generated schemas use the 3.1 operation types.
-      paths[path][method] = mergeSpecs(
-        route,
-        ...context,
-        paths[path]?.[method],
-        specs,
-      );
+      paths[path][method] = operation;
     }
   }
 }
