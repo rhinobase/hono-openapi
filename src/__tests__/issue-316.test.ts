@@ -3,8 +3,134 @@ import { describe, expect, it } from "vitest";
 import z from "zod/v4";
 import { generateSpecs } from "../handler.js";
 import { describeRoute, validator } from "../middlewares.js";
+import type { OpenAPIPaths } from "../types.js";
+import { registerSchemaPath } from "../utils.js";
 
 describe("path context is inherited once per operation", () => {
+  it.each([false, true])(
+    "processes stacked handler metadata once with inherited context=%s",
+    async (inherited) => {
+      const app = new Hono();
+      if (inherited) {
+        app.use("/v1/*", describeRoute({ security: [{ bearerAuth: [] }] }));
+      }
+      let enumerations = 0;
+      const count = 200;
+      for (let i = 0; i < count; i++) {
+        const metadata = new Proxy(
+          { value: i },
+          {
+            ownKeys(target) {
+              enumerations++;
+              return Reflect.ownKeys(target);
+            },
+          },
+        );
+        app.get("/v1/quotes", describeRoute({ "x-metadata": metadata }));
+      }
+      app.get("/v1/quotes", (c) => c.json([]));
+
+      const specs = await generateSpecs(app);
+      const operation = specs.paths["/v1/quotes"]?.get;
+
+      expect(operation?.["x-metadata"]).toEqual({ value: 199 });
+      expect(operation?.security).toEqual(
+        inherited ? [{ bearerAuth: [] }] : undefined,
+      );
+      expect(enumerations).toBeLessThanOrEqual(count * 2);
+    },
+  );
+
+  it("keeps handler histories independent when callers reuse an earlier operation", () => {
+    const route = {
+      method: "GET",
+      path: "/quotes",
+      handler: () => new Response(),
+    };
+    const paths: OpenAPIPaths = {};
+    const context = new Map();
+    registerSchemaPath({ route, paths, specs: { tags: ["Shared"] } }, context);
+    const fork: OpenAPIPaths = { "/quotes": { ...paths["/quotes"] } };
+
+    registerSchemaPath(
+      { route, paths, specs: { tags: ["Original"] } },
+      context,
+    );
+    context.set("/*", { security: [{ bearerAuth: [] }] });
+    registerSchemaPath(
+      { route, paths: fork, specs: { tags: ["Fork"] } },
+      context,
+    );
+
+    expect(paths["/quotes"]?.get?.tags).toEqual(["Shared", "Original"]);
+    expect(fork["/quotes"]?.get?.tags).toEqual(["Shared", "Fork"]);
+    expect(fork["/quotes"]?.get?.security).toEqual([{ bearerAuth: [] }]);
+  });
+
+  it("observes in-place changes to a caller-provided path context", () => {
+    const route = {
+      method: "GET",
+      path: "/quotes",
+      handler: () => new Response(),
+    };
+    const paths: OpenAPIPaths = {};
+    const inherited = {
+      summary: "Before",
+      security: [{ bearerAuth: [] }, { apiKey: [] }],
+    };
+    const context = new Map([["/*", inherited]]);
+    registerSchemaPath(
+      { route, paths, specs: { security: [{ oauth: ["read"] }] } },
+      context,
+    );
+
+    inherited.summary = "After";
+    inherited.security.pop();
+    registerSchemaPath({ route, paths, specs: {} }, context);
+
+    expect(paths["/quotes"]?.get?.summary).toBe("After");
+    expect(paths["/quotes"]?.get?.security).toEqual([
+      { bearerAuth: [] },
+      { oauth: ["read"] },
+    ]);
+  });
+
+  it.each([false, true])(
+    "retains explicit body requirement=%s and callback results when context changes",
+    async (required) => {
+      let calls = 0;
+      const app = new Hono()
+        .use(
+          "/v1/*",
+          describeRoute({
+            security: [{ bearerAuth: [] }],
+            requestBody: { required: !required, content: {} },
+          }),
+        )
+        .post(
+          "/v1/quotes",
+          describeRoute({
+            operationId: () => `createQuote${++calls}`,
+            requestBody: { required, content: {} },
+          }),
+          validator("json", z.object({ text: z.string() })),
+          describeRoute({ summary: "Create a quote" }),
+        )
+        .use("/v1/*", describeRoute({ security: [{ apiKey: [] }] }))
+        .post("/v1/quotes", describeRoute({ tags: ["Quotes"] }), (c) =>
+          c.json({}, 201),
+        );
+
+      const specs = await generateSpecs(app);
+      const operation = specs.paths["/v1/quotes"]?.post;
+
+      expect(operation?.security).toEqual([{ bearerAuth: [] }, { apiKey: [] }]);
+      expect(operation?.requestBody).toMatchObject({ required });
+      expect(operation?.operationId).toBe("createQuote1");
+      expect(calls).toBe(1);
+    },
+  );
+
   it.each([false, true])(
     "preserves an explicit route body requirement of %s over inherited metadata",
     async (required) => {

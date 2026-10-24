@@ -26,7 +26,6 @@ import type {
   HeadersWithResolver,
   OpenAPIDocument,
   OpenAPIPaths,
-  RegisterSchemaPathOptions,
   ResponsesWithResolver,
   SchemaDirection,
   SpecContext,
@@ -34,6 +33,7 @@ import type {
 import {
   ALLOWED_METHODS,
   type AllowedMethods,
+  createSpecsContext,
   documentedComponents,
   expandOptionalParameters,
   registerSchemaPath,
@@ -223,7 +223,7 @@ async function generatePaths<
   const paths: OpenAPIPaths = {};
   // Conversion awaits vendor adapters, so concurrent generations must not
   // share middleware metadata while traversing their routes.
-  const pathContext = new Map<string, RegisterSchemaPathOptions["specs"]>();
+  const pathContext = createSpecsContext();
   // Each middleware of a route documents the same operation, and a later one's
   // spec is merged over the earlier ones'. The defaults go in once, under the
   // first, so they can't override what an earlier `describeRoute` set.
