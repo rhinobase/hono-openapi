@@ -1029,9 +1029,9 @@ const sameSchema = (a: unknown, b: unknown) => canonical(a) === canonical(b);
  * The output forms a patch points at must hold only values their input forms
  * accept too, which `splitOutputComponents` checks.
  *
- * `additionalProperties: false` only sees the properties of its own
- * subschema, so a patch that sets it lists every property, the unchanged ones
- * as `{}`.
+ * `additionalProperties: false` only sees the properties and patterns of its
+ * own subschema, so a patch that sets it lists them all, every pattern and
+ * unchanged property as `{}`.
  */
 const outputPatch = (
   input: unknown,
@@ -1084,6 +1084,14 @@ const outputPatch = (
     ...(closes
       ? {
           additionalProperties: false,
+          ...(isSchemaObject(output.patternProperties) && {
+            patternProperties: Object.fromEntries(
+              Object.keys(output.patternProperties).map((pattern) => [
+                pattern,
+                {},
+              ]),
+            ),
+          }),
           properties: Object.fromEntries(
             Object.entries(properties).map(([property, schema]) => [
               property,

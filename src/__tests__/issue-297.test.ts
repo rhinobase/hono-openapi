@@ -421,3 +421,52 @@ describe("an output form that refers to a narrower one", () => {
     },
   );
 });
+
+const plainNote = {
+  properties: { title: { type: "string" } },
+  type: "object",
+} as const;
+const patterns = { patternProperties: { "^x-": { type: "string" } } } as const;
+
+describe("an output form that closes an input form with patterns", () => {
+  it("is written over its input form, keeping the patterns", async () => {
+    const schemas = await componentsForForms(
+      "closed output form with patterns",
+      { Note: { ...plainNote, ...patterns } },
+      { Note: { ...plainNote, ...patterns, additionalProperties: false } },
+    );
+
+    expect(schemas.NoteOutput).toEqual({
+      allOf: [
+        { $ref: "#/components/schemas/Note" },
+        {
+          additionalProperties: false,
+          patternProperties: { "^x-": {} },
+          properties: { title: {} },
+        },
+      ],
+    });
+    expect(
+      isValid(schemas, "NoteOutput", { title: "ok", "x-source": "web" }),
+    ).toBe(true);
+    expect(isValid(schemas, "NoteOutput", { title: "ok", "x-source": 1 })).toBe(
+      false,
+    );
+    expect(isValid(schemas, "NoteOutput", { body: "", title: "ok" })).toBe(
+      false,
+    );
+  });
+
+  it("stays whole when only the output form has them", async () => {
+    const schemas = await componentsForForms(
+      "closed output form with its own patterns",
+      { Note: plainNote },
+      { Note: { ...plainNote, ...patterns, additionalProperties: false } },
+    );
+
+    expect(schemas.NoteOutput).not.toHaveProperty("allOf");
+    expect(
+      isValid(schemas, "NoteOutput", { title: "ok", "x-source": "web" }),
+    ).toBe(true);
+  });
+});
