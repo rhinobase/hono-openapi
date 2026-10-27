@@ -1201,8 +1201,11 @@ const splitOutputComponents = (
   // Leaving out an `additionalProperties: false` a response adds only widens
   // what it's documented to accept where widening that schema widens the
   // response, so only there can the response share the request's component.
+  // A webhook's request body is sent as a response is, so where it refers to
+  // a component counts as well.
   const polarities =
-    ignoreClosedOutputs && schemaPolarities(schemas, [paths, otherComponents]);
+    ignoreClosedOutputs &&
+    schemaPolarities(schemas, [{ paths, webhooks }, otherComponents]);
   const comparable = (output: string) => {
     const schema = renameSchemaRefs(schemas[output], asInput);
     if (!polarities) {
