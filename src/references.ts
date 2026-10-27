@@ -269,7 +269,7 @@ export const withoutAddedClosures = (
  * The schema components `schema` refers to, each with the polarity of the
  * reference.
  */
-const schemaRefs = (
+export const schemaRefs = (
   schema: unknown,
   polarity: Polarity,
 ): [string, Polarity][] => {
