@@ -191,8 +191,9 @@ export async function generateSpecs<
     paths: outputPaths,
     webhooks,
   } = splitOutputComponents(
+    // What `documentation` declares replaces what's generated under the same
+    // name, as its paths replace the generated ones.
     mergeComponentsObjects(
-      documentation.components as OpenAPIV3_1.ComponentsObject,
       resolvedDocumentation?.components,
       resolvedWebhooks?.components,
       documentedComponents(
@@ -207,6 +208,7 @@ export async function generateSpecs<
           ctx,
         ),
       ),
+      documentation.components as OpenAPIV3_1.ComponentsObject,
     ),
     documentedPaths,
     documentation.webhooks as OpenAPIDocument["webhooks"],
@@ -978,40 +980,31 @@ function liftSchemaDefs(result: {
   delete (result.schema as { $defs?: unknown }).$defs;
 }
 
-function mergeComponentsObjects(
+/**
+ * `components` merged into one components object, a later one's entries
+ * replacing an earlier one's of the same type and name. Types without entries
+ * are left out, so the document gets no empty maps. A specification extension
+ * (`x-*`) holds a value of its own rather than named components, so it's kept
+ * as it is, a later one replacing an earlier one.
+ */
+const mergeComponentsObjects = (
   ...components: (OpenAPIV3_1.ComponentsObject | undefined)[]
-) {
-  return components.reduce<OpenAPIV3_1.ComponentsObject>(
-    (prev, component, index) => {
-      if (component == null || index === 0) return prev;
-
-      if (
-        (prev.schemas && Object.keys(prev.schemas).length > 0) ||
-        (component.schemas && Object.keys(component.schemas).length > 0)
-      ) {
-        prev.schemas = {
-          ...prev.schemas,
-          ...component.schemas,
-        };
-      }
-
-      if (
-        (prev.parameters && Object.keys(prev.parameters).length > 0) ||
-        (component.parameters && Object.keys(component.parameters).length > 0)
-      ) {
-        prev.parameters = {
-          ...prev.parameters,
-          ...component.parameters,
-        };
-      }
-
-      return prev;
-    },
-    // A copy, so the first object, `documentation.components`, still holds
-    // only what the caller declared once its schemas are read afterwards.
-    { ...components[0] },
-  );
-}
+): OpenAPIV3_1.ComponentsObject => {
+  const merged = new Map<string, unknown>();
+  for (const [key, value] of components.flatMap((component) =>
+    Object.entries(component ?? {}),
+  )) {
+    if (key.startsWith("x-")) {
+      merged.set(key, value);
+    } else if (value && Object.keys(value).length > 0) {
+      merged.set(key, {
+        ...(merged.get(key) as Record<string, unknown> | undefined),
+        ...value,
+      });
+    }
+  }
+  return Object.fromEntries(merged);
+};
 
 /**
  * Responses describe what a route sends, which can differ from what the same
