@@ -983,17 +983,24 @@ function liftSchemaDefs(result: {
 /**
  * `components` merged into one components object, a later one's entries
  * replacing an earlier one's of the same type and name. Types without entries
- * are left out, so the document gets no empty maps.
+ * are left out, so the document gets no empty maps. A specification extension
+ * (`x-*`) holds a value of its own rather than named components, so it's kept
+ * as it is, a later one replacing an earlier one.
  */
 const mergeComponentsObjects = (
   ...components: (OpenAPIV3_1.ComponentsObject | undefined)[]
 ): OpenAPIV3_1.ComponentsObject => {
-  const merged = new Map<string, Record<string, unknown>>();
-  for (const [type, entries] of components.flatMap((component) =>
+  const merged = new Map<string, unknown>();
+  for (const [key, value] of components.flatMap((component) =>
     Object.entries(component ?? {}),
   )) {
-    if (entries && Object.keys(entries).length > 0) {
-      merged.set(type, { ...merged.get(type), ...entries });
+    if (key.startsWith("x-")) {
+      merged.set(key, value);
+    } else if (value && Object.keys(value).length > 0) {
+      merged.set(key, {
+        ...(merged.get(key) as Record<string, unknown> | undefined),
+        ...value,
+      });
     }
   }
   return Object.fromEntries(merged);

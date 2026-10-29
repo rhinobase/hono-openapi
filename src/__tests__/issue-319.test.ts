@@ -88,4 +88,21 @@ describe("a component `documentation` declares", () => {
       securitySchemes: { bearer },
     });
   });
+
+  it("keeps its specification extensions as they are", async () => {
+    const extensions = {
+      "x-count": 0,
+      "x-disabled": false,
+      "x-empty": null,
+      "x-list": ["a", "b"],
+      "x-origin": "handwritten",
+    };
+    const app = new Hono().post("/notes", validator("json", Note), (c) =>
+      c.json({}),
+    );
+
+    const specs = await generate(app, extensions);
+
+    expect(specs.components).toMatchObject(extensions);
+  });
 });
