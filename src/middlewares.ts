@@ -105,11 +105,16 @@ export function resolver<Schema extends StandardSchemaV1>(
           : undefined),
       };
 
-      const directionOptions =
-        direction === "output" ? outputOptions(schema) : undefined;
+      const asOutput = direction === "output";
+      const directionOptions = asOutput ? outputOptions(schema) : undefined;
 
       return toOpenAPISchema(
-        schema,
+        asOutput
+          ? outputSchema(
+              schema,
+              context.options as Record<string, unknown> | undefined,
+            )
+          : schema,
         directionOptions
           ? {
               ...context,
@@ -142,6 +147,29 @@ const outputOptions = (
     default:
       return undefined;
   }
+};
+
+/**
+ * The schema of what a schema produces, for the vendors that expose it as a
+ * schema of its own instead of a converter option. ArkType converts a morph as
+ * its input and a key with a default as optional; `.out` has the morph's
+ * output and the key as required. ArkType has no direction option of its own,
+ * so `io: "input"`, the spelling `@standard-community/standard-json` uses
+ * across vendors, keeps the input form.
+ */
+const outputSchema = (
+  schema: StandardSchemaV1,
+  options: Record<string, unknown> = {},
+): StandardSchemaV1 => {
+  if (
+    schema["~standard"].vendor === "arktype" &&
+    "out" in schema &&
+    options.io !== "input"
+  ) {
+    return schema.out as StandardSchemaV1;
+  }
+
+  return schema;
 };
 
 /**
