@@ -108,19 +108,30 @@ export function resolver<Schema extends StandardSchemaV1>(
       const directionOptions =
         direction === "output" ? outputOptions(schema) : undefined;
 
-      return toOpenAPISchema(
-        schema,
-        directionOptions
-          ? {
-              ...context,
-              // Options the caller passed win over this default
-              options: {
-                ...directionOptions,
-                ...(context.options as Record<string, unknown> | undefined),
-              },
-            }
-          : context,
+      if (!directionOptions) {
+        return toOpenAPISchema(schema, context);
+      }
+
+      const callerOptions = context.options as
+        | Record<string, unknown>
+        | undefined;
+      const output = toOpenAPISchema(schema, {
+        ...context,
+        // Options the caller passed win over this default
+        options: { ...directionOptions, ...callerOptions },
+      });
+      const callerChoseForm = Object.keys(directionOptions).some((key) =>
+        Object.hasOwn(callerOptions ?? {}, key),
       );
+
+      // Not every output form can be converted: `zod-openapi` throws for a
+      // Zod v3 `.transform()` without a type, as it can't tell what it
+      // produces. The input form still describes the schema, as it did before
+      // responses were converted as output. A caller who chose the form sees
+      // why it can't be converted instead.
+      return callerChoseForm
+        ? output
+        : output.catch(() => toOpenAPISchema(schema, context));
     },
   };
 }

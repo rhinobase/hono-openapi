@@ -168,3 +168,101 @@ describe("a named schema used for both a request body and a response", () => {
     },
   );
 });
+
+describe("a Zod v3 transformation without an output type", () => {
+  // `zod-openapi` can't tell what a bare `.transform()` produces, so it can't
+  // convert the schema as output.
+  const Pet = z3.object({
+    age: z3.string().transform(Number),
+    name: z3.string(),
+  });
+
+  it("documents a response as what it accepts", async () => {
+    const app = new Hono().get(
+      "/pets",
+      describeRoute({ responses: json(Pet) }),
+      (c) => c.json(Pet.parse({ age: "3", name: "Rex" })),
+    );
+
+    const { response } = await operationOf(app, "/pets", "get");
+    expect(response).toEqual({
+      properties: { age: { type: "string" }, name: { type: "string" } },
+      required: ["age", "name"],
+      type: "object",
+    });
+  });
+
+  it("documents a response header as what it accepts", async () => {
+    const app = new Hono().get(
+      "/pets",
+      describeRoute({
+        responses: {
+          200: {
+            description: "OK",
+            headers: {
+              "X-Total-Count": {
+                schema: resolver(z3.string().transform(Number)),
+              },
+            },
+          },
+        },
+      }),
+      (c) => c.json([]),
+    );
+
+    const specs = await generateSpecs(app);
+    expect(specs.paths["/pets"]?.get?.responses?.["200"]).toEqual({
+      description: "OK",
+      headers: { "X-Total-Count": { schema: { type: "string" } } },
+    });
+  });
+
+  it("documents a webhook's request body as what it accepts", async () => {
+    const specs = await generateSpecs(new Hono(), {
+      documentation: {
+        webhooks: {
+          "pet.adopted": {
+            post: {
+              requestBody: {
+                content: { "application/json": { schema: resolver(Pet) } },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(specs.webhooks?.["pet.adopted"]).toEqual({
+      post: {
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                properties: {
+                  age: { type: "string" },
+                  name: { type: "string" },
+                },
+                required: ["age", "name"],
+                type: "object",
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it("still fails when the resolver asks for the output form", async () => {
+    const app = new Hono().get(
+      "/pets",
+      describeRoute({
+        responses: json(Pet, { options: { schemaType: "output" } }),
+      }),
+      (c) => c.json(Pet.parse({ age: "3", name: "Rex" })),
+    );
+
+    await expect(generateSpecs(app)).rejects.toThrow(
+      "Failed to determine a type for ZodEffects - transform",
+    );
+  });
+});
