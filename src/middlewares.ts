@@ -86,10 +86,19 @@ export function resolver<Schema extends StandardSchemaV1>(
   return {
     vendor,
     validate: schema["~standard"].validate,
-    toJSONSchema: (customOptions?: Record<string, unknown>) =>
-      toJsonSchema(schema, { ...userDefinedOptions, ...customOptions }) as
+    toJSONSchema: (customOptions?: Record<string, unknown>) => {
+      const options = { ...userDefinedOptions, ...customOptions };
+      // Keep this helper's legacy Zod defaults while honoring caller options.
+      if (vendor === "zod") {
+        if ("_zod" in schema) options.io ??= "output";
+        else if (options.io !== "input" && options.io !== "output") {
+          options.pipeStrategy ??= "all";
+        }
+      }
+      return toJsonSchema(schema, options) as
         | JSONSchema7
-        | Promise<JSONSchema7>,
+        | Promise<JSONSchema7>;
+    },
     toOpenAPISchema: (
       customOptions?: Record<string, unknown>,
       direction?: SchemaDirection,

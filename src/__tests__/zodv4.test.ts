@@ -310,14 +310,16 @@ describe("zod v4", () => {
     const specs = await generateSpecs(app);
 
     expect(specs.components?.schemas).toMatchObject({
-      Name: { id: "Name", description: "My name", type: "string" },
-      Address: { id: "Address", description: "My address", type: "string" },
+      Name: { description: "My name", type: "string" },
+      Address: { description: "My address", type: "string" },
       Password: {
-        id: "Password",
         description: "My password",
         type: "string",
       },
     });
+    for (const name of ["Name", "Address", "Password"]) {
+      expect(specs.components?.schemas?.[name]).not.toHaveProperty("id");
+    }
     expect(
       specs.paths["/"]?.get?.responses[200]?.content?.["application/json"]
         ?.schema,
