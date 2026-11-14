@@ -1,3 +1,4 @@
+import { Schema } from "effect";
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import z from "zod/v4";
@@ -118,4 +119,20 @@ describe("requestBody.required", () => {
     expect((await app.request("/", { method: "POST" })).status).toBe(400);
     expect((await requestBodyOf(app))?.required).toBe(true);
   });
+
+  it.each(["pets/NotePatch", "Pet~Patch"])(
+    "is left out for a component named %s whose fields are all optional",
+    async (identifier) => {
+      const patch = Schema.Struct({
+        text: Schema.optional(Schema.String),
+      }).annotations({ identifier });
+      const app = new Hono().post(
+        "/",
+        validator("json", Schema.standardSchemaV1(patch)),
+        (c) => c.json({}),
+      );
+
+      expect((await requestBodyOf(app))?.required).toBeUndefined();
+    },
+  );
 });

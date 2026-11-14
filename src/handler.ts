@@ -381,7 +381,7 @@ const needsBody = (
 ) => {
   const resolved =
     "$ref" in schema
-      ? components?.schemas?.[schema.$ref.split("/").at(-1) ?? ""]
+      ? referencedSchema(schema.$ref, components?.schemas)
       : schema;
 
   if (!resolved || "$ref" in resolved) {
