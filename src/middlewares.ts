@@ -25,8 +25,8 @@ import type { OpenAPIV3_1 } from "openapi-types";
 import type {
   DescribeRouteOptions,
   PromiseOr,
-  ResolverReturnType,
   SchemaDirection,
+  ValidatorOptions,
 } from "./types";
 import { uniqueSymbol } from "./utils";
 
@@ -245,6 +245,7 @@ type HasUndefined<T> = undefined extends T ? true : false;
  * @param target Target for validation
  * @param schema Validation schema
  * @param hook Hook for validation
+ * @param options Options for converting the schema and documenting the route
  * @returns Middleware handler
  */
 export function validator<
@@ -273,7 +274,7 @@ export function validator<
   target: Target,
   schema: Schema,
   hook?: Hook<StandardSchemaV1.InferOutput<Schema>, E, P, Target>,
-  options?: ResolverReturnType["options"],
+  options?: ValidatorOptions,
 ): MiddlewareHandler<E, P, V> {
   const middleware = sValidator(target, schema, hook);
 
@@ -282,12 +283,17 @@ export function validator<
     configurable: true,
   });
 
+  // Only the conversion options go to the resolver: the response documents
+  // the route.
+  const { validationErrorResponse, ...resolverOptions } = options ?? {};
+
   // @ts-expect-error not typed well
   return Object.assign(middleware, {
     [uniqueSymbol]: {
       target,
-      ...resolver(schema, options),
-      options,
+      ...resolver(schema, resolverOptions),
+      options: resolverOptions,
+      validationErrorResponse,
     },
   });
 }
