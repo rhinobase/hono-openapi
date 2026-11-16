@@ -33,6 +33,7 @@ import type {
   ResponsesWithResolver,
   SchemaDirection,
   SpecContext,
+  ValidatorOptions,
   WebhooksWithResolver,
 } from "./types";
 import {
@@ -46,6 +47,7 @@ import {
   setSpecComponents,
   uniqueOperationIds,
   uniqueSymbol,
+  VALIDATION_ERROR_RESPONSE,
   VALIDATION_MARKER,
   withOmittedParameters,
 } from "./utils";
@@ -518,12 +520,46 @@ async function getSpec(
   }
 
   const resolved = await resolveSpecSchemas(docs);
+  const errorResponse = await resolveValidationErrorResponse(
+    middlewareHandler.validationErrorResponse,
+  );
+
   return {
-    schema: resolved.schema,
-    components: mergeComponentsObjects(result.components, resolved.components),
+    schema: {
+      ...resolved.schema,
+      ...(errorResponse && {
+        [VALIDATION_ERROR_RESPONSE]: { response: errorResponse.response },
+      }),
+    },
+    components: mergeComponentsObjects(
+      result.components,
+      resolved.components,
+      errorResponse?.components,
+    ),
     unreferencedComponents,
   };
 }
+
+/**
+ * Resolve the 400 a validator documents for its hook, converting its
+ * `resolver()` schemas as a response's. `false` is kept, as the hook sends no
+ * 400 at all.
+ */
+const resolveValidationErrorResponse = async (
+  response: ValidatorOptions["validationErrorResponse"],
+) => {
+  if (response === undefined) {
+    return undefined;
+  }
+
+  if (response === false) {
+    return { response };
+  }
+
+  const resolved = await resolveResponseSchemas({ 400: response });
+
+  return { components: resolved.components, response: resolved.responses[400] };
+};
 
 /** Resolve described and default schemas regardless of which middleware supplied them. */
 async function resolveSpecSchemas(spec: DescribeRouteOptions) {

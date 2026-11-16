@@ -63,9 +63,26 @@ export type ResolverReturnType = ReturnType<typeof resolver> & {
   } & Partial<ToOpenAPISchemaContext>;
 };
 
+/**
+ * Options of `validator()`: how its schema is converted, plus what it
+ * documents for the route.
+ */
+export type ValidatorOptions = NonNullable<ResolverReturnType["options"]> & {
+  /**
+   * The 400 response this validator's hook sends when validation fails,
+   * documented instead of `defaultValidationErrorResponse` on the route. Its
+   * schemas accept `resolver()`, as in `describeRoute`. Set to `false` when
+   * the hook sends no 400. A 400 the route documents with `describeRoute`
+   * still wins, and when several validators of a route set one, the last
+   * one's is documented.
+   */
+  validationErrorResponse?: false | ResponseObjectWithResolver;
+};
+
 export type HandlerUniqueProperty =
   | (ResolverReturnType & {
       target: keyof ValidationTargets;
+      validationErrorResponse?: ValidatorOptions["validationErrorResponse"];
     })
   | {
       spec: DescribeRouteOptions;

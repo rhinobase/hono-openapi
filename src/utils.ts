@@ -24,6 +24,15 @@ export const uniqueSymbol = Symbol.for("hono-openapi");
  */
 export const VALIDATION_MARKER = "__HonoOpenAPIValidator__";
 
+/**
+ * Internal key set on an operation's spec when its `validator()` documents
+ * the 400 its hook sends, as `{ response }`. It's wrapped so that `mergeSpecs`
+ * replaces the response as a whole, and a later validator's wins. Like
+ * `VALIDATION_MARKER`, it is stripped before the spec is emitted.
+ */
+export const VALIDATION_ERROR_RESPONSE =
+  "__HonoOpenAPIValidationErrorResponse__";
+
 export const ALLOWED_METHODS = [
   "GET",
   "PUT",
@@ -556,6 +565,11 @@ export function removeExcludedPaths(paths: OpenAPIPaths, ctx: SpecContext) {
       // auto-generated path params) must NOT trigger it.
       const hasValidation = schema[VALIDATION_MARKER] === true;
       delete schema[VALIDATION_MARKER];
+      // The 400 a route's validator documents for its hook, which wins over
+      // `defaultValidationErrorResponse`.
+      const validatorErrorResponse =
+        schema[VALIDATION_ERROR_RESPONSE]?.response;
+      delete schema[VALIDATION_ERROR_RESPONSE];
 
       if (schema.parameters && isExpandedOperation(schema)) {
         // A path parameter only exists on a path that has it, and is always
@@ -651,13 +665,13 @@ export function removeExcludedPaths(paths: OpenAPIPaths, ctx: SpecContext) {
       }
 
       // Auto-inject a 400 validation error response for routes that use validators
+      const errorResponse =
+        validatorErrorResponse ?? ctx.options.defaultValidationErrorResponse;
       if (
         hasValidation &&
-        ctx.options.defaultValidationErrorResponse !== false &&
+        errorResponse !== false &&
         !schema.responses["400"]
       ) {
-        const errorResponse = ctx.options.defaultValidationErrorResponse;
-
         // Clone so each route owns its own response object — the same
         // default/custom object would otherwise be shared (by reference)
         // across every validator route (and the module-level default).
