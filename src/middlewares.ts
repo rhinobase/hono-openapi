@@ -133,17 +133,30 @@ export function resolver<Schema extends StandardSchemaV1>(
         Object.hasOwn(callerOptions ?? {}, key),
       );
 
-      // Not every output form can be converted: `zod-openapi` throws for a
-      // Zod v3 `.transform()` without a type, as it can't tell what it
-      // produces. The input form still describes the schema, as it did before
-      // responses were converted as output. A caller who chose the form sees
-      // why it can't be converted instead.
-      return callerChoseForm
-        ? output
-        : output.catch(() => toOpenAPISchema(schema, context));
+      // `zod-openapi` can't convert the output form of a Zod v3 `.transform()`
+      // without a type, as it can't tell what it produces. The input form
+      // still describes the schema, as it did before responses were converted
+      // as output. Any other error, and the error for a caller who chose the
+      // form, is thrown as it is.
+      if (callerChoseForm || "_zod" in schema || vendor !== "zod") {
+        return output;
+      }
+
+      return output.catch((error: unknown) => {
+        if (!isUntypedZod3Transform(error)) {
+          throw error;
+        }
+
+        return toOpenAPISchema(schema, context);
+      });
     },
   };
 }
+
+/** The error `zod-openapi` throws for a Zod v3 `.transform()` without a type. */
+const isUntypedZod3Transform = (error: unknown) =>
+  error instanceof Error &&
+  error.message.startsWith("Failed to determine a type for ZodEffects");
 
 /**
  * The vendor options that convert a schema as what it produces, for the
