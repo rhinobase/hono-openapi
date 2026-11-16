@@ -266,6 +266,17 @@ export type GenerateSpecOptions = {
    * @default false
    */
   composeOutputComponents: boolean;
+
+  /**
+   * Sort the parameters of each operation generated from a route, so their
+   * order doesn't depend on how a validator's schema was put together or on
+   * the order of the middleware that describe them. Path parameters come
+   * first, in the order the path names them, then query, header and cookie
+   * parameters, each by name. Operations in `documentation` keep their order.
+   *
+   * @default false
+   */
+  sortParameters: boolean;
 };
 
 type OperationId = string | ((route: RouterRoute) => string);
