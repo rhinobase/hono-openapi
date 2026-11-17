@@ -466,9 +466,7 @@ async function getSpec(
     )[] = [];
 
     if ("$ref" in result.schema) {
-      const ref = result.schema.$ref as string;
-
-      const pos = ref.split("/").pop();
+      const pos = referencedSchemaName(result.schema.$ref as string);
 
       if (pos && result.components?.schemas?.[pos]) {
         const schema = result.components.schemas[pos];
@@ -493,7 +491,9 @@ async function getSpec(
           result.components.parameters[pos] = singleParameter;
 
           // Preserve parameter references for existing single-field schemas.
-          parameters.push({ $ref: `#/components/parameters/${pos}` });
+          parameters.push({
+            $ref: `#/components/parameters/${escapeToken(pos)}`,
+          });
           delete result.components.schemas[pos];
         } else {
           // A reference cannot name multiple parameters or different locations.
@@ -593,21 +593,28 @@ function generateParameters(
   return parameters;
 }
 
-/** The component a local `#/components/schemas/…` reference points at. */
-const referencedSchema = (
-  $ref: string,
-  schemas?: OpenAPIV3_1.ComponentsObject["schemas"],
-) => {
+/** The name of the component a local `#/components/schemas/…` reference points at. */
+const referencedSchemaName = ($ref: string) => {
   const prefix = "#/components/schemas/";
   if (!$ref.startsWith(prefix)) {
     return undefined;
   }
 
-  const name = $ref
-    .slice(prefix.length)
-    .replaceAll("~1", "/")
-    .replaceAll("~0", "~");
-  return schemas?.[name];
+  return $ref.slice(prefix.length).replaceAll("~1", "/").replaceAll("~0", "~");
+};
+
+/** A component name as a JSON Pointer token, as a reference to it writes it. */
+const escapeToken = (name: string) =>
+  name.replaceAll("~", "~0").replaceAll("/", "~1");
+
+/** The component a local `#/components/schemas/…` reference points at. */
+const referencedSchema = (
+  $ref: string,
+  schemas?: OpenAPIV3_1.ComponentsObject["schemas"],
+) => {
+  const name = referencedSchemaName($ref);
+
+  return name === undefined ? undefined : schemas?.[name];
 };
 
 type SchemaOrReference = OpenAPIV3_1.ReferenceObject | OpenAPIV3_1.SchemaObject;
