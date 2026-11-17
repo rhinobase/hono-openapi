@@ -510,6 +510,54 @@ const parameterComponent = (
   return documented && { generated: false, name, parameter: documented };
 };
 
+const PARAMETER_LOCATIONS = ["path", "query", "header", "cookie"];
+
+/**
+ * `parameters` by location, path parameters in the order `path` names them
+ * and the others by name. A reference that doesn't name a parameter component
+ * goes after the ones that can be sorted, in the order it had.
+ */
+const sortParameters = (
+  parameters: (OpenAPIV3_1.ParameterObject | OpenAPIV3_1.ReferenceObject)[],
+  path: string,
+  ctx: SpecContext,
+) => {
+  const pathNames = [...path.matchAll(/\{([^}]+)\}/g)].map(([, name]) => name);
+  const resolve = (
+    parameter: OpenAPIV3_1.ParameterObject | OpenAPIV3_1.ReferenceObject,
+  ) => {
+    const resolved =
+      "$ref" in parameter
+        ? parameterComponent(parameter, ctx)?.parameter
+        : parameter;
+
+    return resolved && !("$ref" in resolved) ? resolved : undefined;
+  };
+  // A location or path name the list doesn't have goes after the ones it has.
+  const rank = (list: string[], value: string) => {
+    const index = list.indexOf(value);
+
+    return index === -1 ? list.length : index;
+  };
+
+  return parameters.toSorted((a, b) => {
+    const first = resolve(a);
+    const second = resolve(b);
+    if (!first || !second) {
+      return Number(!first) - Number(!second);
+    }
+
+    return (
+      rank(PARAMETER_LOCATIONS, first.in) -
+        rank(PARAMETER_LOCATIONS, second.in) ||
+      (first.in === "path"
+        ? rank(pathNames, first.name) - rank(pathNames, second.name)
+        : 0) ||
+      first.name.localeCompare(second.name)
+    );
+  });
+};
+
 export function removeExcludedPaths(paths: OpenAPIPaths, ctx: SpecContext) {
   const { exclude, excludeStaticFile } = ctx.options;
   const newPaths: OpenAPIPaths = {};
@@ -642,6 +690,10 @@ export function removeExcludedPaths(paths: OpenAPIPaths, ctx: SpecContext) {
             });
           }
         }
+      }
+
+      if (ctx.options.sortParameters && schema.parameters) {
+        schema.parameters = sortParameters(schema.parameters, key, ctx);
       }
 
       if (!schema.responses || Object.keys(schema.responses).length === 0) {
