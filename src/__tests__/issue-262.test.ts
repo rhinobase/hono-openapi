@@ -1,3 +1,4 @@
+import { type } from "arktype";
 import { Hono } from "hono";
 import * as v from "valibot";
 import { describe, expect, it } from "vitest";
@@ -99,6 +100,46 @@ describe("response schemas", () => {
     expect(response?.properties?.count).toEqual({ type: "number" });
   });
 
+  it("require an ArkType field with a default, which a request body may leave out", async () => {
+    const Note = type({ pinned: "boolean = false", title: "string" });
+    const app = new Hono().post(
+      "/notes",
+      describeRoute({ responses: json(Note) }),
+      validator("json", Note),
+      (c) => c.json(c.req.valid("json")),
+    );
+
+    const response = await app.request("/notes", {
+      body: JSON.stringify({ title: "Groceries" }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    });
+    expect(await response.json()).toEqual({
+      pinned: false,
+      title: "Groceries",
+    });
+
+    const { request, response: responseSchema } = await operationOf(
+      app,
+      "/notes",
+      "post",
+    );
+    expect(request?.required).toEqual(["title"]);
+    expect(responseSchema?.required).toEqual(["pinned", "title"]);
+  });
+
+  it("describe what an ArkType morph produces", async () => {
+    const Count = type({ count: "string.numeric.parse" });
+    const app = new Hono().get(
+      "/count",
+      describeRoute({ responses: json(Count) }),
+      (c) => c.json(Count.assert({ count: "3" })),
+    );
+
+    const { response } = await operationOf(app, "/count", "get");
+    expect(response?.properties?.count).toEqual({ type: "number" });
+  });
+
   it("keep converting as input when the resolver asks for it", async () => {
     const Note = z.object({
       pinned: z.boolean().default(false),
@@ -112,6 +153,32 @@ describe("response schemas", () => {
 
     const { response } = await operationOf(app, "/notes", "get");
     expect(response?.required).toEqual(["title"]);
+  });
+
+  it("keep converting an ArkType schema as input when the resolver asks for it", async () => {
+    const Note = type({ pinned: "boolean = false", title: "string" });
+    const app = new Hono().get(
+      "/notes",
+      describeRoute({ responses: json(Note, { options: { io: "input" } }) }),
+      (c) => c.json(Note.assert({ title: "Groceries" })),
+    );
+
+    const { response } = await operationOf(app, "/notes", "get");
+    expect(response?.required).toEqual(["title"]);
+  });
+
+  it("keep converting an ArkType schema as output for another vendor's input option", async () => {
+    const Note = type({ pinned: "boolean = false", title: "string" });
+    const app = new Hono().get(
+      "/notes",
+      describeRoute({
+        responses: json(Note, { options: { typeMode: "input" } }),
+      }),
+      (c) => c.json(Note.assert({ title: "Groceries" })),
+    );
+
+    const { response } = await operationOf(app, "/notes", "get");
+    expect(response?.required).toEqual(["pinned", "title"]);
   });
 });
 

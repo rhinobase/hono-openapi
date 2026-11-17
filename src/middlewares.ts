@@ -143,6 +143,8 @@ const outputOptions = (
   schema: StandardSchemaV1,
 ): Record<string, unknown> | undefined => {
   switch (schema["~standard"].vendor) {
+    case "arktype":
+      return { io: "output" };
     case "zod":
       // Zod v4 converts through `z.toJSONSchema()`, Zod v3 through `zod-openapi`
       return "_zod" in schema ? { io: "output" } : { schemaType: "output" };
