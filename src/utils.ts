@@ -500,7 +500,7 @@ const parameterComponent = (
     return undefined;
   }
 
-  const name = ref.$ref.slice(prefix.length);
+  const name = decodeName(ref.$ref.slice(prefix.length));
   const generated = ctx.components.parameters?.[name];
   if (generated) {
     return { generated: true, name, parameter: generated };
