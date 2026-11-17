@@ -20,6 +20,22 @@ const documentedNote = {
 const generate = (app: Hono, components: OpenAPIV3_1.ComponentsObject) =>
   generateSpecs(app, { documentation: { components } });
 
+// A route that takes a note and returns one, so `Note` has an output form.
+const notes = () =>
+  new Hono().post(
+    "/notes",
+    describeRoute({
+      responses: {
+        200: {
+          content: { "application/json": { schema: resolver(Note) } },
+          description: "OK",
+        },
+      },
+    }),
+    validator("json", Note),
+    (c) => c.json({}),
+  );
+
 describe("a component `documentation` declares", () => {
   it("isn't replaced by a request body's schema with the same name", async () => {
     const app = new Hono().post("/notes", validator("json", Note), (c) =>
@@ -69,6 +85,48 @@ describe("a component `documentation` declares", () => {
     expect(specs.components?.schemas).toMatchObject({
       Note: documentedNote,
       NoteOutput: { required: ["pinned", "title"] },
+    });
+  });
+
+  it("is shared by a response whose output form it equals", async () => {
+    const outputNote = {
+      additionalProperties: false,
+      properties: {
+        pinned: { default: false, type: "boolean" },
+        title: { type: "string" },
+      },
+      required: ["pinned", "title"],
+      type: "object",
+    } satisfies OpenAPIV3_1.SchemaObject;
+
+    const specs = await generate(notes(), { schemas: { Note: outputNote } });
+
+    expect(
+      specs.paths["/notes"]?.post?.responses?.[200]?.content?.[
+        "application/json"
+      ]?.schema,
+    ).toEqual({ $ref: "#/components/schemas/Note" });
+    expect(specs.components?.schemas).not.toHaveProperty("NoteOutput");
+  });
+
+  it("is what a composed output form builds on", async () => {
+    const inputNote = {
+      additionalProperties: false,
+      properties: {
+        pinned: { default: false, type: "boolean" },
+        title: { type: "string" },
+      },
+      required: ["title"],
+      type: "object",
+    } satisfies OpenAPIV3_1.SchemaObject;
+
+    const specs = await generateSpecs(notes(), {
+      composeOutputComponents: true,
+      documentation: { components: { schemas: { Note: inputNote } } },
+    });
+
+    expect(specs.components?.schemas?.NoteOutput).toEqual({
+      allOf: [{ $ref: "#/components/schemas/Note" }, { required: ["pinned"] }],
     });
   });
 
