@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { OpenAPIV3_1 } from "openapi-types";
 import { describe, expect, it } from "vitest";
 import z from "zod/v4";
 import { generateSpecs } from "../handler.js";
@@ -152,6 +153,53 @@ describe("sortParameters", () => {
       "query:after",
       "query:tag",
       "#/components/parameters/Elsewhere",
+    ]);
+  });
+
+  it("puts a location it doesn't know after cookie parameters", async () => {
+    const app = new Hono().get(
+      "/pets",
+      describeRoute({
+        parameters: [
+          // OpenAPI 3.2's location for the whole query string.
+          {
+            in: "querystring",
+            name: "filter",
+            schema: { type: "string" },
+          } as unknown as OpenAPIV3_1.ParameterObject,
+          { in: "cookie", name: "session", schema: { type: "string" } },
+        ],
+      }),
+      validator("query", z.object({ tag: z.string() })),
+      (c) => c.json([]),
+    );
+
+    const specs = await generateSpecs(app, { sortParameters: true });
+
+    expect(names(specs.paths["/pets"]?.get?.parameters)).toEqual([
+      "query:tag",
+      "cookie:session",
+      "querystring:filter",
+    ]);
+  });
+
+  it("keeps the order of an operation in `documentation`", async () => {
+    const parameters: OpenAPIV3_1.ParameterObject[] = [
+      { in: "query", name: "tag", schema: { type: "string" } },
+      { in: "query", name: "after", schema: { type: "string" } },
+    ];
+    const app = new Hono().get("/pets", (c) => c.json([]));
+
+    const specs = await generateSpecs(app, {
+      documentation: {
+        paths: { "/notes": { get: { parameters, responses: {} } } },
+      },
+      sortParameters: true,
+    });
+
+    expect(names(specs.paths["/notes"]?.get?.parameters)).toEqual([
+      "query:tag",
+      "query:after",
     ]);
   });
 });
