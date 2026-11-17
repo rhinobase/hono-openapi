@@ -9,7 +9,7 @@ const specsFor = (schema: z.ZodType) =>
     new Hono().get("/pets", validator("query", schema), (c) => c.json([])),
   );
 
-describe("a named query schema whose name has `/` or `~`", () => {
+describe("a named schema whose name has `/` or `~`", () => {
   it.each([
     ["`/`", "pets/Tag", "pets~1Tag"],
     ["`~`", "Pet~Tag", "Pet~0Tag"],
@@ -42,5 +42,26 @@ describe("a named query schema whose name has `/` or `~`", () => {
         (parameter) => "name" in parameter && parameter.name,
       ),
     ).toEqual(["limit", "tag"]);
+  });
+  it("lists a named path parameter once, as its component", async () => {
+    const specs = await generateSpecs(
+      new Hono().get(
+        "/pets/:id",
+        validator(
+          "param",
+          z.object({ id: z.string() }).meta({ id: "pets/Id" }),
+        ),
+        (c) => c.json({}),
+      ),
+    );
+
+    expect(specs.paths["/pets/{id}"]?.get?.parameters).toEqual([
+      { $ref: "#/components/parameters/pets~1Id" },
+    ]);
+    expect(specs.components?.parameters?.["pets/Id"]).toMatchObject({
+      in: "path",
+      name: "id",
+      required: true,
+    });
   });
 });

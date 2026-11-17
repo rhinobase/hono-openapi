@@ -492,7 +492,7 @@ async function getSpec(
 
           // Preserve parameter references for existing single-field schemas.
           parameters.push({
-            $ref: `#/components/parameters/${escapeToken(pos)}`,
+            $ref: `#/components/parameters/${encodeName(pos)}`,
           });
           delete result.components.schemas[pos];
         } else {
@@ -594,18 +594,10 @@ function generateParameters(
 }
 
 /** The name of the component a local `#/components/schemas/…` reference points at. */
-const referencedSchemaName = ($ref: string) => {
-  const prefix = "#/components/schemas/";
-  if (!$ref.startsWith(prefix)) {
-    return undefined;
-  }
-
-  return $ref.slice(prefix.length).replaceAll("~1", "/").replaceAll("~0", "~");
-};
-
-/** A component name as a JSON Pointer token, as a reference to it writes it. */
-const escapeToken = (name: string) =>
-  name.replaceAll("~", "~0").replaceAll("/", "~1");
+const referencedSchemaName = ($ref: string) =>
+  $ref.startsWith(SCHEMA_REF)
+    ? decodeName($ref.slice(SCHEMA_REF.length))
+    : undefined;
 
 /** The component a local `#/components/schemas/…` reference points at. */
 const referencedSchema = (
